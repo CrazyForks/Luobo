@@ -1981,5 +1981,14 @@
   "themeAnimBadge": "ANIM",
   "@themeAnimBadge": { "description": "Badge shown on theme cards that have animations enabled" },
   "themeAuthor": "by {author}",
-  "@themeAuthor": { "description": "Author attribution shown on theme preview card", "placeholders": { "author": { "type": "String" } } }
+  "@themeAuthor": { "description": "Author attribution shown on theme preview card", "placeholders": { "author": { "type": "String" } } },
+
+  "gaplessPlayback": "Gapless Playback",
+  "@gaplessPlayback": { "description": "Section title for gapless playback setting" },
+  "gaplessPlaybackSubtitle": "Eliminate silence between songs",
+  "@gaplessPlaybackSubtitle": { "description": "Subtitle for gapless playback toggle" },
+  "customizeNowPlaying": "Customize Now Playing Screen (Beta)",
+  "@customizeNowPlaying": { "description": "Title for customize now playing screen option" },
+  "customizeNowPlayingSubtitle": "Create and manage custom themes",
+  "@customizeNowPlayingSubtitle": { "description": "Subtitle for customize now playing screen option" }
 }

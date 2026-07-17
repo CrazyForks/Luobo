@@ -402,7 +402,7 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
       builder: (context, player, _) {
         final accent = Theme.of(context).colorScheme.primary;
         return _buildSection(
-          title: 'Gapless Playback',
+          title: AppLocalizations.of(context)!.gaplessPlayback,
           children: [
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
@@ -424,12 +424,12 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
                   size: 18,
                 ),
               ),
-              title: const Text(
-                'Gapless Playback',
-                style: TextStyle(fontSize: 16),
+              title: Text(
+                AppLocalizations.of(context)!.gaplessPlayback,
+                style: const TextStyle(fontSize: 16),
               ),
               subtitle: Text(
-                'Eliminate silence between songs',
+                AppLocalizations.of(context)!.gaplessPlaybackSubtitle,
                 style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).brightness == Brightness.dark

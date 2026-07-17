@@ -9,14 +9,13 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appName => 'Musly';
+  String get appName => 'Luobo';
 
   @override
-  String get emulatorDetected => 'Emulator Detected';
+  String get emulatorDetected => '检测到模拟器';
 
   @override
-  String get emulatorNotAllowed =>
-      'This app cannot run on an emulator.\\nPlease use a physical device.';
+  String get emulatorNotAllowed => '此应用无法在模拟器上运行。\n请使用真实设备。';
 
   @override
   String get goodMorning => '早上好';
@@ -43,16 +42,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get yourPlaylists => '你的歌单';
 
   @override
-  String get favoritePlaylists => 'Favorite Playlists';
+  String get favoritePlaylists => '收藏的歌单';
 
   @override
-  String get sectionAlbums => 'Albums';
+  String get sectionAlbums => '专辑';
 
   @override
-  String get sectionEPs => 'EPs';
+  String get sectionEPs => 'EP';
 
   @override
-  String get sectionSingles => 'Singles';
+  String get sectionSingles => '单曲';
 
   @override
   String get madeForYou => '为你制作';
@@ -132,7 +131,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get genres => '分类';
 
   @override
-  String get years => 'Years';
+  String get years => '年份';
 
   @override
   String get favorites => '收藏';
@@ -237,7 +236,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get joinDiscord => '加入 Discord 社区';
 
   @override
-  String get unknownArtist => '未知艺术家';
+  String get unknownArtist => '未知歌手';
 
   @override
   String get unknownAlbum => '未知专辑';
@@ -377,23 +376,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get showStarRatingsSubtitle => '为歌曲评分并查看评分';
 
   @override
-  String get showMiniPlayerHeart => 'Show Heart Button';
+  String get showMiniPlayerHeart => '显示收藏按钮';
 
   @override
-  String get showMiniPlayerHeartSubtitle => 'Add to favorites from mini player';
+  String get showMiniPlayerHeartSubtitle => '在迷你播放器中添加到收藏';
 
   @override
-  String get showMiniPlayerRepeat => 'Show Repeat Button';
+  String get showMiniPlayerRepeat => '显示循环按钮';
 
   @override
-  String get showMiniPlayerRepeatSubtitle =>
-      'Toggle repeat mode from mini player';
+  String get showMiniPlayerRepeatSubtitle => '在迷你播放器中切换循环模式';
 
   @override
-  String get showMiniPlayerShuffle => 'Show Shuffle Button';
+  String get showMiniPlayerShuffle => '显示随机按钮';
 
   @override
-  String get showMiniPlayerShuffleSubtitle => 'Toggle shuffle from mini player';
+  String get showMiniPlayerShuffleSubtitle => '在迷你播放器中切换随机播放';
 
   @override
   String get enableRecommendations => '启用推荐';
@@ -443,7 +441,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get filterAll => '全部';
 
   @override
-  String get faves => 'Faves';
+  String get faves => '收藏';
 
   @override
   String get filterPlaylists => '歌单';
@@ -458,45 +456,43 @@ class AppLocalizationsZh extends AppLocalizations {
   String get likedSongs => '喜欢的歌曲';
 
   @override
-  String get likedAlbums => 'Liked Albums';
+  String get likedAlbums => '喜欢的专辑';
 
   @override
-  String get noLikedAlbums => 'No liked albums yet';
+  String get noLikedAlbums => '暂无喜欢的专辑';
 
   @override
-  String get localMusicLibrary => 'Local Music Library';
+  String get localMusicLibrary => '本地音乐库';
 
   @override
-  String get mergeLocalLibrary => 'Merge with Server Library';
+  String get mergeLocalLibrary => '与服务器合并';
 
   @override
-  String get mergeLocalLibrarySubtitle =>
-      'Show local music alongside your server library';
+  String get mergeLocalLibrarySubtitle => '将本地音乐与服务器音乐一起显示';
 
   @override
-  String get localMusicStats => 'Local Music Files';
+  String get localMusicStats => '本地音乐文件';
 
   @override
-  String get addMusicFolder => 'Add Music Folder';
+  String get addMusicFolder => '添加音乐文件夹';
 
   @override
-  String get rescanLocalMusic => 'Rescan Local Music';
+  String get rescanLocalMusic => '重新扫描本地音乐';
 
   @override
-  String get localLibraryEmpty => 'Your library is empty';
+  String get localLibraryEmpty => '音乐库为空';
 
   @override
-  String get localLibraryEmptySubtitle =>
-      'No local music files were found. Tap the button below to scan again.';
+  String get localLibraryEmptySubtitle => '未找到本地音乐文件。点击下方按钮重新扫描。';
 
   @override
-  String get libraryEmpty => 'Your library is empty';
+  String get libraryEmpty => '音乐库为空';
 
   @override
-  String get libraryEmptySubtitle => 'Add some songs to get started.';
+  String get libraryEmptySubtitle => '添加一些歌曲开始吧。';
 
   @override
-  String get scanForMusic => 'Scan for Music';
+  String get scanForMusic => '扫描音乐';
 
   @override
   String get radioStations => '电台';
@@ -560,14 +556,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get browseCategories => '浏览分类';
 
   @override
-  String get liveSearchSection => 'Search';
+  String get liveSearchSection => '搜索';
 
   @override
-  String get liveSearch => 'Live Search';
+  String get liveSearch => '实时搜索';
 
   @override
-  String get liveSearchSubtitle =>
-      'Update results as you type instead of showing a dropdown';
+  String get liveSearchSubtitle => '输入时实时更新结果，而非显示下拉列表';
 
   @override
   String get categoryMadeForYou => '为你制作';
@@ -603,7 +598,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tabDisplay => '显示';
 
   @override
-  String get tabSupport => 'Support';
+  String get tabSupport => '支持';
 
   @override
   String get tabAbout => '关于';
@@ -687,20 +682,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noMusicFolders => '未找到音乐文件夹';
 
   @override
-  String get sectionSavedProfiles => 'SAVED PROFILES';
+  String get sectionSavedProfiles => '已保存的配置';
 
   @override
-  String get switchProfile => 'Switch Profile';
+  String get switchProfile => '切换配置';
 
   @override
-  String get switchServer => 'Switch Server';
+  String get switchServer => '切换服务器';
 
   @override
-  String get addProfile => 'Add Profile';
+  String get addProfile => '添加配置';
 
   @override
   String switchProfileConfirmation(String profile) {
-    return 'Connect to \"$profile\"?';
+    return '连接到「$profile」？';
   }
 
   @override
@@ -759,30 +754,28 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get keepScreenOnDuringDownload => 'Keep Screen On';
+  String get keepScreenOnDuringDownload => '下载时保持屏幕常亮';
 
   @override
-  String get keepScreenOnDuringDownloadSubtitle =>
-      'Prevents download from failing when device locks';
+  String get keepScreenOnDuringDownloadSubtitle => '防止设备锁屏导致下载失败';
 
   @override
-  String get parallelDownloads => 'Parallel Downloads';
+  String get parallelDownloads => '并行下载';
 
   @override
-  String get parallelDownloadsSubtitle =>
-      'Download multiple songs simultaneously';
+  String get parallelDownloadsSubtitle => '同时下载多首歌曲';
 
   @override
-  String get downloadSingular => 'download';
+  String get downloadSingular => '个下载';
 
   @override
-  String get downloadPlural => 'downloads';
+  String get downloadPlural => '个下载';
 
   @override
-  String get slowerButStable => 'Slower but more stable';
+  String get slowerButStable => '较慢但更稳定';
 
   @override
-  String get fasterButMoreData => 'Faster but uses more data';
+  String get fasterButMoreData => '较快但更耗流量';
 
   @override
   String get libraryDownloadStarted => '音乐库下载已开始';
@@ -1228,10 +1221,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get artistDataNotFound => '未找到艺术家';
 
   @override
-  String get addedArtistToQueue => 'Added artist to Queue';
+  String get addedArtistToQueue => '已将歌手添加到队列';
 
   @override
-  String get addedArtistToQueueError => 'Failed adding artist to Queue';
+  String get addedArtistToQueueError => '添加歌手到队列失败';
 
   @override
   String get casting => '投射中';
@@ -1413,161 +1406,155 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noArtwork => '无封面';
 
   @override
-  String get serverUnreachableTitle => 'Cannot reach server';
+  String get serverUnreachableTitle => '无法连接服务器';
 
   @override
-  String get serverUnreachableSubtitle =>
-      'Check your connection or server settings.';
+  String get serverUnreachableSubtitle => '请检查网络连接或服务器设置。';
 
   @override
-  String get openOfflineMode => 'Open in offline mode';
+  String get openOfflineMode => '以离线模式打开';
 
   @override
-  String get appearanceSection => 'Appearance';
+  String get appearanceSection => '外观';
 
   @override
-  String get themeLabel => 'Theme';
+  String get themeLabel => '主题';
 
   @override
-  String get accentColorLabel => 'Accent color';
+  String get accentColorLabel => '强调色';
 
   @override
-  String get circularDesignLabel => 'Circular Design';
+  String get circularDesignLabel => '圆润设计';
 
   @override
-  String get circularDesignSubtitle =>
-      'Floating, rounded UI with translucent panels and glass-blur effect on the player and navigation bar.';
+  String get circularDesignSubtitle => '浮动、圆角 UI，播放器和导航栏带有半透明面板和玻璃模糊效果。';
 
   @override
-  String get themeModeSystem => 'System';
+  String get themeModeSystem => '跟随系统';
 
   @override
-  String get themeModeLight => 'Light';
+  String get themeModeLight => '浅色';
 
   @override
-  String get themeModeDark => 'Dark';
+  String get themeModeDark => '深色';
 
   @override
-  String get liveLabel => 'LIVE';
+  String get liveLabel => '直播';
 
   @override
-  String get discordStatusText => 'Discord status text';
+  String get discordStatusText => 'Discord 状态文字';
 
   @override
-  String get discordStatusTextSubtitle =>
-      'Second line shown in Discord activity';
+  String get discordStatusTextSubtitle => 'Discord 动态中显示的第二行';
 
   @override
-  String get discordRpcStyleArtist => 'Artist name';
+  String get discordRpcStyleArtist => '歌手名';
 
   @override
-  String get discordRpcStyleSong => 'Song title';
+  String get discordRpcStyleSong => '歌曲名';
 
   @override
-  String get discordRpcStyleApp => 'App name (Musly)';
+  String get discordRpcStyleApp => '应用名 (Luobo)';
 
   @override
-  String get sectionVolumeNormalization => 'VOLUME NORMALIZATION (REPLAYGAIN)';
+  String get sectionVolumeNormalization => '音量标准化 (REPLAYGAIN)';
 
   @override
-  String get sectionFadeInOut => 'FADE IN/OUT';
+  String get sectionFadeInOut => '淡入/淡出';
 
   @override
-  String get fadeInOutEnable => 'Enable Fade In/Out';
+  String get fadeInOutEnable => '启用淡入/淡出';
 
   @override
-  String get fadeInOutSubtitle => 'Smoothly fade audio when playing or pausing';
+  String get fadeInOutSubtitle => '播放或暂停时平滑过渡音频';
 
   @override
   String fadeDuration(int duration) {
-    return 'Fade Duration: ${duration}ms';
+    return '淡入淡出时长：${duration}ms';
   }
 
   @override
-  String get replayGainModeOff => 'Off';
+  String get replayGainModeOff => '关闭';
 
   @override
-  String get replayGainModeTrack => 'Track';
+  String get replayGainModeTrack => '单曲';
 
   @override
-  String get replayGainModeAlbum => 'Album';
+  String get replayGainModeAlbum => '专辑';
 
   @override
   String replayGainPreamp(String value) {
-    return 'Preamp: $value dB';
+    return '前置增益：$value dB';
   }
 
   @override
-  String get replayGainPreventClipping => 'Prevent Clipping';
+  String get replayGainPreventClipping => '防止削波';
 
   @override
   String replayGainFallbackGain(String value) {
-    return 'Fallback Gain: $value dB';
+    return '回退增益：$value dB';
   }
 
   @override
   String autoDjSongsToAdd(int count) {
-    return 'Songs to Add: $count';
+    return '添加歌曲数：$count';
   }
 
   @override
-  String get transcodingEnable => 'Enable Transcoding';
+  String get transcodingEnable => '启用转码';
 
   @override
-  String get transcodingEnableSubtitle =>
-      'Reduce data usage with lower quality';
+  String get transcodingEnableSubtitle => '降低音质以减少流量消耗';
 
   @override
-  String get smartTranscoding => 'Smart Transcoding';
+  String get smartTranscoding => '智能转码';
 
   @override
-  String get smartTranscodingSubtitle =>
-      'Automatically adjusts quality based on your connection (WiFi vs mobile data)';
+  String get smartTranscodingSubtitle => '根据网络连接自动调整音质（WiFi vs 移动数据）';
 
   @override
-  String get smartTranscodingDetectedNetwork => 'Detected network: ';
+  String get smartTranscodingDetectedNetwork => '检测到的网络：';
 
   @override
   String smartTranscodingActiveBitrate(String bitrate) {
-    return 'Active bitrate: $bitrate';
+    return '当前码率：$bitrate';
   }
 
   @override
-  String get transcodingWifiQuality => 'WiFi Quality';
+  String get transcodingWifiQuality => 'WiFi 音质';
 
   @override
-  String get transcodingWifiQualitySubtitleSmart =>
-      'Used automatically on WiFi';
+  String get transcodingWifiQualitySubtitleSmart => '连接 WiFi 时自动使用';
 
   @override
-  String get transcodingWifiQualitySubtitle => 'Bitrate when on WiFi';
+  String get transcodingWifiQualitySubtitle => 'WiFi 下的码率';
 
   @override
-  String get transcodingMobileQuality => 'Mobile Quality';
+  String get transcodingMobileQuality => '移动网络音质';
 
   @override
   String get transcodingMobileQualitySubtitleSmart => '在移动数据上自动使用';
 
   @override
-  String get transcodingMobileQualitySubtitle => 'Bitrate when on mobile data';
+  String get transcodingMobileQualitySubtitle => '移动网络下的码率';
 
   @override
-  String get transcodingFormat => 'Format';
+  String get transcodingFormat => '格式';
 
   @override
-  String get transcodingFormatSubtitle => 'Audio codec used for streaming';
+  String get transcodingFormatSubtitle => '流媒体使用的音频编码';
 
   @override
-  String get transcodingBitrateOriginal => 'Original (No Transcoding)';
+  String get transcodingBitrateOriginal => '原始（不转码）';
 
   @override
-  String get transcodingFormatOriginal => 'Original';
+  String get transcodingFormatOriginal => '原始';
 
   @override
-  String get imageCacheTitle => 'Image Cache';
+  String get imageCacheTitle => '图片缓存';
 
   @override
-  String get imageCacheSubtitle => 'Save album covers locally';
+  String get imageCacheSubtitle => '本地保存专辑封面';
 
   @override
   String get musicCacheTitle => '音乐缓存';
@@ -1582,249 +1569,254 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bpmCacheSubtitle => '本地保存 BPM 分析';
 
   @override
-  String get sectionAboutInformation => 'INFORMATION';
+  String get sectionAboutInformation => '信息';
 
   @override
   String get sectionAboutDeveloper => '开发者';
 
   @override
-  String get sectionAboutLinks => 'LINKS';
+  String get sectionAboutLinks => '链接';
 
   @override
-  String get aboutVersion => 'Version';
+  String get aboutVersion => '版本';
 
   @override
-  String get aboutPlatform => 'Platform';
+  String get aboutPlatform => '平台';
 
   @override
-  String get aboutMadeBy => 'Made by dddevid';
+  String get aboutMadeBy => '由 dddevid 制作';
 
   @override
   String get aboutGitHub => 'github.com/dddevid';
 
   @override
-  String get aboutLinkGitHub => 'GitHub Repository';
+  String get aboutLinkGitHub => 'GitHub 仓库';
 
   @override
-  String get aboutLinkChangelog => 'Changelog';
+  String get aboutLinkChangelog => '更新日志';
 
   @override
-  String get aboutLinkReportIssue => 'Report Issue';
+  String get aboutLinkReportIssue => '报告问题';
 
   @override
-  String get aboutLinkDiscord => 'Join Discord Community';
+  String get aboutLinkDiscord => '加入 Discord 社区';
 
   @override
-  String get sectionAnalyticsPrivacy => 'Analytics & Privacy';
+  String get sectionAnalyticsPrivacy => '分析与隐私';
 
   @override
-  String get anonymousAnalytics => 'Anonymous Analytics';
+  String get anonymousAnalytics => '匿名分析';
 
   @override
-  String get anonymousAnalyticsSubtitle =>
-      'Help improve Musly with anonymous crash reports and usage stats';
+  String get anonymousAnalyticsSubtitle => '通过匿名崩溃报告和使用统计帮助改进应用';
 
   @override
-  String get deviceId => 'Device ID';
+  String get deviceId => '设备 ID';
 
   @override
   String deviceIdAnonymous(String id) {
-    return 'Anonymous ID: $id';
+    return '匿名 ID：$id';
   }
 
   @override
-  String get deviceIdDisabled =>
-      'Enable analytics to see your anonymous device ID';
+  String get deviceIdDisabled => '启用分析以查看匿名设备 ID';
 
   @override
-  String get aboutDeviceId => 'About Device ID';
+  String get aboutDeviceId => '关于设备 ID';
 
   @override
-  String get aboutDeviceIdSubtitle =>
-      'This is an anonymous identifier generated by the app. It cannot be linked to your personal identity and is used only for analytics.';
+  String get aboutDeviceIdSubtitle => '这是应用生成的匿名标识符。它无法关联到你的个人身份，仅用于分析。';
 
   @override
-  String get supportGreeting => 'Hey there! 👋';
+  String get supportGreeting => '你好！👋';
 
   @override
   String get supportParagraph1 =>
-      'I\'m Devid, the developer behind Musly. I built this app because I love music and believe everyone deserves a beautiful, free music player.';
+      '我是 Devid，Musly 的开发者。我做这个应用是因为热爱音乐，并且相信每个人都值得拥有一个漂亮的免费音乐播放器。';
 
   @override
   String get supportParagraph2 =>
-      'Musly is completely free and open-source. No ads and no subscription fees. I work on it in my free time because I genuinely enjoy making something useful for people like you.';
+      'Musly 完全免费且开源。没有广告，没有订阅费。我利用业余时间开发它，因为我真心喜欢做对大家有用的东西。';
 
   @override
   String get supportParagraph3 =>
-      'But servers, development tools, and coffee aren\'t free 😅 If Musly has become a part of your daily life and you\'d like to say \"thanks,\" a small donation would mean the world to me. It helps cover costs and keeps me motivated to add new features.';
+      '但服务器、开发工具和咖啡不是免费的 😅 如果 Musly 已经成为你日常生活的一部分，并且想说声「谢谢」，一笔小小的捐赠对我意义重大。它能帮助我支付成本并保持动力去添加新功能。';
 
   @override
-  String get supportParagraph4 =>
-      'No pressure at all though - your enjoyment of the app is already the best reward! 💙';
+  String get supportParagraph4 => '完全没有压力——你喜欢这个应用本身就是最好的回报！💙';
 
   @override
-  String get supportDonationTitle => 'Support with a Donation';
+  String get supportDonationTitle => '捐赠支持';
 
   @override
-  String get supportDonationSubtitle => 'via Revolut - any amount helps!';
+  String get supportDonationSubtitle => '通过 Revolut — 任何金额都有帮助！';
 
   @override
-  String get supportDiscordTitle => 'Join our Discord';
+  String get supportDiscordTitle => '加入 Discord';
 
   @override
-  String get supportDiscordSubtitle =>
-      'Get help, suggest features, or just chat';
+  String get supportDiscordSubtitle => '获取帮助、建议功能或聊天';
 
   @override
-  String get supportWaysTitle => 'Other ways to support';
+  String get supportWaysTitle => '其他支持方式';
 
   @override
-  String get supportWayRate => 'Leave a rating on the app store';
+  String get supportWayRate => '在应用商店留下评分';
 
   @override
-  String get supportWayShare => 'Tell your friends about Musly';
+  String get supportWayShare => '告诉朋友们';
 
   @override
-  String get supportWayBugs => 'Report bugs or suggest features';
+  String get supportWayBugs => '报告 Bug 或建议功能';
 
   @override
-  String get supportWayEnjoy => 'Just enjoy the music! 🎵';
+  String get supportWayEnjoy => '享受音乐！🎵';
 
   @override
-  String get supportMadeWithLove => 'Made with 💙 in Italy';
+  String get supportMadeWithLove => '用 💙 在意大利制作';
 
   @override
-  String get playbackSpeed => 'Playback Speed';
+  String get playbackSpeed => '播放速度';
 
   @override
-  String get normalSpeed => 'Normal (1×)';
+  String get normalSpeed => '正常 (1×)';
 
   @override
-  String get preservePitch => 'Preserve pitch';
+  String get preservePitch => '保持音调';
 
   @override
-  String get preservePitchSubtitle => 'Keep original pitch when changing speed';
+  String get preservePitchSubtitle => '变速时保持原始音调';
 
   @override
-  String get pitch => 'Pitch';
+  String get pitch => '音调';
 
   @override
-  String get pitchPreserved => 'pitch preserved';
+  String get pitchPreserved => '音调已保持';
 
   @override
   String speedTooltipWithPitch(String speed, String pitch) {
-    return 'Speed $speed · pitch $pitch×';
+    return '速度 $speed · 音调 $pitch×';
   }
 
   @override
   String speedTooltipPitchPreserved(String speed) {
-    return 'Speed $speed · pitch preserved';
+    return '速度 $speed · 音调已保持';
   }
 
   @override
-  String get sleepTimer => 'Sleep Timer';
+  String get sleepTimer => '睡眠定时器';
 
   @override
-  String get sleepTimerActive => 'Sleep timer active';
+  String get sleepTimerActive => '睡眠定时器已激活';
 
   @override
-  String get fadeOut => 'Fade out';
+  String get fadeOut => '淡出';
 
   @override
   String fadeOutSubtitle(int seconds) {
-    return 'Gradually lower volume in the last $seconds s';
+    return '在最后 $seconds 秒内逐渐降低音量';
   }
 
   @override
-  String get finishCurrentSong => 'Finish current song';
+  String get finishCurrentSong => '播完当前歌曲';
 
   @override
-  String get finishCurrentSongSubtitle => 'Stop after the current track ends';
+  String get finishCurrentSongSubtitle => '当前曲目结束后停止';
 
   @override
   String sleepTimerMinutes(int count) {
-    return '$count min';
+    return '$count 分钟';
   }
 
   @override
   String sleepTimerHours(int count) {
-    return '$count hour';
+    return '$count 小时';
   }
 
   @override
   String sleepTimerSetFor(String duration) {
-    return 'Sleep timer set for $duration';
+    return '睡眠定时器已设置为 $duration';
   }
 
   @override
-  String get customDuration => 'Custom duration…';
+  String get customDuration => '自定义时长…';
 
   @override
-  String get cancelTimer => 'Cancel timer';
+  String get cancelTimer => '取消定时器';
 
   @override
-  String get customSleepTimer => 'Custom Sleep Timer';
+  String get customSleepTimer => '自定义睡眠定时器';
 
   @override
-  String get set => 'Set';
+  String get set => '设置';
 
   @override
-  String get addToPlaylistTitle => 'Add to Playlist';
+  String get addToPlaylistTitle => '添加到歌单';
 
   @override
-  String get yourPlaylistsLabel => 'Your Playlists';
+  String get yourPlaylistsLabel => '你的歌单';
 
   @override
-  String get enableLrcLibFallback => 'Fetch lyrics from LRCLIB';
+  String get enableLrcLibFallback => '从 LRCLIB 获取歌词';
 
   @override
-  String get lrcLibFallbackSubtitle =>
-      'Automatically search LRCLIB for lyrics when your server does not provide them';
+  String get lrcLibFallbackSubtitle => '当服务器无歌词时自动从 LRCLIB 搜索';
 
   @override
-  String get themeSaved => 'Theme saved';
+  String get themeSaved => '主题已保存';
 
   @override
-  String get themeUnsavedChanges => 'Unsaved changes';
+  String get themeUnsavedChanges => '未保存的更改';
 
   @override
-  String get themeUnsavedChangesTitle => 'Unsaved Changes';
+  String get themeUnsavedChangesTitle => '未保存的更改';
 
   @override
-  String get themeUnsavedChangesBody =>
-      'You have unsaved changes. Do you want to save before leaving?';
+  String get themeUnsavedChangesBody => '你有未保存的更改。离开前要保存吗？';
 
   @override
-  String get discard => 'Discard';
+  String get discard => '丢弃';
 
   @override
-  String get done => 'Done';
+  String get done => '完成';
 
   @override
   String pickColor(String label) {
-    return 'Pick $label';
+    return '选择$label';
   }
 
   @override
-  String get titleStyle => 'Title Style';
+  String get titleStyle => '标题样式';
 
   @override
-  String get artistStyle => 'Artist Style';
+  String get artistStyle => '歌手样式';
 
   @override
-  String get themeActive => 'ACTIVE';
+  String get themeActive => '使用中';
 
   @override
-  String get themeSafeMode => 'SAFE';
+  String get themeSafeMode => '安全';
 
   @override
-  String get themeCodeMode => 'CODE';
+  String get themeCodeMode => '代码';
 
   @override
-  String get themeAnimBadge => 'ANIM';
+  String get themeAnimBadge => '动画';
 
   @override
   String themeAuthor(String author) {
-    return 'by $author';
+    return '作者 $author';
   }
+
+  @override
+  String get gaplessPlayback => '无缝播放';
+
+  @override
+  String get gaplessPlaybackSubtitle => '消除歌曲之间的间隔';
+
+  @override
+  String get customizeNowPlaying => '自定义正在播放界面（Beta）';
+
+  @override
+  String get customizeNowPlayingSubtitle => '创建和管理自定义主题';
 }

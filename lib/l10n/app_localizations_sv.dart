@@ -1851,4 +1851,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String themeAuthor(String author) {
     return 'by $author';
   }
+
+  @override
+  String get gaplessPlayback => 'Gapless Playback';
+
+  @override
+  String get gaplessPlaybackSubtitle => 'Eliminate silence between songs';
+
+  @override
+  String get customizeNowPlaying => 'Customize Now Playing Screen (Beta)';
+
+  @override
+  String get customizeNowPlayingSubtitle => 'Create and manage custom themes';
 }

@@ -505,13 +505,13 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
           size: 18,
         ),
       ),
-      title: const Text(
-        'Customize Now Playing Screen (Beta)',
-        style: TextStyle(fontSize: 16),
+      title: Text(
+        AppLocalizations.of(context)!.customizeNowPlaying,
+        style: const TextStyle(fontSize: 16),
       ),
-      subtitle: const Text(
-        'Create and manage custom themes',
-        style: TextStyle(
+      subtitle: Text(
+        AppLocalizations.of(context)!.customizeNowPlayingSubtitle,
+        style: const TextStyle(
           fontSize: 13,
           color: Colors.grey,
         ),

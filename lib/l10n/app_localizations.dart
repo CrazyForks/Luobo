@@ -3495,6 +3495,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'by {author}'**
   String themeAuthor(String author);
+
+  /// Section title for gapless playback setting
+  ///
+  /// In en, this message translates to:
+  /// **'Gapless Playback'**
+  String get gaplessPlayback;
+
+  /// Subtitle for gapless playback toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Eliminate silence between songs'**
+  String get gaplessPlaybackSubtitle;
+
+  /// Title for customize now playing screen option
+  ///
+  /// In en, this message translates to:
+  /// **'Customize Now Playing Screen (Beta)'**
+  String get customizeNowPlaying;
+
+  /// Subtitle for customize now playing screen option
+  ///
+  /// In en, this message translates to:
+  /// **'Create and manage custom themes'**
+  String get customizeNowPlayingSubtitle;
 }
 
 class _AppLocalizationsDelegate

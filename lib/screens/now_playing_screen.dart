@@ -373,7 +373,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                         albumName: song.album ??
                             AppLocalizations.of(context)!.unknownAlbum,
                         albumId: song.albumId,
-                        showLyricsButton: true,
+                        showLyricsButton: false,
                         isLyricsActive: _showLyrics,
                         onLyricsPressed: () {
                           setState(() {
@@ -411,7 +411,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                           albumName: song.album ??
                               AppLocalizations.of(context)!.unknownAlbum,
                           albumId: song.albumId,
-                          showLyricsButton: true,
+                          showLyricsButton: false,
                           isLyricsActive: _showLyrics,
                           onLyricsPressed: () {
                             setState(() {
@@ -431,6 +431,12 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                             ..setTranslationRaw(0, _morphProgress * 15, 0),
                           child: _PlayerControls(
                             formatDuration: _formatDuration,
+                            onLyricsPressed: () {
+                              setState(() {
+                                _showLyrics = !_showLyrics;
+                              });
+                            },
+                            isLyricsActive: _showLyrics,
                           ),
                         ),
                       ),
@@ -539,6 +545,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                                 duration: const Duration(milliseconds: 400),
                                 curve: Curves.easeOutCubic,
                                 child: SafeArea(
+                                  bottom: false,
                                   child: LayoutBuilder(
                                     builder: (context, constraints) {
                                       final screenHeight =
@@ -614,7 +621,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                                                               context)!
                                                           .unknownAlbum,
                                                   albumId: song.albumId,
-                                                  showLyricsButton: true,
+                                                  showLyricsButton: false,
                                                   isLyricsActive: _showLyrics,
                                                   onLyricsPressed: () {
                                                     setState(() {
@@ -687,6 +694,12 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                                                   child: _PlayerControls(
                                                     formatDuration:
                                                         _formatDuration,
+                                                    onLyricsPressed: () {
+                                                      setState(() {
+                                                        _showLyrics = !_showLyrics;
+                                                      });
+                                                    },
+                                                    isLyricsActive: _showLyrics,
                                                   ),
                                                 ),
                                               ),
@@ -2220,8 +2233,14 @@ class _SwipeableAlbumArtwork extends StatelessWidget {
 
 class _PlayerControls extends StatefulWidget {
   final String Function(Duration) formatDuration;
+  final VoidCallback? onLyricsPressed;
+  final bool isLyricsActive;
 
-  const _PlayerControls({required this.formatDuration});
+  const _PlayerControls({
+    required this.formatDuration,
+    this.onLyricsPressed,
+    this.isLyricsActive = false,
+  });
 
   @override
   State<_PlayerControls> createState() => _PlayerControlsState();
@@ -2256,7 +2275,11 @@ class _PlayerControlsState extends State<_PlayerControls> {
         children: [
           Selector<PlayerProvider, Song?>(
             selector: (_, p) => p.currentSong,
-            builder: (context, song, _) => _SongInfo(song: song),
+            builder: (context, song, _) => _SongInfo(
+              song: song,
+              onLyricsPressed: widget.onLyricsPressed,
+              isLyricsActive: widget.isLyricsActive,
+            ),
           ),
           const SizedBox(height: 12),
           ValueListenableBuilder<bool>(
@@ -2312,10 +2335,7 @@ class _PlayerControlsState extends State<_PlayerControls> {
           ),
           const SizedBox(height: 8),
           const _PlaybackControls(),
-          if (_showVolumeSlider) ...[
-            const SizedBox(height: 12),
-            const _VolumeSlider(),
-          ],
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -2324,8 +2344,14 @@ class _PlayerControlsState extends State<_PlayerControls> {
 
 class _SongInfo extends StatefulWidget {
   final Song? song;
+  final VoidCallback? onLyricsPressed;
+  final bool isLyricsActive;
 
-  const _SongInfo({required this.song});
+  const _SongInfo({
+    required this.song,
+    this.onLyricsPressed,
+    this.isLyricsActive = false,
+  });
 
   @override
   State<_SongInfo> createState() => _SongInfoState();
@@ -2396,6 +2422,14 @@ class _SongInfoState extends State<_SongInfo> {
                     padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2)),
               ],
             ],
+          ),
+        ),
+        IconButton(
+          onPressed: widget.onLyricsPressed,
+          icon: Icon(
+            CupertinoIcons.music_note_list,
+            color: widget.isLyricsActive ? AppTheme.appleMusicRed : Colors.white,
+            size: 24,
           ),
         ),
         IconButton(
