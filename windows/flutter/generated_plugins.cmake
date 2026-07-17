@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   dart_discord_rpc
   dynamic_color
+  file_selector_windows
   just_audio_windows
   local_notifier
   permission_handler_windows
@@ -18,6 +19,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  jni
   smtc_windows
 )
 

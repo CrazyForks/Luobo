@@ -37,6 +37,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get discoverMix => 'Neues entdecken';
 
   @override
+  String get morningVibes => 'Morning Vibes';
+
+  @override
+  String get afternoonVibes => 'Afternoon Vibes';
+
+  @override
+  String get eveningVibes => 'Evening Vibes';
+
+  @override
+  String get nightVibes => 'Night Vibes';
+
+  @override
   String get recentlyPlayed => 'Zuletzt abgespielt';
 
   @override
@@ -624,6 +636,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get autoDjMode => 'Auto DJ-Modus';
 
   @override
+  String get autoDjModeOff => 'Off';
+
+  @override
+  String get autoDjModeShuffleLibrary => 'Shuffle Library';
+
+  @override
+  String get autoDjModeSimilarSongs => 'Similar Songs';
+
+  @override
+  String get autoDjModeSameGenre => 'Same Genre';
+
+  @override
+  String get autoDjModeSameArtist => 'Same Artist';
+
+  @override
+  String get autoDjModeSmartMix => 'Smart Mix';
+
+  @override
   String songsToAdd(int count) {
     return 'Zu hinzufügende Songs: $count';
   }
@@ -707,6 +737,40 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get addProfile => 'Add Profile';
+
+  @override
+  String get shareQrCode => 'Share via QR Code';
+
+  @override
+  String get scanQrCode => 'Scan QR Code';
+
+  @override
+  String get qrCodeTitle => 'Server QR Code';
+
+  @override
+  String get qrCodeSubtitle => 'Scan this code to add server configuration';
+
+  @override
+  String get saveToGallery => 'Save to Gallery';
+
+  @override
+  String get savedToGallery => 'QR code saved to gallery';
+
+  @override
+  String get failedToSaveQr => 'Failed to save QR code';
+
+  @override
+  String get scanFromCamera => 'Camera';
+
+  @override
+  String get scanFromGallery => 'Gallery';
+
+  @override
+  String get invalidQrCode =>
+      'Invalid QR code. Not a valid server configuration.';
+
+  @override
+  String get qrConfigImported => 'Server configuration imported successfully';
 
   @override
   String switchProfileConfirmation(String profile) {
@@ -1141,7 +1205,61 @@ class AppLocalizationsDe extends AppLocalizations {
   String get connect => 'Verbinden';
 
   @override
+  String get lanUrl => 'LAN URL (optional)';
+
+  @override
+  String get lanUrlHint => 'http://192.168.x.x:4533';
+
+  @override
+  String get serverUrlHint => 'https://your-server.com';
+
+  @override
+  String get profileNameLabel => 'Profile Name (optional)';
+
+  @override
+  String get profileNameHint => 'e.g. Home, Work, VPN';
+
+  @override
   String get or => 'ODER';
+
+  @override
+  String get privacyFirst => 'Privacy First';
+
+  @override
+  String get privacySubtitle => 'Your data stays with you. Always.';
+
+  @override
+  String get noDataSelling => 'No Data Selling';
+
+  @override
+  String get noDataSellingDesc =>
+      'We never sell, share, or transfer your personal data to third parties.';
+
+  @override
+  String get localFirstStorage => 'Local-First Storage';
+
+  @override
+  String get localFirstStorageDesc =>
+      'Your music library and credentials stay on your device.';
+
+  @override
+  String get anonymousAnalytics => 'Anonymous Analytics';
+
+  @override
+  String get anonymousAnalyticsDesc =>
+      'With your consent, we collect only anonymous crash reports and usage stats. No personal identifiers.';
+
+  @override
+  String get readFullPrivacyPolicy => 'Read Full Privacy Policy';
+
+  @override
+  String get viewCompleteDetails => 'View complete details on our website';
+
+  @override
+  String get agreeAndContinue => 'I Understand & Continue';
+
+  @override
+  String get declineAndExit => 'Decline & Exit';
 
   @override
   String get useLocalFiles => 'Lokale Dateien verwenden';
@@ -1647,9 +1765,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sectionAnalyticsPrivacy => 'Analytics & Privacy';
 
   @override
-  String get anonymousAnalytics => 'Anonymous Analytics';
-
-  @override
   String get anonymousAnalyticsSubtitle =>
       'Help improve Musly with anonymous crash reports and usage stats';
 
@@ -1868,4 +1983,176 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get customizeNowPlayingSubtitle => 'Create and manage custom themes';
+
+  @override
+  String get lyricsSection => 'LYRICS';
+
+  @override
+  String get neteaseLyrics => 'Netease Lyrics';
+
+  @override
+  String get neteaseLyricsSubtitle =>
+      'Fetch lyrics from Netease Cloud Music when LRCLIB has no results (recommended for Chinese songs)';
+
+  @override
+  String get aiSmartPlaylist => 'AI Smart Playlist';
+
+  @override
+  String get apiKey => 'API Key';
+
+  @override
+  String get notConfigured => 'Not configured';
+
+  @override
+  String get apiUrl => 'API URL';
+
+  @override
+  String get aiModel => 'Model';
+
+  @override
+  String get songKnowledgeBase => 'Song Knowledge Base';
+
+  @override
+  String knowledgeIndexed(int cached, int total) {
+    return 'Indexed $cached / $total songs';
+  }
+
+  @override
+  String lastUpdated(String date) {
+    return 'Last updated: $date';
+  }
+
+  @override
+  String get generate => 'Generate';
+
+  @override
+  String get incrementalUpdate => 'Update';
+
+  @override
+  String knowledgeGenerated(int count) {
+    return 'Knowledge base generated for $count songs';
+  }
+
+  @override
+  String get apiUrlHint => 'https://api.deepseek.com';
+
+  @override
+  String get apiUrlDescription =>
+      'Any OpenAI-compatible API URL works\ne.g. DeepSeek, OpenAI, Kimi, Tongyi Qianwen';
+
+  @override
+  String get modelName => 'Model Name';
+
+  @override
+  String get networkWifi => 'WiFi';
+
+  @override
+  String get networkMobile => 'Mobile';
+
+  @override
+  String get analyticsAndPrivacy => 'Analytics & Privacy';
+
+  @override
+  String get anonymousAnalyticsToggle => 'Anonymous Analytics';
+
+  @override
+  String get anonymousAnalyticsToggleSubtitle =>
+      'Help improve Musly with anonymous crash reports and usage stats';
+
+  @override
+  String anonymousIdLabel(String id) {
+    return 'Anonymous ID: $id';
+  }
+
+  @override
+  String get enableAnalyticsToSeeId =>
+      'Enable analytics to see your anonymous device ID';
+
+  @override
+  String get copyDeviceId => 'Copy device ID';
+
+  @override
+  String get deviceIdCopied => 'Device ID copied to clipboard';
+
+  @override
+  String get aboutDeviceIdDescription =>
+      'This is an anonymous identifier generated by the app. It cannot be linked to your personal identity and is used only for analytics.';
+
+  @override
+  String get support => 'Support';
+
+  @override
+  String get thanksForRating => 'Thanks for Rating!';
+
+  @override
+  String get alreadyRated => 'You\'ve already rated the app';
+
+  @override
+  String get rateMusly => 'Rate Musly';
+
+  @override
+  String get shareFeedback => 'Share your feedback';
+
+  @override
+  String get supportMusly => 'Support Musly';
+
+  @override
+  String get joinDiscordOrDonate => 'Join Discord or donate';
+
+  @override
+  String get howWouldYouRate => 'How would you rate your experience?';
+
+  @override
+  String get optionalFeedback => 'Optional feedback...';
+
+  @override
+  String get submit => 'Submit';
+
+  @override
+  String get thankYouFeedback => 'Thank you for your feedback!';
+
+  @override
+  String get supportMuslyDialog => 'Support Musly';
+
+  @override
+  String get supportDescription =>
+      'Musly is a free, open-source project. Your support helps keep it alive!';
+
+  @override
+  String get joinDiscordSubtitle => 'Get help, suggest features, chat with us';
+
+  @override
+  String get supportWithDonation => 'Support with a Donation';
+
+  @override
+  String get donationSubtitle => 'Help cover server costs and development';
+
+  @override
+  String get dontShowAgain => 'Don\'t show this again';
+
+  @override
+  String get maybeLater => 'Maybe Later';
+
+  @override
+  String addedFolder(String path) {
+    return 'Added folder: $path';
+  }
+
+  @override
+  String get removeFolder => 'Remove Folder';
+
+  @override
+  String removeFolderConfirm(String path) {
+    return 'Remove \"$path\" from scan paths?';
+  }
+
+  @override
+  String get folderRemoved => 'Folder removed';
+
+  @override
+  String get loadingLibrary => 'Loading library...';
+
+  @override
+  String get libraryEmptyOrFailed =>
+      'Library appears to be empty or failed to load. Make sure your server supports full library scanning.';
 }

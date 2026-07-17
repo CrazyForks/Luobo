@@ -10,6 +10,7 @@ import '../services/jukebox_service.dart';
 import '../services/subsonic_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
+import '../widgets/server_qr_dialog.dart';
 import 'jukebox_screen.dart';
 
 class SettingsServerTab extends StatefulWidget {
@@ -425,8 +426,16 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
                           ),
                         ),
                         trailing: isActive
-                            ? const Icon(CupertinoIcons.checkmark,
-                                color: Color(0xFF34C759), size: 18)
+                            ? IconButton(
+                                icon: const Icon(CupertinoIcons.qrcode, size: 20),
+                                tooltip: l10n.shareQrCode,
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => ServerQrDialog(config: profile),
+                                  );
+                                },
+                              )
                             : null,
                         onTap: isActive
                             ? null

@@ -41,6 +41,232 @@ class _HomeScreenState extends State<HomeScreen> {
     return songs.map((s) => s.id).join('|');
   }
 
+  String _localizeVibesTitle(BuildContext context, String key) {
+    final l10n = AppLocalizations.of(context)!;
+    if (key.startsWith('Morning')) return l10n.morningVibes;
+    if (key.startsWith('Afternoon')) return l10n.afternoonVibes;
+    if (key.startsWith('Evening')) return l10n.eveningVibes;
+    if (key.startsWith('Night')) return l10n.nightVibes;
+    return key;
+  }
+
+  void _showSectionsHelp(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.3,
+        maxChildSize: 0.92,
+        snap: true,
+        snapSizes: const [0.85],
+        expand: false,
+        builder: (context, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '首页推荐说明',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '所有推荐基于你的播放历史自动生成',
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.5)
+                    : Colors.black.withValues(alpha: 0.5),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _helpItem(
+              icon: Icons.stars_rounded,
+              title: '为你推荐',
+              desc: '从整个曲库中按综合评分挑选，每次刷新结果不同。',
+              isDark: isDark,
+            ),
+            _helpItem(
+              icon: Icons.bolt_rounded,
+              title: '快速选择',
+              desc: '只从你最常听的歌手和风格中选歌，且排除最近听过的，适合随手播放。',
+              isDark: isDark,
+            ),
+            _helpItem(
+              icon: Icons.explore_rounded,
+              title: '发现混音',
+              desc: '在你喜欢的风格中推荐你没听过的歌手，帮你发现新音乐。',
+              isDark: isDark,
+            ),
+            _helpItem(
+              icon: Icons.album_rounded,
+              title: '歌手 Mix',
+              desc: '你播放最多的歌手会各生成一个专属 Mix，按喜好程度排序。',
+              isDark: isDark,
+            ),
+            _helpItem(
+              icon: Icons.album_rounded,
+              title: '风格 Mix',
+              desc: '你最常听的音乐风格（如国语流行、电子等）会生成对应 Mix。',
+              isDark: isDark,
+            ),
+            _helpItem(
+              icon: Icons.nightlight_round,
+              title: '时段推荐',
+              desc: '根据你在不同时间段的听歌习惯推荐，早上/下午/晚上/深夜各不同。',
+              isDark: isDark,
+            ),
+            const SizedBox(height: 12),
+            Divider(color: isDark ? Colors.white12 : Colors.black12),
+            const SizedBox(height: 12),
+            Text(
+              '推荐算法详解',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _detailParagraph(
+              '评分机制',
+              '每首歌会根据多项指标计算综合评分：歌手亲和度(28%)、'
+                  '是否收藏(20%)、风格亲和度(18%)、歌手评分(11%)、'
+                  '用户评分(10%)、完播率(9%)、风格评分(7%)、播放次数(4%)、'
+                  '时段匹配(5%)。跳过歌曲会扣分，最近播放过的歌曲也会降权，'
+                  '从未播放的新歌有额外加成。',
+              isDark: isDark,
+            ),
+            _detailParagraph(
+              '为你推荐 vs 快速选择',
+              '「为你推荐」从全部曲库中选歌，随机性较高，可能包含最近听过的歌；'
+                  '「快速选择」只从你 Top 5 歌手和 Top 4 风格中选歌，'
+                  '严格排除最近 10 首播放记录，结果更稳定。',
+              isDark: isDark,
+            ),
+            _detailParagraph(
+              '发现混音的分层逻辑',
+              '优先推荐：你喜欢的风格中、你没听过的新歌手的歌曲；'
+                  '其次：你喜欢的风格中任何没听过的歌；'
+                  '最后：曲库中任何你没听过的歌。'
+                  '核心目的是在熟悉的风格中帮你发现新歌手。',
+              isDark: isDark,
+            ),
+            _detailParagraph(
+              'Mix 生成规则',
+              '歌手 Mix 取播放量前 3 的歌手各生成一个；'
+                  '风格 Mix 取前 2 的风格各生成一个；'
+                  '时段推荐分析你在当前时段最常听的风格生成。'
+                  '所有 Mix 至少需要 5 首歌才会显示。',
+              isDark: isDark,
+            ),
+            _detailParagraph(
+              '数据来源',
+              '所有推荐完全基于本地播放历史计算，不依赖任何云端服务。'
+                  '你的播放、跳过、收藏、评分行为都会影响推荐结果。'
+                  '历史数据有 30 天衰减周期，最近的行为权重更高。',
+              isDark: isDark,
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailParagraph(String title, String content, {required bool isDark}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            content,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.6)
+                  : Colors.black.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _helpItem({
+    required IconData icon,
+    required String title,
+    required String desc,
+    required bool isDark,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: AppTheme.appleMusicRed),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.6)
+                        : Colors.black.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   bool get _isDesktop =>
       Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
@@ -70,6 +296,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             actions: [
+              IconButton(
+                icon: Icon(
+                  CupertinoIcons.info_circle,
+                  color: isDark ? Colors.white : Colors.black,
+                  size: 22,
+                ),
+                onPressed: () => _showSectionsHelp(context),
+              ),
               IconButton(
                 icon: Icon(
                   CupertinoIcons.clock,
@@ -251,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         (e) => e.key.contains('Vibes'),
                       )) ...[
                         _SectionTitle(
-                          title: entry.key,
+                          title: _localizeVibesTitle(context, entry.key),
                           icon: Icons.nightlight_round,
                           hPad: hPad,
                         ),

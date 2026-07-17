@@ -16,6 +16,7 @@ import 'package:musly/screens/playlist_screen.dart';
 import 'favorites_screen.dart';
 import 'liked_albums_screen.dart';
 import 'playlists_screen.dart';
+import 'ai_playlist_screen.dart';
 import 'settings_screen.dart';
 import 'library_search_delegate.dart';
 import 'artist_screen.dart';
@@ -90,7 +91,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   CupertinoIcons.plus,
                   color: isDark ? Colors.white : Colors.black,
                 ),
-                onPressed: () => _showCreatePlaylistDialog(context),
+                onPressed: () => _showAddPlaylistMenu(context),
               ),
               IconButton(
                 icon: Icon(
@@ -657,21 +658,106 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
+  void _showAddPlaylistMenu(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final outerContext = context;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Icon(
+                CupertinoIcons.music_note_list,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              title: Text(
+                '新建歌单',
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+              ),
+              subtitle: Text(
+                '手动创建一个空白歌单',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.white54 : Colors.black54,
+                ),
+              ),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                // Wait for bottom sheet dismiss animation to complete
+                await Future.delayed(const Duration(milliseconds: 300));
+                if (outerContext.mounted) {
+                  _showCreatePlaylistDialog(outerContext);
+                }
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.auto_awesome,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              title: Text(
+                'AI 智能生成',
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+              ),
+              subtitle: Text(
+                '根据听歌习惯、场景或描述自动生成歌单',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.white54 : Colors.black54,
+                ),
+              ),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                await Future.delayed(const Duration(milliseconds: 300));
+                if (outerContext.mounted) {
+                  Navigator.push(
+                    outerContext,
+                    MaterialPageRoute(builder: (_) => const AiPlaylistScreen()),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _showCreatePlaylistDialog(BuildContext context) async {
     final controller = TextEditingController();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
+    // Capture provider from outer context before entering dialog
+    final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.newPlaylist),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.newPlaylist),
         content: Padding(
           padding: const EdgeInsets.only(top: 8),
           child: TextField(
             controller: controller,
             autofocus: true,
             decoration: InputDecoration(
-              hintText: AppLocalizations.of(context)!.playlistName,
+              hintText: l10n.playlistName,
               filled: true,
               fillColor:
                   isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
@@ -685,57 +771,41 @@ class _LibraryScreenState extends State<LibraryScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
-                final libraryProvider = Provider.of<LibraryProvider>(
-                  context,
-                  listen: false,
-                );
+                final name = controller.text.trim();
+                Navigator.pop(dialogContext);
                 try {
-                  await libraryProvider.createPlaylist(controller.text.trim());
+                  await libraryProvider.createPlaylist(name);
                   if (context.mounted) {
-                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
-                          AppLocalizations.of(
-                            context,
-                          )!
-                              .playlistCreated(controller.text),
-                        ),
+                        content: Text(l10n.playlistCreated(name)),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
                   }
                 } catch (e) {
                   if (context.mounted) {
-                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
-                          AppLocalizations.of(
-                            context,
-                          )!
-                              .errorCreatingPlaylist(e),
-                        ),
+                        content: Text(l10n.errorCreatingPlaylist(e)),
                         behavior: SnackBarBehavior.floating,
-                        backgroundColor: Colors.red,
                       ),
                     );
                   }
                 }
               }
             },
-            child: Text(AppLocalizations.of(context)!.create),
+            child: Text(l10n.create),
           ),
         ],
       ),
     );
-    controller.dispose();
   }
 
   void _showLibrarySearch(BuildContext context) {

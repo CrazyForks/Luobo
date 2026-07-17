@@ -1,5 +1,6 @@
 class ServerConfig {
   final String serverUrl;
+  final String? localUrl;
   final String username;
   final String password;
   final bool useLegacyAuth;
@@ -20,6 +21,7 @@ class ServerConfig {
 
   ServerConfig({
     required this.serverUrl,
+    this.localUrl,
     required this.username,
     required this.password,
     this.useLegacyAuth = false,
@@ -41,6 +43,7 @@ class ServerConfig {
   factory ServerConfig.fromJson(Map<String, dynamic> json) {
     return ServerConfig(
       serverUrl: json['serverUrl'] ?? '',
+      localUrl: json['localUrl'] as String?,
       username: json['username'] ?? '',
       password: json['password'] ?? '',
       useLegacyAuth: json['useLegacyAuth'] ?? false,
@@ -65,6 +68,7 @@ class ServerConfig {
   Map<String, dynamic> toJson() {
     return {
       'serverUrl': serverUrl,
+      'localUrl': localUrl,
       'username': username,
       'password': password,
       'useLegacyAuth': useLegacyAuth,
@@ -84,6 +88,7 @@ class ServerConfig {
 
   ServerConfig copyWith({
     String? serverUrl,
+    String? localUrl,
     String? username,
     String? password,
     bool? useLegacyAuth,
@@ -101,6 +106,7 @@ class ServerConfig {
   }) {
     return ServerConfig(
       serverUrl: serverUrl ?? this.serverUrl,
+      localUrl: localUrl ?? this.localUrl,
       username: username ?? this.username,
       password: password ?? this.password,
       useLegacyAuth: useLegacyAuth ?? this.useLegacyAuth,
@@ -133,6 +139,20 @@ class ServerConfig {
     }
     return url;
   }
+
+  String? get normalizedLocalUrl {
+    if (localUrl == null || localUrl!.trim().isEmpty) return null;
+    String url = localUrl!.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'http://$url';
+    }
+    if (url.endsWith('/')) {
+      url = url.substring(0, url.length - 1);
+    }
+    return url;
+  }
+
+  bool get hasLocalUrl => localUrl != null && localUrl!.trim().isNotEmpty;
 
   bool get isValid {
     return serverUrl.isNotEmpty && username.isNotEmpty && password.isNotEmpty;

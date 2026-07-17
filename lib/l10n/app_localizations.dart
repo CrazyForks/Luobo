@@ -202,6 +202,30 @@ abstract class AppLocalizations {
   /// **'Discover Mix'**
   String get discoverMix;
 
+  /// Morning time-based mix section title
+  ///
+  /// In en, this message translates to:
+  /// **'Morning Vibes'**
+  String get morningVibes;
+
+  /// Afternoon time-based mix section title
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon Vibes'**
+  String get afternoonVibes;
+
+  /// Evening time-based mix section title
+  ///
+  /// In en, this message translates to:
+  /// **'Evening Vibes'**
+  String get eveningVibes;
+
+  /// Night time-based mix section title
+  ///
+  /// In en, this message translates to:
+  /// **'Night Vibes'**
+  String get nightVibes;
+
   /// Recently played section title
   ///
   /// In en, this message translates to:
@@ -592,10 +616,10 @@ abstract class AppLocalizations {
   /// **'Report Issue'**
   String get reportIssue;
 
-  /// Discord community link label
+  /// Discord button title
   ///
   /// In en, this message translates to:
-  /// **'Join Discord Community'**
+  /// **'Join our Discord'**
   String get joinDiscord;
 
   /// Fallback displayed when a song has no artist
@@ -688,7 +712,7 @@ abstract class AppLocalizations {
   /// **'Error'**
   String get error;
 
-  /// Button to retry a failed server connection
+  /// Retry button label
   ///
   /// In en, this message translates to:
   /// **'Retry'**
@@ -1282,6 +1306,42 @@ abstract class AppLocalizations {
   /// **'Auto DJ Mode'**
   String get autoDjMode;
 
+  /// Auto DJ mode option: disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get autoDjModeOff;
+
+  /// Auto DJ mode option: shuffle library
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffle Library'**
+  String get autoDjModeShuffleLibrary;
+
+  /// Auto DJ mode option: similar songs
+  ///
+  /// In en, this message translates to:
+  /// **'Similar Songs'**
+  String get autoDjModeSimilarSongs;
+
+  /// Auto DJ mode option: same genre
+  ///
+  /// In en, this message translates to:
+  /// **'Same Genre'**
+  String get autoDjModeSameGenre;
+
+  /// Auto DJ mode option: same artist
+  ///
+  /// In en, this message translates to:
+  /// **'Same Artist'**
+  String get autoDjModeSameArtist;
+
+  /// Auto DJ mode option: smart mix
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Mix'**
+  String get autoDjModeSmartMix;
+
   /// No description provided for @songsToAdd.
   ///
   /// In en, this message translates to:
@@ -1437,6 +1497,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Profile'**
   String get addProfile;
+
+  /// Button to show QR code for server config sharing
+  ///
+  /// In en, this message translates to:
+  /// **'Share via QR Code'**
+  String get shareQrCode;
+
+  /// Button to scan QR code to add server config
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR Code'**
+  String get scanQrCode;
+
+  /// Title of the QR code display dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Server QR Code'**
+  String get qrCodeTitle;
+
+  /// Subtitle of the QR code dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this code to add server configuration'**
+  String get qrCodeSubtitle;
+
+  /// Button to save QR code image to photo gallery
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Gallery'**
+  String get saveToGallery;
+
+  /// Snackbar after QR code saved
+  ///
+  /// In en, this message translates to:
+  /// **'QR code saved to gallery'**
+  String get savedToGallery;
+
+  /// Error snackbar when QR code save fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save QR code'**
+  String get failedToSaveQr;
+
+  /// Tab label for scanning from camera
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get scanFromCamera;
+
+  /// Tab label for scanning from photo gallery
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get scanFromGallery;
+
+  /// Error when scanned QR code is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid QR code. Not a valid server configuration.'**
+  String get invalidQrCode;
+
+  /// Snackbar after QR config imported
+  ///
+  /// In en, this message translates to:
+  /// **'Server configuration imported successfully'**
+  String get qrConfigImported;
 
   /// No description provided for @switchProfileConfirmation.
   ///
@@ -2206,11 +2332,113 @@ abstract class AppLocalizations {
   /// **'Connect'**
   String get connect;
 
+  /// Label for the local network URL field on login screen
+  ///
+  /// In en, this message translates to:
+  /// **'LAN URL (optional)'**
+  String get lanUrl;
+
+  /// Hint text for the local network URL field
+  ///
+  /// In en, this message translates to:
+  /// **'http://192.168.x.x:4533'**
+  String get lanUrlHint;
+
+  /// Hint text for the server URL field
+  ///
+  /// In en, this message translates to:
+  /// **'https://your-server.com'**
+  String get serverUrlHint;
+
+  /// Label for the optional profile name field
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Name (optional)'**
+  String get profileNameLabel;
+
+  /// Hint text for the profile name field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Home, Work, VPN'**
+  String get profileNameHint;
+
   /// Divider label between Connect and Use Local Files
   ///
   /// In en, this message translates to:
   /// **'OR'**
   String get or;
+
+  /// Title of the privacy policy dialog header
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy First'**
+  String get privacyFirst;
+
+  /// Subtitle in the privacy policy dialog header
+  ///
+  /// In en, this message translates to:
+  /// **'Your data stays with you. Always.'**
+  String get privacySubtitle;
+
+  /// Privacy point title: no data selling
+  ///
+  /// In en, this message translates to:
+  /// **'No Data Selling'**
+  String get noDataSelling;
+
+  /// Privacy point description: no data selling
+  ///
+  /// In en, this message translates to:
+  /// **'We never sell, share, or transfer your personal data to third parties.'**
+  String get noDataSellingDesc;
+
+  /// Privacy point title: local storage
+  ///
+  /// In en, this message translates to:
+  /// **'Local-First Storage'**
+  String get localFirstStorage;
+
+  /// Privacy point description: local storage
+  ///
+  /// In en, this message translates to:
+  /// **'Your music library and credentials stay on your device.'**
+  String get localFirstStorageDesc;
+
+  /// Title for anonymous analytics toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous Analytics'**
+  String get anonymousAnalytics;
+
+  /// Privacy point description: anonymous analytics
+  ///
+  /// In en, this message translates to:
+  /// **'With your consent, we collect only anonymous crash reports and usage stats. No personal identifiers.'**
+  String get anonymousAnalyticsDesc;
+
+  /// Link label to open the full privacy policy
+  ///
+  /// In en, this message translates to:
+  /// **'Read Full Privacy Policy'**
+  String get readFullPrivacyPolicy;
+
+  /// Subtitle for the privacy policy link
+  ///
+  /// In en, this message translates to:
+  /// **'View complete details on our website'**
+  String get viewCompleteDetails;
+
+  /// Accept button label in privacy dialog
+  ///
+  /// In en, this message translates to:
+  /// **'I Understand & Continue'**
+  String get agreeAndContinue;
+
+  /// Decline button label in privacy dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Decline & Exit'**
+  String get declineAndExit;
 
   /// Button label to start local-files mode
   ///
@@ -3130,19 +3358,13 @@ abstract class AppLocalizations {
   /// **'Analytics & Privacy'**
   String get sectionAnalyticsPrivacy;
 
-  /// Title for anonymous analytics toggle
-  ///
-  /// In en, this message translates to:
-  /// **'Anonymous Analytics'**
-  String get anonymousAnalytics;
-
   /// Subtitle explaining anonymous analytics
   ///
   /// In en, this message translates to:
   /// **'Help improve Musly with anonymous crash reports and usage stats'**
   String get anonymousAnalyticsSubtitle;
 
-  /// Title for device ID row
+  /// Device ID field label
   ///
   /// In en, this message translates to:
   /// **'Device ID'**
@@ -3160,7 +3382,7 @@ abstract class AppLocalizations {
   /// **'Enable analytics to see your anonymous device ID'**
   String get deviceIdDisabled;
 
-  /// Title for device ID explanation
+  /// Title for device ID info tile
   ///
   /// In en, this message translates to:
   /// **'About Device ID'**
@@ -3519,6 +3741,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create and manage custom themes'**
   String get customizeNowPlayingSubtitle;
+
+  /// Section title for lyrics settings
+  ///
+  /// In en, this message translates to:
+  /// **'Lyrics'**
+  String get lyricsSection;
+
+  /// Netease Cloud Music lyrics source
+  ///
+  /// In en, this message translates to:
+  /// **'Netease Lyrics'**
+  String get neteaseLyrics;
+
+  /// Subtitle for Netease lyrics toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch lyrics from Netease Cloud Music when LRCLIB has no results (recommended for Chinese songs)'**
+  String get neteaseLyricsSubtitle;
+
+  /// AI smart playlist section title
+  ///
+  /// In en, this message translates to:
+  /// **'AI Smart Playlist'**
+  String get aiSmartPlaylist;
+
+  /// API Key field label
+  ///
+  /// In en, this message translates to:
+  /// **'API Key'**
+  String get apiKey;
+
+  /// Status when API key is not configured
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured'**
+  String get notConfigured;
+
+  /// API URL field label
+  ///
+  /// In en, this message translates to:
+  /// **'API URL'**
+  String get apiUrl;
+
+  /// AI model field label
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get aiModel;
+
+  /// Song knowledge base title
+  ///
+  /// In en, this message translates to:
+  /// **'Song Knowledge Base'**
+  String get songKnowledgeBase;
+
+  /// Knowledge base indexed status
+  ///
+  /// In en, this message translates to:
+  /// **'Indexed {cached} / {total} songs'**
+  String knowledgeIndexed(int cached, int total);
+
+  /// Knowledge base last update time
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: {date}'**
+  String lastUpdated(String date);
+
+  /// Button to generate knowledge base
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get generate;
+
+  /// Button to incrementally update knowledge base
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get incrementalUpdate;
+
+  /// Snackbar after knowledge generation
+  ///
+  /// In en, this message translates to:
+  /// **'Knowledge base generated for {count} songs'**
+  String knowledgeGenerated(int count);
+
+  /// Hint for API URL field
+  ///
+  /// In en, this message translates to:
+  /// **'https://api.deepseek.com'**
+  String get apiUrlHint;
+
+  /// Help text for API URL dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Any OpenAI-compatible API URL works\ne.g. DeepSeek, OpenAI, Kimi, Tongyi Qianwen'**
+  String get apiUrlDescription;
+
+  /// Model selector dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Model Name'**
+  String get modelName;
+
+  /// WiFi network type label
+  ///
+  /// In en, this message translates to:
+  /// **'WiFi'**
+  String get networkWifi;
+
+  /// Mobile network type label
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get networkMobile;
+
+  /// Settings section title
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics & Privacy'**
+  String get analyticsAndPrivacy;
+
+  /// Analytics switch label
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous Analytics'**
+  String get anonymousAnalyticsToggle;
+
+  /// Analytics switch subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Help improve Musly with anonymous crash reports and usage stats'**
+  String get anonymousAnalyticsToggleSubtitle;
+
+  /// Shows the anonymous device ID
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous ID: {id}'**
+  String anonymousIdLabel(String id);
+
+  /// Hint when analytics disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Enable analytics to see your anonymous device ID'**
+  String get enableAnalyticsToSeeId;
+
+  /// Tooltip for copy device ID button
+  ///
+  /// In en, this message translates to:
+  /// **'Copy device ID'**
+  String get copyDeviceId;
+
+  /// Snackbar after copying device ID
+  ///
+  /// In en, this message translates to:
+  /// **'Device ID copied to clipboard'**
+  String get deviceIdCopied;
+
+  /// Description of what device ID is
+  ///
+  /// In en, this message translates to:
+  /// **'This is an anonymous identifier generated by the app. It cannot be linked to your personal identity and is used only for analytics.'**
+  String get aboutDeviceIdDescription;
+
+  /// Support section title
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get support;
+
+  /// Title after user rated the app
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks for Rating!'**
+  String get thanksForRating;
+
+  /// Subtitle after rated
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve already rated the app'**
+  String get alreadyRated;
+
+  /// Rate app button title
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Musly'**
+  String get rateMusly;
+
+  /// Rate app subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Share your feedback'**
+  String get shareFeedback;
+
+  /// Support button title
+  ///
+  /// In en, this message translates to:
+  /// **'Support Musly'**
+  String get supportMusly;
+
+  /// Support button subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Join Discord or donate'**
+  String get joinDiscordOrDonate;
+
+  /// Rating dialog prompt
+  ///
+  /// In en, this message translates to:
+  /// **'How would you rate your experience?'**
+  String get howWouldYouRate;
+
+  /// Rating feedback hint
+  ///
+  /// In en, this message translates to:
+  /// **'Optional feedback...'**
+  String get optionalFeedback;
+
+  /// Submit button
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submit;
+
+  /// Snackbar after rating submitted
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for your feedback!'**
+  String get thankYouFeedback;
+
+  /// Support dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Support Musly'**
+  String get supportMuslyDialog;
+
+  /// Support dialog description
+  ///
+  /// In en, this message translates to:
+  /// **'Musly is a free, open-source project. Your support helps keep it alive!'**
+  String get supportDescription;
+
+  /// Discord button subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Get help, suggest features, chat with us'**
+  String get joinDiscordSubtitle;
+
+  /// Donate button title
+  ///
+  /// In en, this message translates to:
+  /// **'Support with a Donation'**
+  String get supportWithDonation;
+
+  /// Donate button subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Help cover server costs and development'**
+  String get donationSubtitle;
+
+  /// Checkbox to suppress future support dialogs
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t show this again'**
+  String get dontShowAgain;
+
+  /// Dismiss support dialog button
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe Later'**
+  String get maybeLater;
+
+  /// Snackbar after adding a scan folder
+  ///
+  /// In en, this message translates to:
+  /// **'Added folder: {path}'**
+  String addedFolder(String path);
+
+  /// Dialog title for removing a folder
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Folder'**
+  String get removeFolder;
+
+  /// Dialog content for removing a folder
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{path}\" from scan paths?'**
+  String removeFolderConfirm(String path);
+
+  /// Snackbar after folder removed
+  ///
+  /// In en, this message translates to:
+  /// **'Folder removed'**
+  String get folderRemoved;
+
+  /// Snackbar when library is loading
+  ///
+  /// In en, this message translates to:
+  /// **'Loading library...'**
+  String get loadingLibrary;
+
+  /// Dialog content when library load fails
+  ///
+  /// In en, this message translates to:
+  /// **'Library appears to be empty or failed to load. Make sure your server supports full library scanning.'**
+  String get libraryEmptyOrFailed;
 }
 
 class _AppLocalizationsDelegate

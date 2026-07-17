@@ -12,6 +12,7 @@ class StorageService {
   static const String _repeatModeKey = 'repeat_mode';
   static const String _gaplessPlaybackKey = 'gapless_playback';
   static const String _lrcLibFallbackKey = 'lrclib_fallback';
+  static const String _neteaseFallbackKey = 'netease_fallback';
   static const String _volumeKey = 'volume';
 
   Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
@@ -149,6 +150,16 @@ class StorageService {
     return prefs.getBool(_lrcLibFallbackKey) ?? false;
   }
 
+  Future<void> saveNeteaseFallback(bool enabled) async {
+    final prefs = await _prefs;
+    await prefs.setBool(_neteaseFallbackKey, enabled);
+  }
+
+  Future<bool> getNeteaseFallback() async {
+    final prefs = await _prefs;
+    return prefs.getBool(_neteaseFallbackKey) ?? true;
+  }
+
   Future<void> saveVolume(double volume) async {
     final prefs = await _prefs;
     await prefs.setDouble(_volumeKey, volume);
@@ -177,6 +188,38 @@ class StorageService {
   Future<String> getDiscordRpcStateStyle() async {
     final prefs = await _prefs;
     return prefs.getString('discord_rpc_state_style') ?? 'artist';
+  }
+
+  // ── AI Playlist ─────────────────────────────────────────────────────
+
+  Future<void> saveAiBaseUrl(String url) async {
+    final prefs = await _prefs;
+    await prefs.setString('ai_base_url', url);
+  }
+
+  Future<String> getAiBaseUrl() async {
+    final prefs = await _prefs;
+    return prefs.getString('ai_base_url') ?? 'https://api.deepseek.com';
+  }
+
+  Future<void> saveDeepSeekApiKey(String key) async {
+    final prefs = await _prefs;
+    await prefs.setString('deepseek_api_key', key);
+  }
+
+  Future<String?> getDeepSeekApiKey() async {
+    final prefs = await _prefs;
+    return prefs.getString('deepseek_api_key');
+  }
+
+  Future<void> saveAiModel(String model) async {
+    final prefs = await _prefs;
+    await prefs.setString('ai_model', model);
+  }
+
+  Future<String> getAiModel() async {
+    final prefs = await _prefs;
+    return prefs.getString('ai_model') ?? 'deepseek-v4-flash';
   }
 
   Future<void> clearAll() async {

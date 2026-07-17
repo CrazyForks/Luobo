@@ -6,6 +6,7 @@ import '../providers/providers.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
 import 'playlist_screen.dart';
+import 'ai_playlist_screen.dart';
 
 class PlaylistsScreen extends StatelessWidget {
   const PlaylistsScreen({super.key});
@@ -19,6 +20,14 @@ class PlaylistsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Playlists'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome),
+            tooltip: 'AI 智能歌单',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AiPlaylistScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(CupertinoIcons.add),
             onPressed: () => _showCreatePlaylistDialog(context),
@@ -89,7 +98,7 @@ class PlaylistsScreen extends StatelessWidget {
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('New Playlist'),
         content: TextField(
           controller: controller,
@@ -98,19 +107,19 @@ class PlaylistsScreen extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
                 final libraryProvider = Provider.of<LibraryProvider>(
-                  context,
+                  dialogContext,
                   listen: false,
                 );
                 await libraryProvider.createPlaylist(controller.text.trim());
-                if (context.mounted) {
-                  Navigator.pop(context);
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
                 }
               }
             },

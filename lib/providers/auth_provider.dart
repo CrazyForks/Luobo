@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/server_config.dart';
 import '../services/services.dart';
 
@@ -21,9 +23,11 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
   ServerConfig? _config;
   bool _hasOfflineContent = false;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   AuthProvider(this._subsonicService, this._storageService) {
     _loadSavedConfig();
+    _listenToConnectivityChanges();
   }
 
   AuthState get state => _state;
@@ -31,6 +35,22 @@ class AuthProvider extends ChangeNotifier {
   ServerConfig? get config => _config;
   bool get isAuthenticated => _state == AuthState.authenticated;
   bool get hasOfflineContent => _hasOfflineContent;
+
+  void _listenToConnectivityChanges() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) async {
+      if (_config == null || !_config!.hasLocalUrl) return;
+      if (_state != AuthState.authenticated && _state != AuthState.serverUnreachable) return;
+      // Network changed — re-probe local/remote URL
+      await _subsonicService.resolveActiveUrl();
+      debugPrint('[Auth] Network changed, active URL: ${_subsonicService.activeBaseUrl}');
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
+  }
 
   Future<void> _loadSavedConfig() async {
     final config = await _storageService.getServerConfig();
@@ -45,6 +65,7 @@ class AuthProvider extends ChangeNotifier {
       }
 
       await _subsonicService.configure(config);
+      await _subsonicService.resolveActiveUrl();
       await _verifyConnection();
     } else {
       _state = AuthState.unauthenticated;
@@ -116,18 +137,20 @@ class AuthProvider extends ChangeNotifier {
   Future<void> retryConnection() async {
     if (_config == null) return;
     await _subsonicService.configure(_config!);
+    await _subsonicService.resolveActiveUrl();
     await _verifyConnection();
   }
 
   Future<void> disconnect() async {
     _config = null;
     _state = AuthState.unauthenticated;
-    await _storageService.clearAll();
+    await _storageService.clearServerConfig();
     notifyListeners();
   }
 
   Future<bool> login({
     required String serverUrl,
+    String? localUrl,
     required String username,
     required String password,
     bool useLegacyAuth = false,
@@ -139,7 +162,7 @@ class AuthProvider extends ChangeNotifier {
     String serverFamily = 'subsonic',
   }) async {
     debugPrint(
-        '[Auth] login: user=$username server=$serverUrl family=$serverFamily');
+        '[Auth] login: user=$username server=$serverUrl local=$localUrl family=$serverFamily');
     _state = AuthState.authenticating;
     _error = null;
     notifyListeners();
@@ -182,6 +205,7 @@ class AuthProvider extends ChangeNotifier {
 
     final config = ServerConfig(
       serverUrl: serverUrl,
+      localUrl: localUrl,
       username: username,
       password: password,
       useLegacyAuth: useLegacyAuth,
@@ -196,6 +220,7 @@ class AuthProvider extends ChangeNotifier {
     );
 
     await _subsonicService.configure(config);
+    await _subsonicService.resolveActiveUrl();
 
     try {
       final pingResult = await _subsonicService.pingWithError();
@@ -307,6 +332,7 @@ class AuthProvider extends ChangeNotifier {
     _config = profile;
     await _storageService.saveServerConfig(profile);
     await _subsonicService.configure(profile);
+    await _subsonicService.resolveActiveUrl();
     await _verifyConnection();
   }
 

@@ -81,6 +81,10 @@ dependencies:
   wakelock_plus: ^1.4.0
   dart_eval: ^0.8.4
   flutter_colorpicker: ^1.1.0
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.0.1
+  image_gallery_saver_plus: ^4.0.1
+  image_picker: ^1.1.2
 
 dependency_overrides:
   ffi: ^2.1.0

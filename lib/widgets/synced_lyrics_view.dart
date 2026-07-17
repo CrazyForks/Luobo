@@ -16,6 +16,7 @@ import '../providers/player_provider.dart';
 import '../services/subsonic_service.dart';
 import '../services/offline_service.dart';
 import '../services/lrclib_service.dart';
+import '../services/netease_lyrics_service.dart';
 import '../services/storage_service.dart';
 import 'album_artwork.dart' show isLocalFilePath;
 import '../l10n/app_localizations.dart';
@@ -408,6 +409,64 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
             }
           } else {
             final value = fallbackLyrics['value']?.toString();
+            if (value != null && value.isNotEmpty) {
+              if (value.contains('[') && value.contains(':')) {
+                _applyLyrics(SyncedLyrics.fromLrc(value));
+              } else {
+                _applyLyrics(SyncedLyrics.fromPlainText(value));
+              }
+              return;
+            }
+          }
+        }
+      }
+
+      // ── NetEase Cloud Music fallback ────────────────────────────────────
+      final neteaseEnabled = await storageService.getNeteaseFallback();
+      if (neteaseEnabled && _song.artist != null) {
+        final netease = NeteaseLyricsService();
+        final neteaseLyrics = await netease.searchLyrics(
+          artist: _song.artist!,
+          title: _song.title,
+          durationSeconds: _song.duration,
+        );
+        if (neteaseLyrics != null) {
+          // Cache the result locally
+          final cacheMap = <String, dynamic>{};
+          if (neteaseLyrics.containsKey('structuredLyrics')) {
+            cacheMap['lyricsList'] = neteaseLyrics;
+          } else {
+            cacheMap['lyrics'] = neteaseLyrics;
+          }
+          await offlineService.saveLyrics(_song.id, cacheMap);
+
+          if (neteaseLyrics.containsKey('structuredLyrics')) {
+            final structured = neteaseLyrics['structuredLyrics'];
+            if (structured is List && structured.isNotEmpty) {
+              final entry = structured.cast<Map<String, dynamic>>().firstWhere(
+                    (l) => l['synced'] == true,
+                    orElse: () => <String, dynamic>{},
+                  );
+              final lines = entry['line'] as List?;
+              if (lines != null && lines.isNotEmpty) {
+                final parsedLines = lines
+                    .map<LyricLine>((line) {
+                      final start = line['start'] as int? ?? 0;
+                      return LyricLine(
+                        timestamp: Duration(milliseconds: start),
+                        text: line['value']?.toString() ?? '',
+                      );
+                    })
+                    .where((line) => line.text.isNotEmpty)
+                    .toList();
+                if (parsedLines.isNotEmpty) {
+                  _applyLyrics(SyncedLyrics(lines: parsedLines));
+                  return;
+                }
+              }
+            }
+          } else {
+            final value = neteaseLyrics['value']?.toString();
             if (value != null && value.isNotEmpty) {
               if (value.contains('[') && value.contains(':')) {
                 _applyLyrics(SyncedLyrics.fromLrc(value));

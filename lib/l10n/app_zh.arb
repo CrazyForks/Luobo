@@ -25,6 +25,22 @@
   "@discoverMix": {
     "description": "Discover Mix section title"
   },
+  "morningVibes": "清晨漫步",
+  "@morningVibes": {
+    "description": "Morning time-based mix section title"
+  },
+  "afternoonVibes": "午后时光",
+  "@afternoonVibes": {
+    "description": "Afternoon time-based mix section title"
+  },
+  "eveningVibes": "傍晚小憩",
+  "@eveningVibes": {
+    "description": "Evening time-based mix section title"
+  },
+  "nightVibes": "深夜电台",
+  "@nightVibes": {
+    "description": "Night time-based mix section title"
+  },
   "recentlyPlayed": "最近播放",
   "@recentlyPlayed": {
     "description": "Recently played section title"
@@ -582,6 +598,18 @@
   "@_SETTINGS_PLAYBACK": {},
   "sectionAutoDj": "自动播放",
   "autoDjMode": "自动播放模式",
+  "autoDjModeOff": "关闭",
+  "@autoDjModeOff": { "description": "Auto DJ mode option: disabled" },
+  "autoDjModeShuffleLibrary": "随机播放曲库",
+  "@autoDjModeShuffleLibrary": { "description": "Auto DJ mode option: shuffle library" },
+  "autoDjModeSimilarSongs": "相似歌曲",
+  "@autoDjModeSimilarSongs": { "description": "Auto DJ mode option: similar songs" },
+  "autoDjModeSameGenre": "相同流派",
+  "@autoDjModeSameGenre": { "description": "Auto DJ mode option: same genre" },
+  "autoDjModeSameArtist": "相同艺术家",
+  "@autoDjModeSameArtist": { "description": "Auto DJ mode option: same artist" },
+  "autoDjModeSmartMix": "智能混合",
+  "@autoDjModeSmartMix": { "description": "Auto DJ mode option: smart mix" },
   "songsToAdd": "添加歌曲数：{count}",
   "@songsToAdd": {
     "placeholders": {
@@ -1045,9 +1073,77 @@
   "@connect": {
     "description": "Login submit button label"
   },
+  "lanUrl": "局域网地址（可选）",
+  "@lanUrl": {
+    "description": "Label for the local network URL field on login screen"
+  },
+  "lanUrlHint": "http://192.168.x.x:4533",
+  "@lanUrlHint": {
+    "description": "Hint text for the local network URL field"
+  },
+  "serverUrlHint": "https://your-server.com",
+  "@serverUrlHint": {
+    "description": "Hint text for the server URL field"
+  },
+  "profileNameLabel": "配置名称（可选）",
+  "@profileNameLabel": {
+    "description": "Label for the optional profile name field"
+  },
+  "profileNameHint": "例如：家庭、办公室、VPN",
+  "@profileNameHint": {
+    "description": "Hint text for the profile name field"
+  },
   "or": "或者",
   "@or": {
     "description": "Divider label between Connect and Use Local Files"
+  },
+  "privacyFirst": "隐私优先",
+  "@privacyFirst": {
+    "description": "Title of the privacy policy dialog header"
+  },
+  "privacySubtitle": "您的数据始终由您掌控。",
+  "@privacySubtitle": {
+    "description": "Subtitle in the privacy policy dialog header"
+  },
+  "noDataSelling": "不出售数据",
+  "@noDataSelling": {
+    "description": "Privacy point title: no data selling"
+  },
+  "noDataSellingDesc": "我们绝不会向第三方出售、分享或转让您的个人数据。",
+  "@noDataSellingDesc": {
+    "description": "Privacy point description: no data selling"
+  },
+  "localFirstStorage": "本地优先存储",
+  "@localFirstStorage": {
+    "description": "Privacy point title: local storage"
+  },
+  "localFirstStorageDesc": "您的音乐库和登录凭证保存在本地设备上。",
+  "@localFirstStorageDesc": {
+    "description": "Privacy point description: local storage"
+  },
+  "anonymousAnalytics": "匿名分析（可选）",
+  "@anonymousAnalytics": {
+    "description": "Privacy point title: anonymous analytics"
+  },
+  "anonymousAnalyticsDesc": "经您同意后，我们仅收集匿名的崩溃报告和使用统计，不包含任何个人标识信息。",
+  "@anonymousAnalyticsDesc": {
+    "description": "Privacy point description: anonymous analytics"
+  },
+  "readFullPrivacyPolicy": "阅读完整隐私政策",
+  "@readFullPrivacyPolicy": {
+    "description": "Link label to open the full privacy policy"
+  },
+  "viewCompleteDetails": "在网站上查看完整详情",
+  "@viewCompleteDetails": {
+    "description": "Subtitle for the privacy policy link"
+  },
+  "agreeAndContinue": "我已了解，继续使用",
+  "@agreeAndContinue": {
+    "description": "Accept button label in privacy dialog"
+  },
+  "declineAndExit": "拒绝并退出",
+  "@declineAndExit": {
+    "description": "Decline button label in privacy dialog"
   },
   "useLocalFiles": "使用本地文件",
   "@useLocalFiles": {
@@ -1555,6 +1651,28 @@
   "switchProfile": "切换配置",
   "switchServer": "切换服务器",
   "addProfile": "添加配置",
+  "shareQrCode": "分享二维码",
+  "@shareQrCode": { "description": "Button to show QR code for server config sharing" },
+  "scanQrCode": "扫码添加",
+  "@scanQrCode": { "description": "Button to scan QR code to add server config" },
+  "qrCodeTitle": "服务器二维码",
+  "@qrCodeTitle": { "description": "Title of the QR code display dialog" },
+  "qrCodeSubtitle": "扫描此二维码即可添加服务器配置",
+  "@qrCodeSubtitle": { "description": "Subtitle of the QR code dialog" },
+  "saveToGallery": "保存到相册",
+  "@saveToGallery": { "description": "Button to save QR code image to photo gallery" },
+  "savedToGallery": "二维码已保存到相册",
+  "@savedToGallery": { "description": "Snackbar after QR code saved" },
+  "failedToSaveQr": "保存二维码失败",
+  "@failedToSaveQr": { "description": "Error snackbar when QR code save fails" },
+  "scanFromCamera": "相机",
+  "@scanFromCamera": { "description": "Tab label for scanning from camera" },
+  "scanFromGallery": "相册",
+  "@scanFromGallery": { "description": "Tab label for scanning from photo gallery" },
+  "invalidQrCode": "无效的二维码，不是有效的服务器配置。",
+  "@invalidQrCode": { "description": "Error when scanned QR code is invalid" },
+  "qrConfigImported": "服务器配置导入成功",
+  "@qrConfigImported": { "description": "Snackbar after QR config imported" },
   "switchProfileConfirmation": "连接到「{profile}」？",
   "keepScreenOnDuringDownload": "下载时保持屏幕常亮",
   "keepScreenOnDuringDownloadSubtitle": "防止设备锁屏导致下载失败",
@@ -1692,5 +1810,118 @@
   "gaplessPlayback": "无缝播放",
   "gaplessPlaybackSubtitle": "消除歌曲之间的间隔",
   "customizeNowPlaying": "自定义正在播放界面（Beta）",
-  "customizeNowPlayingSubtitle": "创建和管理自定义主题"
+  "customizeNowPlayingSubtitle": "创建和管理自定义主题",
+
+  "lyricsSection": "歌词",
+  "@lyricsSection": { "description": "Section title for lyrics settings" },
+  "neteaseLyrics": "网易云歌词",
+  "@neteaseLyrics": { "description": "Netease Cloud Music lyrics source" },
+  "neteaseLyricsSubtitle": "当 LRCLIB 无结果时从网易云音乐获取歌词（中文歌推荐开启）",
+  "@neteaseLyricsSubtitle": { "description": "Subtitle for Netease lyrics toggle" },
+  "aiSmartPlaylist": "AI 智能歌单",
+  "@aiSmartPlaylist": { "description": "AI smart playlist section title" },
+  "apiKey": "API Key",
+  "@apiKey": { "description": "API Key field label" },
+  "notConfigured": "未配置",
+  "@notConfigured": { "description": "Status when API key is not configured" },
+  "apiUrl": "API 地址",
+  "@apiUrl": { "description": "API URL field label" },
+  "aiModel": "模型",
+  "@aiModel": { "description": "AI model field label" },
+  "songKnowledgeBase": "歌曲知识库",
+  "@songKnowledgeBase": { "description": "Song knowledge base title" },
+  "knowledgeIndexed": "已索引 {cached} / {total} 首",
+  "@knowledgeIndexed": { "description": "Knowledge base indexed status", "placeholders": { "cached": { "type": "int" }, "total": { "type": "int" } } },
+  "lastUpdated": "上次更新：{date}",
+  "@lastUpdated": { "description": "Knowledge base last update time", "placeholders": { "date": { "type": "String" } } },
+  "generate": "生成",
+  "@generate": { "description": "Button to generate knowledge base" },
+  "incrementalUpdate": "增量更新",
+  "@incrementalUpdate": { "description": "Button to incrementally update knowledge base" },
+  "knowledgeGenerated": "已完成 {count} 首歌的知识库生成",
+  "@knowledgeGenerated": { "description": "Snackbar after knowledge generation", "placeholders": { "count": { "type": "int" } } },
+  "apiUrlHint": "https://api.deepseek.com",
+  "@apiUrlHint": { "description": "Hint for API URL field" },
+  "apiUrlDescription": "兼容 OpenAI 格式的 API 地址均可使用\n如 DeepSeek、OpenAI、Kimi、通义千问等",
+  "@apiUrlDescription": { "description": "Help text for API URL dialog" },
+  "modelName": "模型名称",
+  "@modelName": { "description": "Model selector dialog title" },
+  "networkWifi": "WiFi",
+  "@networkWifi": { "description": "WiFi network type label" },
+  "networkMobile": "蜂窝网络",
+  "@networkMobile": { "description": "Mobile network type label" },
+
+  "analyticsAndPrivacy": "分析与隐私",
+  "@analyticsAndPrivacy": { "description": "Settings section title" },
+  "anonymousAnalyticsToggle": "匿名分析",
+  "@anonymousAnalyticsToggle": { "description": "Analytics switch label" },
+  "anonymousAnalyticsToggleSubtitle": "通过匿名的崩溃报告和使用统计帮助改进 Musly",
+  "@anonymousAnalyticsToggleSubtitle": { "description": "Analytics switch subtitle" },
+  "deviceId": "设备 ID",
+  "@deviceId": { "description": "Device ID field label" },
+  "anonymousIdLabel": "匿名 ID：{id}",
+  "@anonymousIdLabel": { "description": "Shows the anonymous device ID", "placeholders": { "id": { "type": "String" } } },
+  "enableAnalyticsToSeeId": "启用分析后可查看匿名设备 ID",
+  "@enableAnalyticsToSeeId": { "description": "Hint when analytics disabled" },
+  "copyDeviceId": "复制设备 ID",
+  "@copyDeviceId": { "description": "Tooltip for copy device ID button" },
+  "deviceIdCopied": "设备 ID 已复制到剪贴板",
+  "@deviceIdCopied": { "description": "Snackbar after copying device ID" },
+  "aboutDeviceId": "关于设备 ID",
+  "@aboutDeviceId": { "description": "Title for device ID info tile" },
+  "aboutDeviceIdDescription": "这是应用生成的匿名标识符，无法与您的个人身份关联，仅用于分析统计。",
+  "@aboutDeviceIdDescription": { "description": "Description of what device ID is" },
+  "support": "支持",
+  "@support": { "description": "Support section title" },
+  "thanksForRating": "感谢评分！",
+  "@thanksForRating": { "description": "Title after user rated the app" },
+  "alreadyRated": "您已经评过分了",
+  "@alreadyRated": { "description": "Subtitle after rated" },
+  "rateMusly": "为 Musly 评分",
+  "@rateMusly": { "description": "Rate app button title" },
+  "shareFeedback": "分享您的使用反馈",
+  "@shareFeedback": { "description": "Rate app subtitle" },
+  "supportMusly": "支持 Musly",
+  "@supportMusly": { "description": "Support button title" },
+  "joinDiscordOrDonate": "加入 Discord 或捐赠",
+  "@joinDiscordOrDonate": { "description": "Support button subtitle" },
+  "howWouldYouRate": "您如何评价使用体验？",
+  "@howWouldYouRate": { "description": "Rating dialog prompt" },
+  "optionalFeedback": "反馈意见（可选）...",
+  "@optionalFeedback": { "description": "Rating feedback hint" },
+  "submit": "提交",
+  "@submit": { "description": "Submit button" },
+  "thankYouFeedback": "感谢您的反馈！",
+  "@thankYouFeedback": { "description": "Snackbar after rating submitted" },
+  "supportMuslyDialog": "支持 Musly",
+  "@supportMuslyDialog": { "description": "Support dialog title" },
+  "supportDescription": "Musly 是一个免费的开源项目，您的支持将帮助它持续发展！",
+  "@supportDescription": { "description": "Support dialog description" },
+  "joinDiscord": "加入我们的 Discord",
+  "@joinDiscord": { "description": "Discord button title" },
+  "joinDiscordSubtitle": "获取帮助、建议功能、与我们交流",
+  "@joinDiscordSubtitle": { "description": "Discord button subtitle" },
+  "supportWithDonation": "捐赠支持",
+  "@supportWithDonation": { "description": "Donate button title" },
+  "donationSubtitle": "帮助支付服务器费用和开发成本",
+  "@donationSubtitle": { "description": "Donate button subtitle" },
+  "dontShowAgain": "不再显示",
+  "@dontShowAgain": { "description": "Checkbox to suppress future support dialogs" },
+  "maybeLater": "以后再说",
+  "@maybeLater": { "description": "Dismiss support dialog button" },
+
+  "addedFolder": "已添加文件夹：{path}",
+  "@addedFolder": { "description": "Snackbar after adding a scan folder", "placeholders": { "path": { "type": "String" } } },
+  "removeFolder": "移除文件夹",
+  "@removeFolder": { "description": "Dialog title for removing a folder" },
+  "removeFolderConfirm": "从扫描路径中移除「{path}」？",
+  "@removeFolderConfirm": { "description": "Dialog content for removing a folder", "placeholders": { "path": { "type": "String" } } },
+  "folderRemoved": "文件夹已移除",
+  "@folderRemoved": { "description": "Snackbar after folder removed" },
+  "loadingLibrary": "正在加载曲库...",
+  "@loadingLibrary": { "description": "Snackbar when library is loading" },
+  "libraryEmptyOrFailed": "曲库为空或加载失败，请确认您的服务器支持全曲库扫描。",
+  "@libraryEmptyOrFailed": { "description": "Dialog content when library load fails" },
+  "retry": "重试",
+  "@retry": { "description": "Retry button label" }
 }

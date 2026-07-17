@@ -5,6 +5,7 @@ import '../services/recommendation_service.dart';
 import '../providers/library_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
+import 'listening_report_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -104,7 +105,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Listening History')),
+      appBar: AppBar(
+        title: const Text('Listening History'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ListeningReportScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.bar_chart_rounded),
+            tooltip: '听歌报告',
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _recentSongs.isEmpty

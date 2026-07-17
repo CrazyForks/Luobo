@@ -36,6 +36,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get discoverMix => '发现混音';
 
   @override
+  String get morningVibes => '清晨漫步';
+
+  @override
+  String get afternoonVibes => '午后时光';
+
+  @override
+  String get eveningVibes => '傍晚小憩';
+
+  @override
+  String get nightVibes => '深夜电台';
+
+  @override
   String get recentlyPlayed => '最近播放';
 
   @override
@@ -233,7 +245,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportIssue => '报告问题';
 
   @override
-  String get joinDiscord => '加入 Discord 社区';
+  String get joinDiscord => '加入我们的 Discord';
 
   @override
   String get unknownArtist => '未知歌手';
@@ -610,6 +622,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get autoDjMode => '自动播放模式';
 
   @override
+  String get autoDjModeOff => '关闭';
+
+  @override
+  String get autoDjModeShuffleLibrary => '随机播放曲库';
+
+  @override
+  String get autoDjModeSimilarSongs => '相似歌曲';
+
+  @override
+  String get autoDjModeSameGenre => '相同流派';
+
+  @override
+  String get autoDjModeSameArtist => '相同艺术家';
+
+  @override
+  String get autoDjModeSmartMix => '智能混合';
+
+  @override
   String songsToAdd(int count) {
     return '添加歌曲数：$count';
   }
@@ -692,6 +722,39 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get addProfile => '添加配置';
+
+  @override
+  String get shareQrCode => '分享二维码';
+
+  @override
+  String get scanQrCode => '扫码添加';
+
+  @override
+  String get qrCodeTitle => '服务器二维码';
+
+  @override
+  String get qrCodeSubtitle => '扫描此二维码即可添加服务器配置';
+
+  @override
+  String get saveToGallery => '保存到相册';
+
+  @override
+  String get savedToGallery => '二维码已保存到相册';
+
+  @override
+  String get failedToSaveQr => '保存二维码失败';
+
+  @override
+  String get scanFromCamera => '相机';
+
+  @override
+  String get scanFromGallery => '相册';
+
+  @override
+  String get invalidQrCode => '无效的二维码，不是有效的服务器配置。';
+
+  @override
+  String get qrConfigImported => '服务器配置导入成功';
 
   @override
   String switchProfileConfirmation(String profile) {
@@ -1114,7 +1177,58 @@ class AppLocalizationsZh extends AppLocalizations {
   String get connect => '连接';
 
   @override
+  String get lanUrl => '局域网地址（可选）';
+
+  @override
+  String get lanUrlHint => 'http://192.168.x.x:4533';
+
+  @override
+  String get serverUrlHint => 'https://your-server.com';
+
+  @override
+  String get profileNameLabel => '配置名称（可选）';
+
+  @override
+  String get profileNameHint => '例如：家庭、办公室、VPN';
+
+  @override
   String get or => '或者';
+
+  @override
+  String get privacyFirst => '隐私优先';
+
+  @override
+  String get privacySubtitle => '您的数据始终由您掌控。';
+
+  @override
+  String get noDataSelling => '不出售数据';
+
+  @override
+  String get noDataSellingDesc => '我们绝不会向第三方出售、分享或转让您的个人数据。';
+
+  @override
+  String get localFirstStorage => '本地优先存储';
+
+  @override
+  String get localFirstStorageDesc => '您的音乐库和登录凭证保存在本地设备上。';
+
+  @override
+  String get anonymousAnalytics => '匿名分析';
+
+  @override
+  String get anonymousAnalyticsDesc => '经您同意后，我们仅收集匿名的崩溃报告和使用统计，不包含任何个人标识信息。';
+
+  @override
+  String get readFullPrivacyPolicy => '阅读完整隐私政策';
+
+  @override
+  String get viewCompleteDetails => '在网站上查看完整详情';
+
+  @override
+  String get agreeAndContinue => '我已了解，继续使用';
+
+  @override
+  String get declineAndExit => '拒绝并退出';
 
   @override
   String get useLocalFiles => '使用本地文件';
@@ -1605,9 +1719,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sectionAnalyticsPrivacy => '分析与隐私';
 
   @override
-  String get anonymousAnalytics => '匿名分析';
-
-  @override
   String get anonymousAnalyticsSubtitle => '通过匿名崩溃报告和使用统计帮助改进应用';
 
   @override
@@ -1819,4 +1930,170 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get customizeNowPlayingSubtitle => '创建和管理自定义主题';
+
+  @override
+  String get lyricsSection => '歌词';
+
+  @override
+  String get neteaseLyrics => '网易云歌词';
+
+  @override
+  String get neteaseLyricsSubtitle => '当 LRCLIB 无结果时从网易云音乐获取歌词（中文歌推荐开启）';
+
+  @override
+  String get aiSmartPlaylist => 'AI 智能歌单';
+
+  @override
+  String get apiKey => 'API Key';
+
+  @override
+  String get notConfigured => '未配置';
+
+  @override
+  String get apiUrl => 'API 地址';
+
+  @override
+  String get aiModel => '模型';
+
+  @override
+  String get songKnowledgeBase => '歌曲知识库';
+
+  @override
+  String knowledgeIndexed(int cached, int total) {
+    return '已索引 $cached / $total 首';
+  }
+
+  @override
+  String lastUpdated(String date) {
+    return '上次更新：$date';
+  }
+
+  @override
+  String get generate => '生成';
+
+  @override
+  String get incrementalUpdate => '增量更新';
+
+  @override
+  String knowledgeGenerated(int count) {
+    return '已完成 $count 首歌的知识库生成';
+  }
+
+  @override
+  String get apiUrlHint => 'https://api.deepseek.com';
+
+  @override
+  String get apiUrlDescription =>
+      '兼容 OpenAI 格式的 API 地址均可使用\n如 DeepSeek、OpenAI、Kimi、通义千问等';
+
+  @override
+  String get modelName => '模型名称';
+
+  @override
+  String get networkWifi => 'WiFi';
+
+  @override
+  String get networkMobile => '蜂窝网络';
+
+  @override
+  String get analyticsAndPrivacy => '分析与隐私';
+
+  @override
+  String get anonymousAnalyticsToggle => '匿名分析';
+
+  @override
+  String get anonymousAnalyticsToggleSubtitle => '通过匿名的崩溃报告和使用统计帮助改进 Musly';
+
+  @override
+  String anonymousIdLabel(String id) {
+    return '匿名 ID：$id';
+  }
+
+  @override
+  String get enableAnalyticsToSeeId => '启用分析后可查看匿名设备 ID';
+
+  @override
+  String get copyDeviceId => '复制设备 ID';
+
+  @override
+  String get deviceIdCopied => '设备 ID 已复制到剪贴板';
+
+  @override
+  String get aboutDeviceIdDescription => '这是应用生成的匿名标识符，无法与您的个人身份关联，仅用于分析统计。';
+
+  @override
+  String get support => '支持';
+
+  @override
+  String get thanksForRating => '感谢评分！';
+
+  @override
+  String get alreadyRated => '您已经评过分了';
+
+  @override
+  String get rateMusly => '为 Musly 评分';
+
+  @override
+  String get shareFeedback => '分享您的使用反馈';
+
+  @override
+  String get supportMusly => '支持 Musly';
+
+  @override
+  String get joinDiscordOrDonate => '加入 Discord 或捐赠';
+
+  @override
+  String get howWouldYouRate => '您如何评价使用体验？';
+
+  @override
+  String get optionalFeedback => '反馈意见（可选）...';
+
+  @override
+  String get submit => '提交';
+
+  @override
+  String get thankYouFeedback => '感谢您的反馈！';
+
+  @override
+  String get supportMuslyDialog => '支持 Musly';
+
+  @override
+  String get supportDescription => 'Musly 是一个免费的开源项目，您的支持将帮助它持续发展！';
+
+  @override
+  String get joinDiscordSubtitle => '获取帮助、建议功能、与我们交流';
+
+  @override
+  String get supportWithDonation => '捐赠支持';
+
+  @override
+  String get donationSubtitle => '帮助支付服务器费用和开发成本';
+
+  @override
+  String get dontShowAgain => '不再显示';
+
+  @override
+  String get maybeLater => '以后再说';
+
+  @override
+  String addedFolder(String path) {
+    return '已添加文件夹：$path';
+  }
+
+  @override
+  String get removeFolder => '移除文件夹';
+
+  @override
+  String removeFolderConfirm(String path) {
+    return '从扫描路径中移除「$path」？';
+  }
+
+  @override
+  String get folderRemoved => '文件夹已移除';
+
+  @override
+  String get loadingLibrary => '正在加载曲库...';
+
+  @override
+  String get libraryEmptyOrFailed => '曲库为空或加载失败，请确认您的服务器支持全曲库扫描。';
 }

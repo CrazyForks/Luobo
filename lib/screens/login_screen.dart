@@ -10,6 +10,7 @@ import '../providers/auth_provider.dart';
 import '../services/local_music_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/screen_helper.dart';
+import 'qr_scanner_screen.dart';
 
 enum _LoginErrorType {
   ssl,
@@ -31,9 +32,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _serverController = TextEditingController();
+  final _localServerController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _serverFocusNode = FocusNode();
+  final _localServerFocusNode = FocusNode();
   final _usernameFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   bool _useLegacyAuth = false;
@@ -60,6 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     
     _serverController.addListener(_clearError);
+    _localServerController.addListener(_clearError);
     _usernameController.addListener(_clearError);
     _passwordController.addListener(_clearError);
     _profileNameController.addListener(_clearError);
@@ -243,15 +247,18 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _serverController.removeListener(_clearError);
+    _localServerController.removeListener(_clearError);
     _usernameController.removeListener(_clearError);
     _passwordController.removeListener(_clearError);
     _profileNameController.removeListener(_clearError);
     _serverController.dispose();
+    _localServerController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     _profileNameController.dispose();
     _clientCertPasswordController.dispose();
     _serverFocusNode.dispose();
+    _localServerFocusNode.dispose();
     _usernameFocusNode.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
@@ -332,15 +339,17 @@ class _LoginScreenState extends State<LoginScreen> {
         !serverUrl.startsWith('http://') &&
         !serverUrl.startsWith('https://')) {
       setState(
-        () => _loginError = 'Server URL must start with http:// or https://',
+        () => _loginError = AppLocalizations.of(context)!.serverUrlMustStartWith,
       );
       return;
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final profileName = _profileNameController.text.trim();
+    final localUrl = _localServerController.text.trim();
     final success = await authProvider.login(
       serverUrl: serverUrl,
+      localUrl: localUrl.isEmpty ? null : localUrl,
       username: _usernameController.text.trim(),
       password: _passwordController.text,
       useLegacyAuth: _useLegacyAuth,
@@ -360,6 +369,53 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
     
+  }
+
+  Future<void> _scanQrCode() async {
+    final config = await Navigator.push<ServerConfig>(
+      context,
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+    if (config == null || !mounted) return;
+
+    // Fill in the form fields from scanned config
+    _serverController.text = config.serverUrl;
+    _localServerController.text = config.localUrl ?? '';
+    _usernameController.text = config.username;
+    _passwordController.text = config.password;
+    _profileNameController.text = config.name ?? '';
+    setState(() {
+      _serverFamily = config.serverFamily;
+      _useLegacyAuth = config.useLegacyAuth;
+      _allowSelfSignedCertificates = config.allowSelfSignedCertificates;
+    });
+
+    // Auto-login with scanned config
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.login(
+      serverUrl: config.serverUrl,
+      localUrl: config.localUrl,
+      username: config.username,
+      password: config.password,
+      useLegacyAuth: config.useLegacyAuth,
+      allowSelfSignedCertificates: config.allowSelfSignedCertificates,
+      profileName: config.name,
+      serverFamily: config.serverFamily,
+    );
+
+    if (!success && mounted) {
+      setState(
+        () => _loginError = authProvider.error ?? 'Failed to connect to server',
+      );
+    } else if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.qrConfigImported),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _useLocalFiles() async {
@@ -594,10 +650,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     keyboardType: TextInputType.url,
                     autocorrect: false,
                     textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) => _usernameFocusNode.requestFocus(),
+                    onFieldSubmitted: (_) => _localServerFocusNode.requestFocus(),
                     decoration: InputDecoration(
-                      labelText: 'Server URL',
-                      hintText: 'https://your-server.com',
+                      labelText: AppLocalizations.of(context)!.serverUrl,
+                      hintText: AppLocalizations.of(context)!.serverUrlHint,
                       prefixIcon: const Icon(CupertinoIcons.globe),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -605,12 +661,39 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Please enter server URL';
+                        return AppLocalizations.of(context)!.pleaseEnterServerUrl;
                       }
                       final url = value.trim();
                       if (!url.startsWith('http://') &&
                           !url.startsWith('https://')) {
-                        return 'URL must start with http:// or https://';
+                        return AppLocalizations.of(context)!.invalidUrlFormat;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextFormField(
+                    controller: _localServerController,
+                    focusNode: _localServerFocusNode,
+                    keyboardType: TextInputType.url,
+                    autocorrect: false,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) => _usernameFocusNode.requestFocus(),
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.lanUrl,
+                      hintText: AppLocalizations.of(context)!.lanUrlHint,
+                      prefixIcon: const Icon(CupertinoIcons.wifi),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return null;
+                      final url = value.trim();
+                      if (!url.startsWith('http://') &&
+                          !url.startsWith('https://')) {
+                        return AppLocalizations.of(context)!.invalidUrlFormat;
                       }
                       return null;
                     },
@@ -624,7 +707,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.next,
                     onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
                     decoration: InputDecoration(
-                      labelText: 'Username',
+                      labelText: AppLocalizations.of(context)!.username,
                       prefixIcon: const Icon(CupertinoIcons.person),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -632,7 +715,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Please enter username';
+                        return AppLocalizations.of(context)!.pleaseEnterUsername;
                       }
                       return null;
                     },
@@ -646,7 +729,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) { if (!isBusy) _login(); },
                     decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: AppLocalizations.of(context)!.password,
                       prefixIcon: const Icon(CupertinoIcons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -666,7 +749,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter password';
+                        return AppLocalizations.of(context)!.pleaseEnterPassword;
                       }
                       return null;
                     },
@@ -691,11 +774,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Legacy Authentication',
+                              AppLocalizations.of(context)!.legacyAuthentication,
                               style: theme.textTheme.bodyMedium,
                             ),
                             Text(
-                              'Use for older Subsonic servers',
+                              AppLocalizations.of(context)!.legacyAuthSubtitle,
                               style: theme.textTheme.bodySmall,
                             ),
                           ],
@@ -722,11 +805,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Allow Self-Signed Certificates',
+                              AppLocalizations.of(context)!.allowSelfSignedCerts,
                               style: theme.textTheme.bodyMedium,
                             ),
                             Text(
-                              'For servers with custom TLS/SSL certificates',
+                              AppLocalizations.of(context)!.allowSelfSignedSubtitle,
                               style: theme.textTheme.bodySmall,
                             ),
                           ],
@@ -753,7 +836,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Advanced Options',
+                          AppLocalizations.of(context)!.advancedOptions,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -768,8 +851,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _profileNameController,
                       autocorrect: false,
                       decoration: InputDecoration(
-                        labelText: 'Profile Name (optional)',
-                        hintText: 'e.g. Home, Work, VPN',
+                        labelText: AppLocalizations.of(context)!.profileNameLabel,
+                        hintText: AppLocalizations.of(context)!.profileNameHint,
                         prefixIcon: const Icon(CupertinoIcons.tag),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -789,14 +872,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Custom TLS/SSL Certificate',
+                            AppLocalizations.of(context)!.customTlsCertificate,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Upload a custom certificate for servers with non-standard CA',
+                            AppLocalizations.of(context)!.customCertificateSubtitle,
                             style: theme.textTheme.bodySmall,
                           ),
                           const SizedBox(height: 12),
@@ -1013,9 +1096,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             )
-                          : const Text(
-                              'Connect',
-                              style: TextStyle(
+                          : Text(
+                              AppLocalizations.of(context)!.connect,
+                              style: const TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1031,7 +1114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          'OR',
+                          AppLocalizations.of(context)!.or,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppTheme.lightSecondaryText,
                           ),
@@ -1043,7 +1126,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 24),
 
-                  if (!Platform.isIOS) SizedBox(
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: isBusy ? null : _scanQrCode,
+                      icon: const Icon(CupertinoIcons.qrcode_viewfinder),
+                      label: Text(
+                        AppLocalizations.of(context)!.scanQrCode,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.appleMusicRed,
+                        side: const BorderSide(color: AppTheme.appleMusicRed),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  if (!Platform.isIOS) ...[
+                  const SizedBox(height: 12),
+
+                  SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: OutlinedButton.icon(
@@ -1061,7 +1170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             )
                           : const Icon(CupertinoIcons.folder),
                       label: Text(
-                        _isScanning ? _scanStatus : 'Use Local Files',
+                        _isScanning ? _scanStatus : AppLocalizations.of(context)!.useLocalFiles,
                         style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
@@ -1077,6 +1186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
+                  ],
 
                   if (!Platform.isIOS && _isScanning) ...[
                     const SizedBox(height: 12),

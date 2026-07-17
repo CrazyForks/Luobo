@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 
 /// Dialog shown on app startup asking users to join Discord or support the project
 class SupportDialog extends StatefulWidget {
@@ -95,7 +96,7 @@ class _SupportDialogState extends State<SupportDialog> {
 
               // Title
               Text(
-                'Support Musly',
+                AppLocalizations.of(context)!.supportMuslyDialog,
                 style: TextStyle(
                   fontSize: isSmallScreen ? 20 : 24,
                   fontWeight: FontWeight.bold,
@@ -105,7 +106,7 @@ class _SupportDialogState extends State<SupportDialog> {
 
               // Description
               Text(
-                'Musly is a free, open-source project. Your support helps keep it alive!',
+                AppLocalizations.of(context)!.supportDescription,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: isSmallScreen ? 13 : 14,
@@ -118,8 +119,8 @@ class _SupportDialogState extends State<SupportDialog> {
               // Discord button
               _buildActionButton(
                 icon: CupertinoIcons.chat_bubble_fill,
-                title: 'Join our Discord',
-                subtitle: 'Get help, suggest features, chat with us',
+                title: AppLocalizations.of(context)!.joinDiscord,
+                subtitle: AppLocalizations.of(context)!.joinDiscordSubtitle,
                 color: const Color(0xFF5865F2),
                 onTap: _launchDiscord,
               ),
@@ -128,8 +129,8 @@ class _SupportDialogState extends State<SupportDialog> {
               // Donation button
               _buildActionButton(
                 icon: CupertinoIcons.heart_fill,
-                title: 'Support with a Donation',
-                subtitle: 'Help cover server costs and development',
+                title: AppLocalizations.of(context)!.supportWithDonation,
+                subtitle: AppLocalizations.of(context)!.donationSubtitle,
                 color: const Color(0xFFFA2D48),
                 onTap: _launchDonation,
                 compact: isSmallScreen,
@@ -162,7 +163,7 @@ class _SupportDialogState extends State<SupportDialog> {
                         });
                       },
                       child: Text(
-                        'Don\'t show this again',
+                        AppLocalizations.of(context)!.dontShowAgain,
                         style: TextStyle(
                           fontSize: isSmallScreen ? 13 : 14,
                           color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -189,7 +190,7 @@ class _SupportDialogState extends State<SupportDialog> {
                     ),
                   ),
                   child: Text(
-                    'Maybe Later',
+                    AppLocalizations.of(context)!.maybeLater,
                     style: TextStyle(
                       fontSize: isSmallScreen ? 14 : 16,
                       fontWeight: FontWeight.w500,

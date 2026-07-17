@@ -25,6 +25,7 @@ import '../utils/screen_helper.dart';
 import '../widgets/synced_lyrics_view.dart';
 import '../widgets/compact_lyrics_view.dart';
 import 'album_screen.dart';
+import 'car_mode_screen.dart';
 import '../widgets/multi_artist_widget.dart';
 import '../widgets/album_artwork.dart' show isLocalFilePath;
 import '../widgets/themed_now_playing_elements.dart';
@@ -2433,6 +2434,27 @@ class _SongInfoState extends State<_SongInfo> {
           ),
         ),
         IconButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                opaque: false,
+                pageBuilder: (_, __, ___) => const CarModeScreen(),
+                transitionsBuilder: (_, animation, __, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                transitionDuration: const Duration(milliseconds: 200),
+                reverseTransitionDuration: Duration.zero,
+              ),
+            );
+          },
+          icon: const Icon(
+            Icons.directions_car,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+        IconButton(
           onPressed: () => _showAddToPlaylistDialog(context),
           icon: const Icon(
             CupertinoIcons.plus_circle,
@@ -2512,7 +2534,9 @@ class _SongInfoState extends State<_SongInfo> {
       showModalBottomSheet(
         context: outerContext,
         backgroundColor: Colors.transparent,
-        builder: (sheetContext) => Container(
+        builder: (sheetContext) {
+          final l10n = AppLocalizations.of(outerContext)!;
+          return Container(
           decoration: BoxDecoration(
             color: AppTheme.darkSurface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -2531,7 +2555,7 @@ class _SongInfoState extends State<_SongInfo> {
               ),
               const SizedBox(height: 16),
               Text(
-                AppLocalizations.of(context)!.addToPlaylistTitle,
+                l10n.addToPlaylistTitle,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -2565,7 +2589,7 @@ class _SongInfoState extends State<_SongInfo> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            AppLocalizations.of(context)!.createNewPlaylist,
+                            l10n.createNewPlaylist,
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -2582,7 +2606,7 @@ class _SongInfoState extends State<_SongInfo> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  AppLocalizations.of(context)!.yourPlaylistsLabel,
+                  l10n.yourPlaylistsLabel,
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 13,
@@ -2595,7 +2619,7 @@ class _SongInfoState extends State<_SongInfo> {
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: playlists.length,
-                  itemBuilder: (context, index) {
+                  itemBuilder: (listContext, index) {
                     final playlist = playlists[index];
                     final coverArtUrl = playlist.coverArt != null
                         ? subsonicService.getCoverArtUrl(
@@ -2654,8 +2678,7 @@ class _SongInfoState extends State<_SongInfo> {
                       ),
                       subtitle: playlist.songCount != null
                           ? Text(
-                              AppLocalizations.of(context)!
-                                  .songsCount(playlist.songCount!),
+                              l10n.songsCount(playlist.songCount!),
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.6),
                               ),
@@ -2676,7 +2699,8 @@ class _SongInfoState extends State<_SongInfo> {
               const SizedBox(height: 16),
             ],
           ),
-        ),
+        );
+        },
       );
     } catch (e) {
       if (context.mounted) {
@@ -2699,10 +2723,10 @@ class _SongInfoState extends State<_SongInfo> {
 
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppTheme.darkSurface,
         title: Text(
-          AppLocalizations.of(context)!.createPlaylistTitle,
+          AppLocalizations.of(dialogContext)!.createPlaylistTitle,
           style: const TextStyle(color: Colors.white),
         ),
         content: TextField(
@@ -2710,7 +2734,7 @@ class _SongInfoState extends State<_SongInfo> {
           autofocus: true,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.playlistNameHint,
+            hintText: AppLocalizations.of(dialogContext)!.playlistNameHint,
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(
@@ -2724,20 +2748,20 @@ class _SongInfoState extends State<_SongInfo> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(
-              AppLocalizations.of(context)!.cancel,
+              AppLocalizations.of(dialogContext)!.cancel,
               style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
           ),
           TextButton(
             onPressed: () {
               if (nameController.text.trim().isNotEmpty) {
-                Navigator.pop(context, nameController.text.trim());
+                Navigator.pop(dialogContext, nameController.text.trim());
               }
             },
             child: Text(
-              AppLocalizations.of(context)!.create,
+              AppLocalizations.of(dialogContext)!.create,
               style: const TextStyle(
                 color: AppTheme.appleMusicRed,
                 fontWeight: FontWeight.bold,
@@ -2748,11 +2772,11 @@ class _SongInfoState extends State<_SongInfo> {
       ),
     );
 
+    nameController.dispose();
+
     if (result != null && result.isNotEmpty && context.mounted) {
       await _createPlaylistAndAddSong(context, result);
     }
-
-    nameController.dispose();
   }
 
   Future<void> _createPlaylistAndAddSong(

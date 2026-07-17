@@ -414,7 +414,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     if (path == null) return;
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Added folder: $path')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.addedFolder(path))),
     );
     // Trigger a rescan if merge mode is enabled
     final libraryProvider = context.read<LibraryProvider>();
@@ -427,16 +427,16 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove Folder'),
-        content: Text('Remove "$path" from scan paths?'),
+        title: Text(AppLocalizations.of(context)!.removeFolder),
+        content: Text(AppLocalizations.of(context)!.removeFolderConfirm(path)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+            child: Text(AppLocalizations.of(context)!.remove, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -446,7 +446,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     await service.removeCustomScanPath(path);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Folder removed')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.folderRemoved)),
     );
   }
 
@@ -580,7 +580,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     if (!hasPermission) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Storage permission required')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.storagePermissionRequired)),
         );
       }
       return;
@@ -762,9 +762,9 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
       // Show loading indicator
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Loading library...'),
-            duration: Duration(seconds: 1),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.loadingLibrary),
+            duration: const Duration(seconds: 1),
           ),
         );
       }
@@ -786,8 +786,8 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
           context: context,
           builder: (ctx) => AlertDialog(
             title: Text(AppLocalizations.of(context)!.noSongsAvailable),
-            content: const Text(
-              'Library appears to be empty or failed to load. Make sure your server supports full library scanning.',
+            content: Text(
+              AppLocalizations.of(context)!.libraryEmptyOrFailed,
             ),
             actions: [
               TextButton(
@@ -796,7 +796,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Retry'),
+                child: Text(AppLocalizations.of(context)!.retry),
               ),
             ],
           ),

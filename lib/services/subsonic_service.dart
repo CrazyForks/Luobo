@@ -29,6 +29,7 @@ class SubsonicService {
   ServerConfig? _config;
   JellyfinService? _jellyfin;
   YoutubeService? _youtube;
+  String? _activeBaseUrl;
 
   static const String _clientName = 'Musly';
   static const String _apiVersion = '1.16.1';
@@ -84,6 +85,7 @@ class SubsonicService {
 
   Future<void> configure(ServerConfig config) async {
     _config = config;
+    _activeBaseUrl = null;
     if (config.isJellyfin) {
       _jellyfin ??= JellyfinService();
       _jellyfin!.configure(config);
@@ -104,6 +106,44 @@ class SubsonicService {
       );
     }
   }
+
+  /// Probes the local URL; if reachable, uses it. Otherwise falls back to the
+  /// remote (serverUrl). Call this after [configure] and before making requests.
+  Future<void> resolveActiveUrl() async {
+    if (_config == null) return;
+    final localUrl = _config!.normalizedLocalUrl;
+    if (localUrl == null) {
+      _activeBaseUrl = _config!.normalizedUrl;
+      debugPrint('[Musly] No local URL configured, using remote: $_activeBaseUrl');
+      return;
+    }
+
+    // Try local URL with a short timeout
+    try {
+      final params = _getAuthParams();
+      final queryString = params.entries
+          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      final pingUrl = '$localUrl/rest/ping?$queryString';
+      final probeDio = Dio();
+      probeDio.options.connectTimeout = const Duration(seconds: 3);
+      probeDio.options.receiveTimeout = const Duration(seconds: 3);
+      probeDio.options.sendTimeout = const Duration(seconds: 3);
+      final response = await probeDio.get(pingUrl);
+      if (response.statusCode == 200) {
+        _activeBaseUrl = localUrl;
+        debugPrint('[Musly] LAN URL reachable, using: $_activeBaseUrl');
+        return;
+      }
+    } catch (e) {
+      debugPrint('[Musly] LAN URL probe failed: $e');
+    }
+
+    _activeBaseUrl = _config!.normalizedUrl;
+    debugPrint('[Musly] Falling back to remote URL: $_activeBaseUrl');
+  }
+
+  String get activeBaseUrl => _activeBaseUrl ?? _config?.normalizedUrl ?? '';
 
   bool get isYoutube => _youtube != null;
 
@@ -284,7 +324,7 @@ class SubsonicService {
         )
         .join('&');
 
-    return '${_config!.normalizedUrl}/rest/$endpoint?$queryString';
+    return '$activeBaseUrl/rest/$endpoint?$queryString';
   }
 
   Future<Map<String, dynamic>> _request(
@@ -416,7 +456,7 @@ class SubsonicService {
         )
         .join('&');
 
-    return '${_config!.normalizedUrl}/rest/getCoverArt?$queryString';
+    return '$activeBaseUrl/rest/getCoverArt?$queryString';
   }
 
   String getStreamUrl(String songId, {int? maxBitRate, String? format}) {
