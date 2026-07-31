@@ -90,7 +90,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         }
 
         let section = CPListSection(items: [playPauseItem, skipNextItem, skipPrevItem])
-        let list = CPListTemplate(title: "Musly", sections: [section])
+        let list = CPListTemplate(title: "Luobo", sections: [section])
         list.tabImage = UIImage(systemName: "music.note.list")
         list.tabTitle = "Actions"
         return list

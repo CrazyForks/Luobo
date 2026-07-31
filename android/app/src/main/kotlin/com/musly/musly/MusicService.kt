@@ -110,7 +110,7 @@ class MusicService : MediaBrowserServiceCompat() {
 
     private fun showIdleNotification() {
         val builder = NotificationCompat.Builder(this, CHANNEL_ID).apply {
-            setContentTitle("Musly")
+            setContentTitle("Luobo")
             setContentText("Ready to play your music")
             setSmallIcon(R.mipmap.ic_launcher)
             setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -143,7 +143,7 @@ class MusicService : MediaBrowserServiceCompat() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Musly Music",
+                "Luobo Music",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Music playback controls"
@@ -163,7 +163,7 @@ class MusicService : MediaBrowserServiceCompat() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        mediaSession = MediaSessionCompat(this, "MuslyMusicService").apply {
+        mediaSession = MediaSessionCompat(this, "LuoboMusicService").apply {
             setFlags(
                 MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
                 MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
