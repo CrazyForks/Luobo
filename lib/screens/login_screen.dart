@@ -332,25 +332,49 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loginError = null);
 
-    final serverUrl = _serverFamily == 'youtube'
+    var serverUrl = _serverFamily == 'youtube'
         ? 'https://music.youtube.com'
         : _serverController.text.trim();
+    final localUrl = _localServerController.text.trim();
+
+    // Accept at least one URL (LAN-only without WAN is valid).
+    if (_serverFamily != 'youtube' &&
+        serverUrl.isEmpty &&
+        localUrl.isEmpty) {
+      setState(
+        () => _loginError = '请至少填写一个服务器地址（远程或局域网）',
+      );
+      return;
+    }
+
+    // If only the LAN (local) URL was provided, use it as the primary
+    // server url so the app can connect from home.
+    if (_serverFamily != 'youtube' &&
+        serverUrl.isEmpty &&
+        localUrl.isNotEmpty) {
+      serverUrl = localUrl;
+    }
 
     if (_serverFamily != 'youtube' &&
+        serverUrl.isNotEmpty &&
         !serverUrl.startsWith('http://') &&
         !serverUrl.startsWith('https://')) {
       setState(
-        () => _loginError = AppLocalizations.of(context)!.serverUrlMustStartWith,
+        () => _loginError =
+            AppLocalizations.of(context)!.serverUrlMustStartWith,
       );
       return;
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final profileName = _profileNameController.text.trim();
-    final localUrl = _localServerController.text.trim();
+    // Only pass localUrl if it differs from serverUrl (avoids pointless
+    // LAN-probe when the user only configured a single address).
+    final effectiveLocalUrl =
+        (localUrl.isNotEmpty && localUrl != serverUrl) ? localUrl : null;
     final success = await authProvider.login(
       serverUrl: serverUrl,
-      localUrl: localUrl.isEmpty ? null : localUrl,
+      localUrl: effectiveLocalUrl,
       username: _usernameController.text.trim(),
       password: _passwordController.text,
       useLegacyAuth: _useLegacyAuth,
@@ -668,11 +692,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return AppLocalizations.of(context)!.pleaseEnterServerUrl;
-                      }
-                      final url = value.trim();
-                      if (!url.startsWith('http://') &&
+                      final url = (value ?? '').trim();
+                      if (url.isNotEmpty &&
+                          !url.startsWith('http://') &&
                           !url.startsWith('https://')) {
                         return AppLocalizations.of(context)!.invalidUrlFormat;
                       }

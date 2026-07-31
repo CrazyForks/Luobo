@@ -14,6 +14,7 @@ import '../services/netease_lyrics_service.dart';
 import '../models/lyrics.dart';
 import '../models/song.dart';
 import '../widgets/album_artwork.dart' show isLocalFilePath;
+import '../utils/image_cache.dart';
 
 class CarModeScreen extends StatefulWidget {
   const CarModeScreen({super.key});
@@ -594,7 +595,8 @@ class _CarModeScreenState extends State<CarModeScreen>
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: CachedNetworkImage(
-                          imageUrl: coverUrl,
+                              cacheManager: coverCacheManager,
+                              imageUrl: coverUrl,
                           width: 120,
                           height: 120,
                           fit: BoxFit.cover,

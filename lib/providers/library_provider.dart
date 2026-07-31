@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
+import '../utils/image_cache.dart';
 import '../services/services.dart';
 import '../services/local_music_service.dart';
 
@@ -619,7 +620,7 @@ class LibraryProvider extends ChangeNotifier {
         addCover(album.coverArt, 300);
       }
 
-      final cacheManager = DefaultCacheManager();
+      final cacheManager = coverCacheManager;
       const batchSize = 6;
       var ok = 0;
       var failed = 0;

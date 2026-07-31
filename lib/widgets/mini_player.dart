@@ -12,6 +12,7 @@ import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/screen_helper.dart';
+import '../services/subsonic_service.dart';
 import 'album_artwork.dart';
 
 class MiniPlayer extends StatelessWidget {
@@ -244,6 +245,7 @@ class _MiniPlayerRow extends StatelessWidget {
               ],
             ),
           ),
+          if (!isPlayingRadio) const _NetworkIndicatorIcon(),
           _MiniPlayerControls(isRadio: isPlayingRadio),
         ],
       ),
@@ -362,6 +364,47 @@ class _MiniPlayerControls extends StatelessWidget {
             );
           },
         );
+      },
+    );
+  }
+}
+
+/// Tappable network indicator in the mini player: green WiFi icon when the
+/// server is on the local network (LAN), orange when remote (WAN). Tapping
+/// shows the connection details.
+class _NetworkIndicatorIcon extends StatelessWidget {
+  const _NetworkIndicatorIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    final subsonicService =
+        Provider.of<SubsonicService>(context, listen: false);
+    final isLan = subsonicService.isUsingLocalUrl;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isLan
+        ? (isDark ? Colors.green.shade300 : Colors.green.shade700)
+        : (isDark ? Colors.orange.shade300 : Colors.orange.shade700);
+    final label = isLan ? '局域网' : '外网';
+    final url = subsonicService.activeBaseUrl;
+
+    return IconButton(
+      icon: Icon(
+        isLan ? Icons.wifi_rounded : Icons.public_rounded,
+        size: 18,
+        color: color,
+      ),
+      tooltip: '$label\n$url',
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      onPressed: () {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('$label：$url'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
       },
     );
   }

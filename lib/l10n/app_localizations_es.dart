@@ -2344,6 +2344,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String artistsCount(int count) {
+    return '$count Artists';
+  }
+
+  @override
   String get createPlaylistToStart => 'Create a playlist to get started';
 
   @override

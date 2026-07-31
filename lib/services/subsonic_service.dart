@@ -145,8 +145,21 @@ class SubsonicService {
 
   String get activeBaseUrl => _activeBaseUrl ?? _config?.normalizedUrl ?? '';
 
-  bool get isYoutube => _youtube != null;
+  /// Whether the active connection is using the LAN (local) URL rather than
+  /// the remote server URL.  Only meaningful when the user configured both
+  /// addresses.
+  bool get isUsingLocalUrl {
+    if (_config == null || _config!.normalizedLocalUrl == null) return false;
+    final base = _activeBaseUrl ?? _config!.normalizedUrl;
+    return base.isNotEmpty && base == _config!.normalizedLocalUrl;
+  }
 
+  /// Whether the current server config includes a LAN (local) URL.
+  bool get hasLocalUrl =>
+      _config?.normalizedLocalUrl != null &&
+      _config!.normalizedLocalUrl!.isNotEmpty;
+
+  bool get isYoutube => _youtube != null;
   bool get isJellyfin => _jellyfin != null;
 
   /// For YouTube songs, returns a pre-warmed [StreamAudioSource] that proxies

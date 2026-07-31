@@ -8,6 +8,7 @@ import '../screens/playlist_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/radio_screen.dart';
 import '../screens/settings_screen.dart';
+import '../utils/image_cache.dart';
 
 class DesktopNavigationSidebar extends StatefulWidget {
   final int selectedIndex;
@@ -681,7 +682,8 @@ class _ArtworkImage extends StatelessWidget {
       );
     }
     return CachedNetworkImage(
-      imageUrl: url!,
+                              cacheManager: coverCacheManager,
+                              imageUrl: url!,
       cacheKey: url,
       fit: BoxFit.cover,
       memCacheHeight: 200,

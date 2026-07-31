@@ -2239,6 +2239,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String artistsCount(int count) {
+    return '$count 位歌手';
+  }
+
+  @override
   String get createPlaylistToStart => '创建一个歌单开始吧';
 
   @override

@@ -2008,6 +2008,8 @@
   "@downloadingSongsInBackground": { "description": "开始后台下载时的提示", "placeholders": { "count": { "type": "int" } } },
   "songsCountWithDuration": "{count} 首歌曲 • {duration}",
   "@songsCountWithDuration": { "description": "歌单副标题：歌曲数与时长", "placeholders": { "count": { "type": "int" }, "duration": { "type": "String" } } },
+  "artistsCount": "{count} 位歌手",
+  "@artistsCount": { "description": "歌手数量", "placeholders": { "count": { "type": "int" } } },
   "createPlaylistToStart": "创建一个歌单开始吧",
   "@createPlaylistToStart": { "description": "歌单列表空状态提示" },
 

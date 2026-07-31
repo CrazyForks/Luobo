@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/image_cache.dart';
 import '../providers/library_provider.dart';
 import '../services/subsonic_service.dart';
 import '../services/bpm_analyzer_service.dart';
@@ -25,7 +26,6 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
 
   bool _imageCacheEnabled = true;
   bool _musicCacheEnabled = true;
-  bool _bpmCacheEnabled = true;
   final bool _isCaching = false;
   final int _currentProgress = 0;
   final int _totalSongs = 0;
@@ -69,7 +69,6 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     setState(() {
       _imageCacheEnabled = _cacheSettings.getImageCacheEnabled();
       _musicCacheEnabled = _cacheSettings.getMusicCacheEnabled();
-      _bpmCacheEnabled = _cacheSettings.getBpmCacheEnabled();
       _parallelDownloads = _offlineService.getParallelDownloadsCount();
       _keepScreenOn = _offlineService.getKeepScreenOn();
     });
@@ -98,7 +97,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
               icon: CupertinoIcons.photo,
               iconGradient: const [Color(0xFFFF3B30), Color(0xFFFF453A)],
               title: AppLocalizations.of(context)!.imageCacheTitle,
-              subtitle: AppLocalizations.of(context)!.imageCacheSubtitle,
+              subtitle: Text(AppLocalizations.of(context)!.imageCacheSubtitle),
               value: _imageCacheEnabled,
               onChanged: _toggleImageCache,
             ),
@@ -107,18 +106,9 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
               icon: CupertinoIcons.music_note,
               iconGradient: const [Color(0xFF34C759), Color(0xFF30D158)],
               title: AppLocalizations.of(context)!.musicCacheTitle,
-              subtitle: AppLocalizations.of(context)!.musicCacheSubtitle,
+              subtitle: Text(AppLocalizations.of(context)!.musicCacheSubtitle),
               value: _musicCacheEnabled,
               onChanged: _toggleMusicCache,
-            ),
-            _buildDivider(),
-            _buildCacheToggle(
-              icon: CupertinoIcons.speedometer,
-              iconGradient: const [Color(0xFF5856D6), Color(0xFF7B68EE)],
-              title: AppLocalizations.of(context)!.bpmCacheTitle,
-              subtitle: AppLocalizations.of(context)!.bpmCacheSubtitle,
-              value: _bpmCacheEnabled,
-              onChanged: _toggleBpmCache,
             ),
           ],
         ),
@@ -136,8 +126,6 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
             _buildKeepScreenOnTile(),
             _buildDivider(),
             _buildOfflineInfo(),
-            _buildDivider(),
-            _buildDownloadAllLibraryButton(),
             _buildDivider(),
             _buildDeleteDownloadsButton(),
           ],
@@ -209,7 +197,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     required IconData icon,
     required List<Color> iconGradient,
     required String title,
-    required String subtitle,
+    required Widget subtitle,
     required bool value,
     required Function(bool) onChanged,
   }) {
@@ -225,14 +213,14 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
         child: Icon(icon, color: Colors.white, size: 18),
       ),
       title: Text(title, style: const TextStyle(fontSize: 16)),
-      subtitle: Text(
-        subtitle,
+      subtitle: DefaultTextStyle(
         style: TextStyle(
           fontSize: 13,
           color: _isDark
               ? AppTheme.darkSecondaryText
               : AppTheme.lightSecondaryText,
         ),
+        child: subtitle,
       ),
       trailing: CupertinoSwitch(
         value: value,
@@ -245,7 +233,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
   void _toggleImageCache(bool value) async {
     setState(() => _imageCacheEnabled = value);
     await _cacheSettings.setImageCacheEnabled(value);
-    if (!value) await DefaultCacheManager().emptyCache();
+    if (!value) await coverCacheManager.emptyCache();
   }
 
   void _toggleMusicCache(bool value) async {
@@ -253,11 +241,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     await _cacheSettings.setMusicCacheEnabled(value);
   }
 
-  void _toggleBpmCache(bool value) async {
-    setState(() => _bpmCacheEnabled = value);
-    await _cacheSettings.setBpmCacheEnabled(value);
-    if (!value) await _bpmAnalyzer.clearCache();
-  }
+
 
   Widget _buildLocalMusicSection() {
     return Consumer<LocalMusicService>(
@@ -616,7 +600,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
   }
 
   void _clearAllCache() async {
-    await DefaultCacheManager().emptyCache();
+    await coverCacheManager.emptyCache();
     await _bpmAnalyzer.clearCache();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -660,200 +644,6 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
         ),
       ),
     );
-  }
-
-  Widget _buildDownloadAllLibraryButton() {
-    return ValueListenableBuilder<DownloadState>(
-      valueListenable: _offlineService.downloadState,
-      builder: (context, downloadState, _) {
-        final isDownloading = downloadState.isDownloading;
-        final progress = downloadState.totalCount > 0
-            ? downloadState.currentProgress / downloadState.totalCount
-            : 0.0;
-
-        if (isDownloading) {
-          return Column(
-            children: [
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
-                leading: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF34C759), Color(0xFF30D158)],
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    CupertinoIcons.arrow_down_circle_fill,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
-                title: Text(
-                  AppLocalizations.of(context)!.downloadingLibrary(
-                    downloadState.currentProgress,
-                    downloadState.totalCount,
-                  ),
-                  style: const TextStyle(fontSize: 16),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: () {
-                    _offlineService.cancelBackgroundDownload();
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: _isDark
-                      ? AppTheme.darkCard
-                      : AppTheme.lightDivider,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF34C759),
-                  ),
-                ),
-              ),
-            ],
-          );
-        }
-
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 4,
-          ),
-          leading: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF34C759), Color(0xFF30D158)],
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              CupertinoIcons.cloud_download,
-              color: Colors.white,
-              size: 18,
-            ),
-          ),
-          title: Text(
-            AppLocalizations.of(context)!.downloadAllLibrary,
-            style: const TextStyle(fontSize: 16, color: Color(0xFF34C759)),
-          ),
-          onTap: _downloadAllLibrary,
-        );
-      },
-    );
-  }
-
-  Future<void> _downloadAllLibrary() async {
-    try {
-      final libraryProvider = context.read<LibraryProvider>();
-      final subsonicService = context.read<SubsonicService>();
-
-      // Show loading indicator
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.loadingLibrary),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      }
-
-      await libraryProvider.ensureLibraryLoaded();
-
-      // If still empty, try to refresh from server with a small delay
-      if (libraryProvider.cachedAllSongs.isEmpty) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        // Force refresh by calling refresh method
-        await libraryProvider.refresh();
-      }
-
-      final allSongs = libraryProvider.cachedAllSongs;
-
-      if (allSongs.isEmpty) {
-        if (!mounted) return;
-        final retry = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(AppLocalizations.of(context)!.noSongsAvailable),
-            content: Text(
-              AppLocalizations.of(context)!.libraryEmptyOrFailed,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(AppLocalizations.of(context)!.cancel),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: Text(AppLocalizations.of(context)!.retry),
-              ),
-            ],
-          ),
-        );
-        if (retry == true) {
-          return _downloadAllLibrary();
-        }
-        return;
-      }
-
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(AppLocalizations.of(context)!.downloadAllLibrary),
-          content: Text(
-            AppLocalizations.of(
-              context,
-            )!.downloadLibraryConfirm(allSongs.length),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppLocalizations.of(context)!.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppLocalizations.of(context)!.download),
-            ),
-          ],
-        ),
-      );
-
-      if (confirm != true || !mounted) return;
-
-      await _offlineService.startBackgroundDownload(allSongs, subsonicService);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.libraryDownloadStarted),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        await _loadOfflineInfo();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.errorStartingDownload(e),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   Widget _buildDeleteDownloadsButton() {

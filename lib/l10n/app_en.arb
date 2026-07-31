@@ -2293,6 +2293,8 @@
   "@downloadingSongsInBackground": { "description": "Snackbar when download starts in background", "placeholders": { "count": { "type": "int" } } },
   "songsCountWithDuration": "{count} {count, plural, =1{song} other{songs}} • {duration}",
   "@songsCountWithDuration": { "description": "Playlist subtitle with song count and duration", "placeholders": { "count": { "type": "int" }, "duration": { "type": "String" } } },
+  "artistsCount": "{count} Artists",
+  "@artistsCount": { "description": "Artist count", "placeholders": { "count": { "type": "int" } } },
   "createPlaylistToStart": "Create a playlist to get started",
   "@createPlaylistToStart": { "description": "Empty state hint for playlists screen" },
 

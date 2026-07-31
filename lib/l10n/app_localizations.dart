@@ -4270,6 +4270,12 @@ abstract class AppLocalizations {
   /// **'{count} {count, plural, =1{song} other{songs}} • {duration}'**
   String songsCountWithDuration(int count, String duration);
 
+  /// Artist count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Artists'**
+  String artistsCount(int count);
+
   /// Empty state hint for playlists screen
   ///
   /// In en, this message translates to:

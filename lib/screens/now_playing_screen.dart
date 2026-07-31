@@ -21,6 +21,7 @@ import '../widgets/star_rating_widget.dart';
 import '../widgets/dolby_atmos_badge.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
+import '../utils/image_cache.dart';
 import '../utils/screen_helper.dart';
 import '../widgets/synced_lyrics_view.dart';
 import '../widgets/compact_lyrics_view.dart';
@@ -2001,7 +2002,8 @@ class _AlbumArtworkSectionState extends State<_AlbumArtworkSection>
                                   widget.thumbnailUrl != null &&
                                           widget.thumbnailUrl!.isNotEmpty
                                       ? CachedNetworkImage(
-                                          imageUrl: widget.thumbnailUrl!,
+                              cacheManager: coverCacheManager,
+                              imageUrl: widget.thumbnailUrl!,
                                           fit: BoxFit.contain,
                                           memCacheWidth: 200,
                                           fadeInDuration: Duration.zero,
@@ -2633,7 +2635,8 @@ class _SongInfoState extends State<_SongInfo> {
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: CachedNetworkImage(
-                                imageUrl: coverArtUrl,
+                              cacheManager: coverCacheManager,
+                              imageUrl: coverArtUrl,
                                 width: 50,
                                 height: 50,
                                 fit: BoxFit.cover,

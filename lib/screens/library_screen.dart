@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lpinyin/lpinyin.dart';
-import '../models/server_config.dart';
 import '../models/song.dart';
 import '../models/album.dart';
 import '../models/artist.dart';
@@ -13,8 +12,9 @@ import '../services/subsonic_service.dart';
 import '../services/local_music_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
+import '../utils/image_cache.dart';
 import 'album_screen.dart';
-import 'package:musly/screens/playlist_screen.dart';
+import 'package:luobo/screens/playlist_screen.dart';
 import 'favorites_screen.dart';
 import 'liked_albums_screen.dart';
 import 'playlists_screen.dart';
@@ -325,6 +325,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   groups.putIfAbsent(letter, () => []).add(a);
                 }
                 final letters = groups.keys.toList()..sort();
+                final l10n = AppLocalizations.of(context)!;
                 _letterIndexMap = {};
                 double offset = 0;
                 const headerH = 30.0;
@@ -363,8 +364,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                 spacing: 6,
                                 runSpacing: 6,
                                 children: groups[letter]!.map((a) {
-                                  final l10n =
-                                      AppLocalizations.of(context)!;
                                   return GestureDetector(
                                     onTap: () => _openItem(
                                       context,
@@ -388,7 +387,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                       ),
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             a.name,
@@ -400,8 +400,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                             ),
                                           ),
                                           Builder(builder: (ctx) {
-                                            final songCount = artistSongCounts[a.id];
-                                            if (songCount == null || songCount == 0) {
+                                            final songCount =
+                                                artistSongCounts[a.id];
+                                            if (songCount == null ||
+                                                songCount == 0) {
                                               return const SizedBox.shrink();
                                             }
                                             return Text(
@@ -729,7 +731,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         _buildPlaceholder(item.type, isDark),
                   )
                 : CachedNetworkImage(
-                    imageUrl: coverArtUrl,
+                              cacheManager: coverCacheManager,
+                              imageUrl: coverArtUrl,
                     fit: BoxFit.cover,
                     placeholder: (ctx, url) =>
                         Container(color: Colors.grey[800]),
@@ -1126,11 +1129,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   void _showSettings(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _SettingsSheet(),
-    );
+    NavigationHelper.push(context, const SettingsScreen());
   }
 }
 
@@ -1363,258 +1362,3 @@ class _SpotifyLibraryTile extends StatelessWidget {
   }
 }
 
-class _SettingsSheet extends StatelessWidget {
-  const _SettingsSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final authProvider = Provider.of<AuthProvider>(context);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkSurface : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 36,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
-                  borderRadius: BorderRadius.circular(2.5),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                AppLocalizations.of(context)!.settingsTitle,
-                style: theme.textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 24),
-              if (authProvider.config != null) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color:
-                          isDark ? AppTheme.darkCard : AppTheme.lightBackground,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          authProvider.state == AuthState.offlineMode
-                              ? CupertinoIcons.wifi_slash
-                              : CupertinoIcons.checkmark_circle_fill,
-                          color: authProvider.state == AuthState.offlineMode
-                              ? Colors.orange
-                              : Colors.green,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                authProvider.state == AuthState.offlineMode
-                                    ? AppLocalizations.of(context)!.offlineMode
-                                    : AppLocalizations.of(context)!.connected,
-                                style: theme.textTheme.titleMedium,
-                              ),
-                              Text(
-                                authProvider.config!.serverUrl,
-                                style: theme.textTheme.bodySmall,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        _buildSwitchServerButton(context),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              ListTile(
-                leading: Icon(
-                  CupertinoIcons.gear_alt,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-                title: Text(AppLocalizations.of(context)!.settingsTitle),
-                trailing: Icon(
-                  CupertinoIcons.chevron_forward,
-                  size: 18,
-                  color: isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  NavigationHelper.push(context, const SettingsScreen());
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  CupertinoIcons.arrow_right_square,
-                  color: Colors.red,
-                ),
-                title: Text(AppLocalizations.of(context)!.logout),
-                onTap: () async {
-                  final playerProvider = Provider.of<PlayerProvider>(
-                    context,
-                    listen: false,
-                  );
-                  Navigator.pop(context);
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: Text(AppLocalizations.of(context)!.logout),
-                      content: Text(
-                        AppLocalizations.of(context)!.logoutConfirmation,
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: Text(AppLocalizations.of(context)!.cancel),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: Text(
-                            AppLocalizations.of(context)!.logout,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed == true) {
-                    await playerProvider.stop();
-                    await authProvider.logout();
-                  }
-                },
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSwitchServerButton(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final l10n = AppLocalizations.of(context)!;
-
-    return FutureBuilder<List<ServerConfig>>(
-      future: authProvider.getSavedProfiles(),
-      builder: (context, snapshot) {
-        final profiles = snapshot.data ?? [];
-        if (profiles.length < 2) return const SizedBox.shrink();
-
-        return IconButton(
-          onPressed: () => _showSwitchServerDialog(context),
-          icon: Icon(
-            CupertinoIcons.arrow_right_arrow_left,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : Colors.black87,
-          ),
-          tooltip: l10n.switchServer,
-        );
-      },
-    );
-  }
-
-  void _showSwitchServerDialog(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final l10n = AppLocalizations.of(context)!;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(ctx).brightness == Brightness.dark
-              ? AppTheme.darkSurface
-              : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 36,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Theme.of(ctx).brightness == Brightness.dark
-                      ? AppTheme.darkDivider
-                      : AppTheme.lightDivider,
-                  borderRadius: BorderRadius.circular(2.5),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.switchServer,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              FutureBuilder<List<ServerConfig>>(
-                future: authProvider.getSavedProfiles(),
-                builder: (context, snapshot) {
-                  final profiles = snapshot.data ?? [];
-                  final currentConfig = authProvider.config;
-                  final otherProfiles = profiles
-                      .where(
-                        (p) =>
-                            p.serverUrl != currentConfig?.serverUrl ||
-                            p.username != currentConfig?.username,
-                      )
-                      .toList();
-
-                  return Column(
-                    children: otherProfiles.map((profile) {
-                      final label = profile.name?.isNotEmpty == true
-                          ? profile.name!
-                          : '${profile.username}@${Uri.tryParse(profile.serverUrl)?.host ?? profile.serverUrl}';
-                      return ListTile(
-                        leading: const Icon(CupertinoIcons.person_crop_circle),
-                        title: Text(label),
-                        subtitle: Text(
-                          profile.serverUrl,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        onTap: () async {
-                          Navigator.pop(ctx);
-                          final playerProvider = Provider.of<PlayerProvider>(
-                              context,
-                              listen: false);
-                          await playerProvider.stop();
-                          await authProvider.switchProfile(profile);
-                        },
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

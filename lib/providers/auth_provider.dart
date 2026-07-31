@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/server_config.dart';
+import '../utils/image_cache.dart';
 import '../services/services.dart';
 
 enum AuthState {
@@ -352,7 +353,7 @@ class AuthProvider extends ChangeNotifier {
     }
 
     try {
-      await DefaultCacheManager().emptyCache();
+      await coverCacheManager.emptyCache();
     } catch (_) {}
     try {
       await BpmAnalyzerService().clearCache();

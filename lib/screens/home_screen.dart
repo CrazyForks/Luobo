@@ -9,6 +9,7 @@ import '../services/subsonic_service.dart';
 import '../services/recommendation_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
+import '../utils/image_cache.dart';
 import '../widgets/widgets.dart';
 import 'album_screen.dart';
 import 'playlist_screen.dart';
@@ -900,7 +901,8 @@ class _QuickAccessTileState extends State<_QuickAccessTile> {
                                 ),
                               )
                             : CachedNetworkImage(
-                                imageUrl: widget.imageUrl!,
+                              cacheManager: coverCacheManager,
+                              imageUrl: widget.imageUrl!,
                                 fit: BoxFit.cover,
                                 placeholder: (ctx, e) =>
                                     Container(color: Colors.grey[800]),
@@ -987,7 +989,8 @@ class _PlaylistCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: coverArtUrl != null
                     ? CachedNetworkImage(
-                        imageUrl: coverArtUrl,
+                              cacheManager: coverCacheManager,
+                              imageUrl: coverArtUrl,
                         fit: BoxFit.cover,
                         placeholder: (ctx, url) => Container(
                           color: isDark
@@ -1229,7 +1232,8 @@ class _DesktopSongRowState extends State<_DesktopSongRow> {
                   height: 40,
                   child: song.coverArt != null
                       ? CachedNetworkImage(
-                          imageUrl: subsonicService.getCoverArtUrl(
+                              cacheManager: coverCacheManager,
+                              imageUrl: subsonicService.getCoverArtUrl(
                             song.coverArt!,
                             size: 80,
                           ),

@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../services/subsonic_service.dart';
 import '../services/player_ui_settings_service.dart';
+import '../utils/image_cache.dart';
 
 bool isLocalFilePath(String? s) {
   if (s == null || s.isEmpty) return false;
@@ -191,7 +192,8 @@ class AlbumArtwork extends StatelessWidget {
         );
         if (imageUrl.isEmpty) return _buildPlaceholder(isDark);
         return CachedNetworkImage(
-          imageUrl: imageUrl,
+                              cacheManager: coverCacheManager,
+                              imageUrl: imageUrl,
           cacheKey: '${coverArt}_natural_$cacheSize',
           key: ValueKey('${coverArt}_natural_$cacheSize'),
           fit: BoxFit.contain,
@@ -234,7 +236,8 @@ class AlbumArtwork extends StatelessWidget {
         );
         if (imageUrl.isEmpty) return _buildPlaceholder(isDark);
         return CachedNetworkImage(
-          imageUrl: imageUrl,
+                              cacheManager: coverCacheManager,
+                              imageUrl: imageUrl,
           cacheKey: '${coverArt}_$cacheSize',
           key: ValueKey('${coverArt}_$cacheSize'),
           fit: BoxFit.cover,

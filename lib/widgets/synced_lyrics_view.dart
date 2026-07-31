@@ -20,6 +20,7 @@ import '../services/netease_lyrics_service.dart';
 import '../services/storage_service.dart';
 import 'album_artwork.dart' show isLocalFilePath;
 import '../l10n/app_localizations.dart';
+import '../utils/image_cache.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Apple Music-like Lyrics Controller (inspired by AMLL)
@@ -657,7 +658,8 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
                                     Container(color: Colors.grey[900]),
                               )
                             : CachedNetworkImage(
-                                imageUrl: imageUrl,
+                              cacheManager: coverCacheManager,
+                              imageUrl: imageUrl,
                                 fit: BoxFit.cover,
                                 memCacheWidth: 1200,
                                 memCacheHeight: 1200,
@@ -866,7 +868,8 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
                     Container(color: Colors.black),
               )
             : CachedNetworkImage(
-                imageUrl: imageUrl,
+                              cacheManager: coverCacheManager,
+                              imageUrl: imageUrl,
                 fit: BoxFit.cover,
                 memCacheWidth: 1200,
                 memCacheHeight: 1200,

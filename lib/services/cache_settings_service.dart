@@ -1,9 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Toggles for image and music caching. BPM caching is intentionally
+/// always enabled (it consumes negligible space in SharedPreferences).
 class CacheSettingsService {
   static const String _keyImageCacheEnabled = 'cache_images_enabled';
   static const String _keyMusicCacheEnabled = 'cache_music_enabled';
-  static const String _keyBpmCacheEnabled = 'cache_bpm_enabled';
 
   static final CacheSettingsService _instance =
       CacheSettingsService._internal();
@@ -32,42 +33,5 @@ class CacheSettingsService {
 
   bool getMusicCacheEnabled() {
     return _prefs?.getBool(_keyMusicCacheEnabled) ?? true;
-  }
-
-  Future<void> setBpmCacheEnabled(bool enabled) async {
-    await initialize();
-    await _prefs!.setBool(_keyBpmCacheEnabled, enabled);
-  }
-
-  bool getBpmCacheEnabled() {
-    return _prefs?.getBool(_keyBpmCacheEnabled) ?? true;
-  }
-
-  Future<void> disableAllCaches() async {
-    await Future.wait([
-      setImageCacheEnabled(false),
-      setMusicCacheEnabled(false),
-      setBpmCacheEnabled(false),
-    ]);
-  }
-
-  Future<void> enableAllCaches() async {
-    await Future.wait([
-      setImageCacheEnabled(true),
-      setMusicCacheEnabled(true),
-      setBpmCacheEnabled(true),
-    ]);
-  }
-
-  bool areAllCachesDisabled() {
-    return !getImageCacheEnabled() &&
-        !getMusicCacheEnabled() &&
-        !getBpmCacheEnabled();
-  }
-
-  bool areAllCachesEnabled() {
-    return getImageCacheEnabled() &&
-        getMusicCacheEnabled() &&
-        getBpmCacheEnabled();
   }
 }

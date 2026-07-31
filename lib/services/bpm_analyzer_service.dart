@@ -30,18 +30,16 @@ class BpmAnalyzerService {
       await initialize();
     }
 
-    if (_cacheSettings.getBpmCacheEnabled()) {
-      final cachedBPM = _getCachedBPM(song.id);
-      if (cachedBPM != null) {
-        return cachedBPM;
-      }
+    // BPM values are tiny (a few bytes per song in SharedPreferences) so the
+    // cache is always enabled.
+    final cachedBPM = _getCachedBPM(song.id);
+    if (cachedBPM != null) {
+      return cachedBPM;
     }
 
     final estimatedBPM = _estimateBPMFromGenre(song);
 
-    if (_cacheSettings.getBpmCacheEnabled()) {
-      await _cacheBPM(song.id, estimatedBPM);
-    }
+    await _cacheBPM(song.id, estimatedBPM);
 
     return estimatedBPM;
   }
