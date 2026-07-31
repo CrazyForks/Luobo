@@ -35,7 +35,7 @@ class LibraryScreen extends StatefulWidget {
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
-  String _selectedFilter = 'Faves';
+  String _selectedFilter = 'Artists';
   double _swipeDelta = 0;
 
   // Artists tab scrubber
@@ -90,9 +90,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final libraryProvider =
         Provider.of<LibraryProvider>(context, listen: false);
     if (libraryProvider.isLocalOnlyMode) {
-      return ['Faves', 'Albums', 'Artists', 'Songs', 'Genres', 'Years'];
+      return ['Artists', 'Albums', 'Songs', 'Faves', 'Genres', 'Years'];
     }
-    return ['Faves', 'Albums', 'Artists', 'Songs'];
+    return ['Artists', 'Albums', 'Songs', 'Faves'];
   }
 
   @override
@@ -112,7 +112,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           final distance = _swipeDelta.abs();
           _swipeDelta = 0;
           // Require both enough distance AND speed to avoid accidental triggers
-          if (distance < 50 || velocity.abs() < 500) return;
+          if (distance < 30 || velocity.abs() < 300) return;
           if (velocity < 0 && idx < filters.length - 1) {
             setState(() => _selectedFilter = filters[idx + 1]);
           } else if (velocity > 0 && idx > 0) {
@@ -311,6 +311,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 }
                 final isDark =
                     Theme.of(context).brightness == Brightness.dark;
+                // Compute song counts per artist from the local cache
+                final artistSongCounts = <String, int>{};
+                for (final s in libraryProvider.cachedAllSongs) {
+                  final aid = s.artistId;
+                  if (aid != null && aid.isNotEmpty) {
+                    artistSongCounts[aid] = (artistSongCounts[aid] ?? 0) + 1;
+                  }
+                }
                 final groups = <String, List<Artist>>{};
                 for (final a in artists) {
                   final letter = _firstLetter(a.name);
@@ -355,6 +363,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                 spacing: 6,
                                 runSpacing: 6,
                                 children: groups[letter]!.map((a) {
+                                  final l10n =
+                                      AppLocalizations.of(context)!;
                                   return GestureDetector(
                                     onTap: () => _openItem(
                                       context,
@@ -376,14 +386,35 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                             : Colors.black.withValues(alpha: 0.06),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: Text(
-                                        a.name,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: isDark
-                                              ? Colors.white
-                                              : Colors.black87,
-                                        ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            a.name,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black87,
+                                            ),
+                                          ),
+                                          Builder(builder: (ctx) {
+                                            final songCount = artistSongCounts[a.id];
+                                            if (songCount == null || songCount == 0) {
+                                              return const SizedBox.shrink();
+                                            }
+                                            return Text(
+                                              l10n.songsCount(songCount),
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: isDark
+                                                    ? Colors.white60
+                                                    : Colors.black45,
+                                              ),
+                                            );
+                                          }),
+                                        ],
                                       ),
                                     ),
                                   );
