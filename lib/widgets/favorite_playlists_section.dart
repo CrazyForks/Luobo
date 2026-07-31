@@ -111,6 +111,7 @@ class _PlaylistCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return GestureDetector(
       onTap: onTap,
@@ -178,7 +179,8 @@ class _PlaylistCard extends StatelessWidget {
             // Song count
             if (playlist.songCount != null)
               Text(
-                '${playlist.songCount} ${playlist.songCount == 1 ? 'song' : 'songs'}',
+                l10n?.songsCount(playlist.songCount!) ??
+                    '${playlist.songCount} songs',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: isDark
                       ? AppTheme.darkSecondaryText

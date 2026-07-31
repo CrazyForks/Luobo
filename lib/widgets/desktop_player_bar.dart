@@ -208,7 +208,7 @@ class _DesktopPlayerBarState extends State<DesktopPlayerBar> {
                       icon:
                           Icon(Icons.stop_rounded, size: 26, color: iconColor),
                       onPressed: provider.stop,
-                      tooltip: 'Stop',
+                      tooltip: AppLocalizations.of(context)!.stop,
                     ),
                   ],
                 );

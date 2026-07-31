@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:dart_eval/dart_eval.dart';
-import 'package:dart_eval/stdlib/core.dart';
 import '../models/now_playing_theme.dart';
+import '../l10n/app_localizations.dart';
 
 /// A widget that executes custom Dart code from themes using dart_eval
 /// in a sandboxed environment with limited permissions.
@@ -64,10 +63,7 @@ class _CustomWidgetRunnerState extends State<CustomWidgetRunner> {
       // with Flutter bridge bindings, which is beyond the scope of this basic impl.
       
       setState(() {
-        _compiledWidget = _buildPlaceholder(
-          'Custom Widget: ${widget.customWidget.name}',
-          Colors.purple.withOpacity(0.1),
-        );
+        _compiledWidget = null;
         _isCompiling = false;
       });
 
@@ -81,7 +77,7 @@ class _CustomWidgetRunnerState extends State<CustomWidgetRunner> {
       
     } catch (e) {
       setState(() {
-        _error = 'Custom widget error: ${e.toString()}';
+        _error = e.toString();
         _isCompiling = false;
       });
     }
@@ -122,6 +118,7 @@ class _CustomWidgetRunnerState extends State<CustomWidgetRunner> {
   }
 
   Widget _buildError() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(8),
@@ -141,7 +138,9 @@ class _CustomWidgetRunnerState extends State<CustomWidgetRunner> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              _error ?? 'Unknown error',
+              _error == null
+                  ? l10n.unknownError
+                  : l10n.customWidgetError(_error!),
               style: const TextStyle(
                 color: Colors.red,
                 fontSize: 11,
@@ -157,9 +156,10 @@ class _CustomWidgetRunnerState extends State<CustomWidgetRunner> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (widget.safeMode) {
       return _buildPlaceholder(
-        'Safe Mode: ${widget.customWidget.name} disabled',
+        l10n.safeModeDisabledLabel(widget.customWidget.name),
         Colors.orange.withOpacity(0.1),
       );
     }
@@ -182,7 +182,7 @@ class _CustomWidgetRunnerState extends State<CustomWidgetRunner> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Compiling...',
+              l10n.compiling,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.7),
                 fontSize: 12,
@@ -197,7 +197,13 @@ class _CustomWidgetRunnerState extends State<CustomWidgetRunner> {
       return _buildError();
     }
 
-    return _compiledWidget ?? const SizedBox.shrink();
+    return _compiledWidget ??
+        _buildPlaceholder(
+          AppLocalizations.of(context)!.customWidgetLabel(
+            widget.customWidget.name,
+          ),
+          Colors.purple.withOpacity(0.1),
+        );
   }
 }
 

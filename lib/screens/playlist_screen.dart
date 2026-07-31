@@ -78,6 +78,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
       context,
       listen: false,
     );
+    final l10n = AppLocalizations.of(context)!;
     try {
       await subsonicService.updatePlaylist(
         playlistId: widget.playlistId,
@@ -93,9 +94,9 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Song removed from playlist'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(l10n.songRemovedFromPlaylist),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -103,7 +104,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error removing song: $e'),
+            content: Text(l10n.errorRemovingSong(e)),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -134,6 +135,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
       context,
       listen: false,
     );
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() {
       final updatedSongs = List<Song>.from(_playlist!.songs!);
@@ -154,7 +156,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error reordering song: $e'),
+            content: Text(l10n.errorReorderingSong(e)),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -187,22 +189,23 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
   Future<void> _removeSelected() async {
     if (_selectedIndices.isEmpty) return;
     final count = _selectedIndices.length;
+    final l10n = AppLocalizations.of(context)!;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove songs'),
+        title: Text(l10n.removeSongs),
         content: Text(
-          'Remove $count ${count == 1 ? 'song' : 'songs'} from this playlist?',
+          l10n.removeSongsConfirm(count),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+            child: Text(l10n.remove, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -240,7 +243,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '$count ${count == 1 ? 'song' : 'songs'} removed from playlist',
+              l10n.songsRemovedFromPlaylist(count),
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -250,7 +253,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error removing songs: $e'),
+            content: Text(l10n.errorRemovingSongs(e)),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -262,12 +265,13 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     if (_playlist == null) return;
     await FavoritePlaylistsService().toggleFavorite(widget.playlistId);
     if (mounted) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             FavoritePlaylistsService().isFavorite(widget.playlistId)
-                ? 'Added to favorites'
-                : 'Removed from favorites',
+                ? l10n.addedToFavorites
+                : l10n.removedFromFavorites,
           ),
           duration: const Duration(seconds: 2),
         ),
@@ -285,6 +289,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     );
     final offlineService = OfflineService();
     await offlineService.initialize();
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() => _isDownloading = true);
 
@@ -294,7 +299,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Downloaded ${songs.length} songs from ${_playlist!.name}',
+              l10n.downloadedSongsFrom(songs.length, _playlist!.name),
             ),
             duration: const Duration(seconds: 3),
           ),
@@ -305,7 +310,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Downloading ${songs.length} songs in background…'),
+          content: Text(l10n.downloadingSongsInBackground(songs.length)),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -316,6 +321,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     if (_isLoading) {
       return Scaffold(
@@ -330,7 +336,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     if (_playlist == null) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('Playlist not found')),
+        body: Center(child: Text(l10n.playlistNotFound)),
       );
     }
 
@@ -340,14 +346,14 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     if (_isReordering) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Reorder Songs'),
+          title: Text(l10n.reorderSongs),
           leading: IconButton(
             icon: const Icon(CupertinoIcons.xmark),
             onPressed: _toggleReorderMode,
           ),
           actions: [
             IconButton(
-              tooltip: 'Done reordering',
+              tooltip: l10n.doneReordering,
               icon: const Icon(CupertinoIcons.checkmark),
               onPressed: _toggleReorderMode,
             ),
@@ -388,7 +394,10 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_playlist!.songs?.length ?? 0} songs • ${_playlist!.formattedDuration}',
+                    l10n.songsCountWithDuration(
+                      _playlist!.songs?.length ?? 0,
+                      _playlist!.formattedDuration,
+                    ),
                     style: theme.textTheme.bodySmall,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -514,8 +523,8 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                 IconButton(
                   tooltip:
                       _selectedIndices.length == (_playlist?.songs?.length ?? 0)
-                          ? 'Deselect all'
-                          : 'Select all',
+                          ? l10n.deselectAll
+                          : l10n.selectAll,
                   icon: Icon(
                     _selectedIndices.length == (_playlist?.songs?.length ?? 0)
                         ? CupertinoIcons.checkmark_square
@@ -524,7 +533,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                   onPressed: _toggleSelectAll,
                 ),
                 IconButton(
-                  tooltip: 'Remove selected',
+                  tooltip: l10n.removeSelected,
                   icon: const Icon(CupertinoIcons.trash),
                   color: _selectedIndices.isNotEmpty ? Colors.red : null,
                   onPressed:
@@ -538,8 +547,8 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                         .isFavorite(widget.playlistId);
                     return IconButton(
                       tooltip: isFavorite
-                          ? 'Remove from favorites'
-                          : 'Add to favorites',
+                          ? l10n.removeFromFavorites
+                          : l10n.addToFavorites,
                       icon: Icon(
                         isFavorite
                             ? CupertinoIcons.heart_fill
@@ -551,7 +560,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                   },
                 ),
                 IconButton(
-                  tooltip: 'Reorder songs',
+                  tooltip: l10n.reorderSongs,
                   icon: const Icon(CupertinoIcons.arrow_up_arrow_down),
                   onPressed:
                       _playlist!.songs != null && _playlist!.songs!.length > 1
@@ -559,13 +568,13 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                           : null,
                 ),
                 IconButton(
-                  tooltip: 'Select songs',
+                  tooltip: l10n.selectSongs,
                   icon: const Icon(CupertinoIcons.checkmark_circle),
                   onPressed: _toggleSelectMode,
                 ),
                 if (!isOffline)
                   IconButton(
-                    tooltip: 'Download playlist',
+                    tooltip: l10n.downloadPlaylist,
                     onPressed: _isDownloading ? null : _downloadPlaylist,
                     icon: _isDownloading
                         ? const SizedBox(
@@ -593,7 +602,10 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_playlist!.songs?.length ?? 0} songs • ${_playlist!.formattedDuration}',
+                    l10n.songsCountWithDuration(
+                      _playlist!.songs?.length ?? 0,
+                      _playlist!.formattedDuration,
+                    ),
                     style: theme.textTheme.bodySmall,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -630,7 +642,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 40),
                   child: Text(
-                    'No songs in this playlist',
+                    l10n.noSongsInPlaylist,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: AppTheme.lightSecondaryText,
                     ),
@@ -667,7 +679,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                     secondary: IconButton(
                       icon: const Icon(CupertinoIcons.trash, size: 20),
                       color: Colors.red,
-                      tooltip: 'Remove from playlist',
+                      tooltip: l10n.removeFromPlaylist,
                       onPressed: () async {
                         setState(() => _selectedIndices.remove(index));
                         await _removeSongFromPlaylist(index);
@@ -709,14 +721,14 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                       return await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('Remove from playlist'),
+                              title: Text(l10n.removeFromPlaylist),
                               content: Text(
-                                'Remove "${song.title}" from this playlist?',
+                                l10n.removeSongFromPlaylistConfirm(song.title),
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Cancel'),
+                                  child: Text(l10n.cancel),
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx, true),

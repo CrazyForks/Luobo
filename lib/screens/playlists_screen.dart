@@ -5,6 +5,7 @@ import '../models/models.dart';
 import '../providers/providers.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
+import '../l10n/app_localizations.dart';
 import 'playlist_screen.dart';
 import 'ai_playlist_screen.dart';
 
@@ -15,10 +16,11 @@ class PlaylistsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final libraryProvider = Provider.of<LibraryProvider>(context);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Playlists'),
+        title: Text(l10n.playlists),
         actions: [
           IconButton(
             icon: const Icon(Icons.auto_awesome),
@@ -45,10 +47,10 @@ class PlaylistsScreen extends StatelessWidget {
                     color: AppTheme.lightSecondaryText,
                   ),
                   const SizedBox(height: 16),
-                  Text('No Playlists', style: theme.textTheme.headlineMedium),
+                  Text(l10n.noPlaylists, style: theme.textTheme.headlineMedium),
                   const SizedBox(height: 8),
                   Text(
-                    'Create a playlist to get started',
+                    l10n.createPlaylistToStart,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: AppTheme.lightSecondaryText,
                     ),
@@ -57,7 +59,7 @@ class PlaylistsScreen extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: () => _showCreatePlaylistDialog(context),
                     icon: const Icon(CupertinoIcons.add),
-                    label: const Text('New Playlist'),
+                    label: Text(l10n.newPlaylist),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.appleMusicRed,
                       foregroundColor: Colors.white,
@@ -99,16 +101,18 @@ class PlaylistsScreen extends StatelessWidget {
     await showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('New Playlist'),
+        title: Text(AppLocalizations.of(dialogContext)!.newPlaylist),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'Playlist name'),
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(dialogContext)!.playlistName,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(dialogContext)!.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -123,7 +127,7 @@ class PlaylistsScreen extends StatelessWidget {
                 }
               }
             },
-            child: const Text('Create'),
+            child: Text(AppLocalizations.of(dialogContext)!.create),
           ),
         ],
       ),
@@ -162,7 +166,7 @@ class PlaylistsScreen extends StatelessWidget {
               const SizedBox(height: 16),
               ListTile(
                 leading: const Icon(CupertinoIcons.trash, color: Colors.red),
-                title: const Text('Delete Playlist'),
+                title: Text(AppLocalizations.of(context)!.deletePlaylist),
                 onTap: () async {
                   Navigator.pop(context);
                   await libraryProvider.deletePlaylist(playlist.id);
@@ -216,7 +220,10 @@ class _PlaylistTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        '${playlist.songCount ?? 0} songs',
+        AppLocalizations.of(
+          context,
+        )!
+            .songsCount(playlist.songCount ?? 0),
         style: theme.textTheme.bodySmall,
       ),
       trailing: const Icon(

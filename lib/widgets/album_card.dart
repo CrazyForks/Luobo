@@ -78,24 +78,36 @@ class _AlbumCardState extends State<AlbumCard> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                widget.album.name,
-                style: theme.textTheme.bodyMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (widget.album.artist != null ||
-                  widget.album.artistParticipants != null)
-                MultiArtistWidget(
-                  artists: widget.album.artistParticipants,
-                  artistFallback: widget.album.artist,
-                  artistIdFallback: widget.album.artistId,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: isDark
-                        ? AppTheme.darkSecondaryText
-                        : AppTheme.lightSecondaryText,
-                  ),
+              // Flexible so the text block shrinks (with ellipsis) instead of
+              // overflowing the grid cell when the cell is 1-2 px too short.
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.album.name,
+                      style: theme.textTheme.bodyMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (widget.album.artist != null ||
+                        widget.album.artistParticipants != null)
+                      Flexible(
+                        child: MultiArtistWidget(
+                          artists: widget.album.artistParticipants,
+                          artistFallback: widget.album.artist,
+                          artistIdFallback: widget.album.artistId,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isDark
+                                ? AppTheme.darkSecondaryText
+                                : AppTheme.lightSecondaryText,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+              ),
             ],
           ),
         ),

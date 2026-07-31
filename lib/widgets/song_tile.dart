@@ -268,6 +268,7 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final playerProvider = Provider.of<PlayerProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       decoration: BoxDecoration(
@@ -329,8 +330,8 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
                           ? CupertinoIcons.heart_fill
                           : CupertinoIcons.heart,
                       title: _isStarred
-                          ? 'Remove from Liked Songs'
-                          : 'Add to Liked Songs',
+                          ? l10n.removeFromLikedSongs
+                          : l10n.addToLikedSongs,
                       iconColor: _isStarred
                           ? Theme.of(context).colorScheme.primary
                           : null,
@@ -343,7 +344,7 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
                     ),
                     _OptionTile(
                       icon: Icons.play_arrow_rounded,
-                      title: 'Play Next',
+                      title: l10n.playNext,
                       onTap: () {
                         playerProvider.addToQueueNext(widget.song);
                         Navigator.pop(context);
@@ -351,7 +352,7 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
                     ),
                     _OptionTile(
                       icon: Icons.queue_music_rounded,
-                      title: 'Add to Queue',
+                      title: l10n.addToQueue,
                       onTap: () {
                         playerProvider.addToQueue(widget.song);
                         Navigator.pop(context);
@@ -412,7 +413,7 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
                     ),
                     _OptionTile(
                       icon: Icons.album_rounded,
-                      title: 'Go to Album',
+                      title: l10n.goToAlbum,
                       onTap: () {
                         Navigator.pop(context);
                         if (widget.song.albumId != null) {
@@ -428,7 +429,7 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
                     ),
                     _OptionTile(
                       icon: Icons.person_rounded,
-                      title: 'Go to Artist',
+                      title: l10n.goToArtist,
                       onTap: () {
                         final nav = Navigator.of(context);
                         nav.pop();
@@ -521,7 +522,7 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
 
     return _OptionTile(
       icon: Icons.download_rounded,
-      title: 'Download',
+      title: AppLocalizations.of(context)!.download,
       onTap: () => _downloadSong(context),
     );
   }
@@ -591,11 +592,12 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
 
   Widget _buildRatingTile(BuildContext context) {
     final rating = widget.song.userRating ?? 0;
+    final l10n = AppLocalizations.of(context)!;
     return _OptionTile(
       icon: Icons.star_rounded,
       title: rating > 0
-          ? 'Rate Song ($rating ${rating == 1 ? "star" : "stars"})'
-          : 'Rate Song',
+          ? l10n.rateSongWithRating(rating)
+          : l10n.rateSong,
       iconColor: rating > 0 ? Colors.amber : null,
       onTap: () => _showRatingDialog(context),
     );
@@ -677,8 +679,8 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
           SnackBar(
             content: Text(
               rating > 0
-                  ? 'Rated $rating ${rating == 1 ? "star" : "stars"}'
-                  : 'Rating removed',
+                  ? l10n.songRated(rating)
+                  : l10n.ratingRemoved,
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -835,7 +837,12 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
                 (playlist) => ListTile(
                   leading: const Icon(Icons.queue_music_rounded),
                   title: Text(playlist.name),
-                  subtitle: Text('${playlist.songCount ?? 0} songs'),
+                  subtitle: Text(
+                    AppLocalizations.of(
+                      context,
+                    )!
+                        .songsCount(playlist.songCount ?? 0),
+                  ),
                   onTap: () async {
                     Navigator.pop(context);
 
@@ -873,7 +880,10 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Added "${song.title}" to ${playlist.name}',
+                                  l10n.addedToPlaylist(
+                                    song.title,
+                                    playlist.name,
+                                  ),
                                 ),
                               ),
                             ],

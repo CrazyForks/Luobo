@@ -114,7 +114,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
         ),
         const SizedBox(height: 24),
         _buildSection(
-          title: 'NOW PLAYING THEMES',
+          title: AppLocalizations.of(context)!.nowPlayingThemesTitle.toUpperCase(),
           children: [
             _buildNowPlayingThemesButton(),
           ],

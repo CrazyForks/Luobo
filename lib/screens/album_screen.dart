@@ -92,6 +92,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
     );
     final offlineService = OfflineService();
     await offlineService.initialize();
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() => _isDownloading = true);
 
@@ -101,7 +102,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Downloaded ${_songs.length} songs from ${_album!.name}',
+              l10n.downloadedSongsFrom(_songs.length, _album!.name),
             ),
             duration: const Duration(seconds: 3),
           ),
@@ -112,7 +113,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Downloading ${_songs.length} songs in background…'),
+          content: Text(l10n.downloadingSongsInBackground(_songs.length)),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -247,7 +248,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                 actions: [
                   if (!isOffline)
                     IconButton(
-                      tooltip: 'Download album',
+                      tooltip: AppLocalizations.of(context)!.downloadAlbum,
                       onPressed: _isDownloading ? null : _downloadAlbum,
                       icon: _isDownloading
                           ? const SizedBox(
@@ -294,9 +295,13 @@ class _AlbumScreenState extends State<AlbumScreen> {
                             _album!.genre!.toUpperCase(),
                           if (_album!.year != null) _album!.year.toString(),
                           if (hours > 0)
-                            '$hours HR $minutes MIN'
+                            AppLocalizations.of(
+                              context,
+                            )!
+                                .durationHoursMinutes(hours, minutes)
                           else
-                            '$minutes MIN',
+                            AppLocalizations.of(context)!
+                                .durationMinutesOnly(minutes),
                         ].join(' • '),
                         style: theme.textTheme.bodySmall,
                         textAlign: TextAlign.center,

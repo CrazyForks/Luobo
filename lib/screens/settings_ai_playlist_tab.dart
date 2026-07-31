@@ -1,0 +1,807 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import '../l10n/app_localizations.dart';
+import '../providers/library_provider.dart';
+import '../services/ai_playlist_service.dart';
+import '../services/song_knowledge_cache.dart';
+import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
+
+class SettingsAiPlaylistTab extends StatefulWidget {
+  const SettingsAiPlaylistTab({super.key});
+
+  @override
+  State<SettingsAiPlaylistTab> createState() => _SettingsAiPlaylistTabState();
+}
+
+class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
+  String _aiApiKey = '';
+  String _aiBaseUrl = 'https://api.deepseek.com';
+  String _aiModel = 'deepseek-v4-flash';
+  int _knowledgeCached = 0;
+  int _knowledgeTotal = 0;
+  DateTime? _knowledgeLastUpdate;
+  bool _isGeneratingKnowledge = false;
+  double _knowledgeProgress = 0;
+  bool _isExporting = false;
+  bool _isImporting = false;
+
+  AiPlaylistService? _aiServiceInstance;
+
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final storageService = StorageService();
+    final aiApiKey = await storageService.getDeepSeekApiKey() ?? '';
+    final aiBaseUrl = await storageService.getAiBaseUrl();
+    final aiModel = await storageService.getAiModel();
+
+    final knowledgeCache = SongKnowledgeCache();
+    await knowledgeCache.initialize();
+    final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+    final totalSongs = libraryProvider.cachedAllSongs.length;
+    final stats = knowledgeCache.getCacheStats(totalSongs);
+
+    if (!mounted) return;
+    setState(() {
+      _aiApiKey = aiApiKey;
+      _aiBaseUrl = aiBaseUrl;
+      _aiModel = aiModel;
+      _knowledgeCached = stats['cached'] as int;
+      _knowledgeTotal = stats['total'] as int;
+      final lastUpdate = stats['lastUpdate'] as String?;
+      _knowledgeLastUpdate =
+          lastUpdate != null ? DateTime.tryParse(lastUpdate) : null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      children: [
+        _buildConnectionSection(),
+        const SizedBox(height: 24),
+        _buildKnowledgeSection(),
+        const SizedBox(height: 24),
+        _buildExplanationSection(),
+      ],
+    );
+  }
+
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: _isDark
+                  ? AppTheme.darkSecondaryText
+                  : AppTheme.lightSecondaryText,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: _isDark ? AppTheme.darkSurface : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Column(children: children),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Connection settings (API Key / URL / Model) ─────────────────────
+
+  Widget _buildConnectionSection() {
+    final accent = Theme.of(context).colorScheme.primary;
+    final isDark = _isDark;
+    return _buildSection(
+      title: AppLocalizations.of(context)!.aiConnectionSettings,
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: _buildLeadingIcon(CupertinoIcons.lock, accent),
+          title: Text(AppLocalizations.of(context)!.apiKey, style: const TextStyle(fontSize: 16)),
+          subtitle: Text(
+            _aiApiKey.isEmpty
+                ? AppLocalizations.of(context)!.notConfigured
+                : '${_aiApiKey.substring(0, 8)}...${_aiApiKey.substring(_aiApiKey.length - 4)}',
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.5)
+                  : Colors.black.withValues(alpha: 0.5),
+            ),
+          ),
+          trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
+          onTap: _showApiKeyDialog,
+        ),
+        const Divider(height: 1, indent: 64),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: _buildLeadingIcon(CupertinoIcons.globe, accent),
+          title: Text(AppLocalizations.of(context)!.apiUrl, style: const TextStyle(fontSize: 16)),
+          subtitle: Text(
+            _aiBaseUrl,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.5)
+                  : Colors.black.withValues(alpha: 0.5),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
+          onTap: _showBaseUrlDialog,
+        ),
+        const Divider(height: 1, indent: 64),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: _buildLeadingIcon(Icons.memory_rounded, accent),
+          title: Text(AppLocalizations.of(context)!.aiModel, style: const TextStyle(fontSize: 16)),
+          subtitle: Text(
+            _aiModel,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.5)
+                  : Colors.black.withValues(alpha: 0.5),
+            ),
+          ),
+          trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
+          onTap: _showModelSelector,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLeadingIcon(IconData icon, Color accent) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [accent, accent.withValues(alpha: 0.6)]),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(icon, color: Colors.white, size: 18),
+    );
+  }
+
+  void _showApiKeyDialog() {
+    final controller = TextEditingController(text: _aiApiKey);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('API Key'),
+        content: TextField(
+          controller: controller,
+          obscureText: true,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'sk-...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              final key = controller.text.trim();
+              await StorageService().saveDeepSeekApiKey(key);
+              setState(() => _aiApiKey = key);
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Text(AppLocalizations.of(context)!.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBaseUrlDialog() {
+    final controller = TextEditingController(text: _aiBaseUrl);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.apiUrl),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.apiUrlHint,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              AppLocalizations.of(context)!.apiUrlDescription,
+              style: TextStyle(
+                fontSize: 12,
+                color: _isDark ? Colors.white54 : Colors.black54,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              final url = controller.text.trim();
+              await StorageService().saveAiBaseUrl(url);
+              setState(() => _aiBaseUrl = url);
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Text(AppLocalizations.of(context)!.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showModelSelector() {
+    final controller = TextEditingController(text: _aiModel);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.modelName),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'deepseek-v4-flash',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                'deepseek-v4-flash',
+                'deepseek-chat',
+                'deepseek-reasoner',
+                'gpt-4o-mini',
+                'gpt-4o',
+                'moonshot-v1-8k',
+                'qwen-turbo',
+              ].map((m) => GestureDetector(
+                onTap: () => controller.text = m,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _isDark ? Colors.white10 : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(m, style: const TextStyle(fontSize: 12)),
+                ),
+              )).toList(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              final model = controller.text.trim();
+              if (model.isNotEmpty) {
+                await StorageService().saveAiModel(model);
+                setState(() => _aiModel = model);
+              }
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Text(AppLocalizations.of(context)!.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Knowledge base ───────────────────────────────────────────────────
+
+  Widget _buildKnowledgeSection() {
+    final accent = Theme.of(context).colorScheme.primary;
+    final isDark = _isDark;
+    return _buildSection(
+      title: AppLocalizations.of(context)!.songKnowledgeBase,
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: _buildLeadingIcon(CupertinoIcons.book, accent),
+          title: Text(AppLocalizations.of(context)!.songKnowledgeBase, style: const TextStyle(fontSize: 16)),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.knowledgeIndexed(_knowledgeCached, _knowledgeTotal),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.5)
+                      : Colors.black.withValues(alpha: 0.5),
+                ),
+              ),
+              if (_knowledgeLastUpdate != null)
+                Text(
+                  AppLocalizations.of(context)!.lastUpdated(
+                      '${_knowledgeLastUpdate!.month}/${_knowledgeLastUpdate!.day} '
+                      '${_knowledgeLastUpdate!.hour}:${_knowledgeLastUpdate!.minute.toString().padLeft(2, '0')}'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: 0.3),
+                  ),
+                ),
+              if (_isGeneratingKnowledge)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: LinearProgressIndicator(
+                    value: _knowledgeProgress,
+                    backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation<Color>(accent),
+                  ),
+                ),
+            ],
+          ),
+          trailing: _isGeneratingKnowledge
+              ? IconButton(
+                  icon: const Icon(CupertinoIcons.xmark_circle, size: 22),
+                  onPressed: _cancelKnowledgeGeneration,
+                )
+              : TextButton(
+                  onPressed: _aiApiKey.isEmpty ? null : _generateKnowledge,
+                  child: Text(
+                    _knowledgeCached == 0 ? AppLocalizations.of(context)!.generate : AppLocalizations.of(context)!.incrementalUpdate,
+                    style: TextStyle(color: _aiApiKey.isEmpty ? Colors.grey : accent),
+                  ),
+                ),
+        ),
+        const Divider(height: 1, indent: 64),
+        // Export
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: _buildLeadingIcon(CupertinoIcons.square_arrow_up, accent),
+          title: Text(
+            AppLocalizations.of(context)!.exportKnowledgeBase,
+            style: const TextStyle(fontSize: 16),
+          ),
+          subtitle: Text(
+            AppLocalizations.of(context)!.exportKnowledgeBaseSubtitle,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.5)
+                  : Colors.black.withValues(alpha: 0.5),
+            ),
+          ),
+          trailing: _isExporting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : TextButton(
+                  onPressed: _knowledgeCached == 0 ? null : _exportKnowledge,
+                  child: Text(
+                    AppLocalizations.of(context)!.export,
+                    style: TextStyle(color: _knowledgeCached == 0 ? Colors.grey : accent),
+                  ),
+                ),
+        ),
+        const Divider(height: 1, indent: 64),
+        // Import
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: _buildLeadingIcon(CupertinoIcons.square_arrow_down, accent),
+          title: Text(
+            AppLocalizations.of(context)!.importKnowledgeBase,
+            style: const TextStyle(fontSize: 16),
+          ),
+          subtitle: Text(
+            AppLocalizations.of(context)!.importKnowledgeBaseSubtitle,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.5)
+                  : Colors.black.withValues(alpha: 0.5),
+            ),
+          ),
+          trailing: _isImporting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : TextButton(
+                  onPressed: _importKnowledge,
+                  child: Text(
+                    AppLocalizations.of(context)!.import,
+                    style: TextStyle(color: accent),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _generateKnowledge() async {
+    final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+    final allSongs = libraryProvider.cachedAllSongs;
+    if (allSongs.isEmpty) return;
+
+    setState(() {
+      _isGeneratingKnowledge = true;
+      _knowledgeProgress = 0;
+    });
+
+    _aiServiceInstance = AiPlaylistService();
+    await _aiServiceInstance!.initialize();
+
+    final processed = await _aiServiceInstance!.generateKnowledge(
+      allSongs: allSongs,
+      onProgress: (done, total) {
+        if (mounted) {
+          setState(() {
+            _knowledgeProgress = done / total;
+            _knowledgeCached = (_knowledgeTotal - total) + done;
+          });
+        }
+      },
+    );
+
+    if (mounted) {
+      final cache = SongKnowledgeCache();
+      await cache.initialize();
+      final stats = cache.getCacheStats(allSongs.length);
+      setState(() {
+        _isGeneratingKnowledge = false;
+        _knowledgeCached = stats['cached'] as int;
+        _knowledgeTotal = stats['total'] as int;
+        final lastUpdate = stats['lastUpdate'] as String?;
+        _knowledgeLastUpdate =
+            lastUpdate != null ? DateTime.tryParse(lastUpdate) : null;
+      });
+
+      if (processed > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.knowledgeGenerated(processed))),
+        );
+      }
+    }
+  }
+
+  void _cancelKnowledgeGeneration() {
+    _aiServiceInstance?.cancel();
+    setState(() => _isGeneratingKnowledge = false);
+  }
+
+  Future<void> _exportKnowledge() async {
+    setState(() => _isExporting = true);
+    try {
+      final cache = SongKnowledgeCache();
+      await cache.initialize();
+      final jsonStr = cache.exportAsJson();
+      final fileName =
+          'luobo_knowledge_${DateTime.now().millisecondsSinceEpoch}.json';
+
+      if (Platform.isAndroid || Platform.isIOS) {
+        final bytes = Uint8List.fromList(utf8.encode(jsonStr));
+        final result = await FilePicker.platform.saveFile(
+          dialogTitle: AppLocalizations.of(context)!.exportKnowledgeBase,
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+          bytes: bytes,
+        );
+        if (result != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.exportedTo(result))),
+          );
+        }
+      } else {
+        final result = await FilePicker.platform.saveFile(
+          dialogTitle: AppLocalizations.of(context)!.exportKnowledgeBase,
+          fileName: fileName,
+        );
+        if (result != null) {
+          final file = File(result);
+          await file.writeAsString(jsonStr);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(AppLocalizations.of(context)!.exportedTo(result))),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.exportFailed(e.toString()))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  Future<void> _importKnowledge() async {
+    setState(() => _isImporting = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+      if (result == null || result.files.isEmpty) {
+        setState(() => _isImporting = false);
+        return;
+      }
+
+      final path = result.files.first.path;
+      String jsonStr;
+      if (path != null) {
+        jsonStr = await File(path).readAsString();
+      } else {
+        // Web/some platforms provide bytes instead of a path
+        final bytes = result.files.first.bytes;
+        if (bytes == null) throw const FormatException('无法读取文件内容');
+        jsonStr = utf8.decode(bytes);
+      }
+
+      final cache = SongKnowledgeCache();
+      await cache.initialize();
+      final count = await cache.importFromJson(jsonStr);
+
+      if (!mounted) return;
+      final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+      final stats = cache.getCacheStats(libraryProvider.cachedAllSongs.length);
+      setState(() {
+        _knowledgeCached = stats['cached'] as int;
+        _knowledgeTotal = stats['total'] as int;
+        final lastUpdate = stats['lastUpdate'] as String?;
+        _knowledgeLastUpdate =
+            lastUpdate != null ? DateTime.tryParse(lastUpdate) : null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.knowledgeImported(count))),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.importFailed(e.toString()))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
+  // ── Explanation ──────────────────────────────────────────────────────
+
+  Widget _buildExplanationSection() {
+    final isDark = _isDark;
+    return _buildSection(
+      title: AppLocalizations.of(context)!.howItWorks,
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Icon(CupertinoIcons.info_circle, color: isDark ? Colors.white70 : Colors.black54),
+          title: Text(
+            AppLocalizations.of(context)!.knowledgeBaseExplanation,
+            style: const TextStyle(fontSize: 16),
+          ),
+          trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
+          onTap: () => _showExplanationSheet(
+            title: AppLocalizations.of(context)!.knowledgeBaseExplanation,
+            paragraphs: _knowledgeExplanationParagraphs(),
+          ),
+        ),
+        const Divider(height: 1, indent: 56),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Icon(CupertinoIcons.info_circle, color: isDark ? Colors.white70 : Colors.black54),
+          title: Text(
+            AppLocalizations.of(context)!.playlistGenerationExplanation,
+            style: const TextStyle(fontSize: 16),
+          ),
+          trailing: const Icon(CupertinoIcons.chevron_right, size: 16),
+          onTap: () => _showExplanationSheet(
+            title: AppLocalizations.of(context)!.playlistGenerationExplanation,
+            paragraphs: _playlistExplanationParagraphs(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<(String, String)> _knowledgeExplanationParagraphs() {
+    return const [
+      (
+        '标签生成',
+        '对曲库中每首歌，AI 会根据歌名、歌手、专辑、风格、年份生成 8-12 个标签，'
+            '涵盖情绪氛围、节奏能量、适合场景、歌词主题、演唱风格、乐器编曲特征、'
+            '风格子类和相似歌手八个维度。',
+      ),
+      (
+        '为什么不抓取歌词/评价',
+        'AI 大模型本身的训练数据中已经包含了大量歌曲的歌词内容和公众评价信息，'
+            '所以只需要提供歌名和歌手，AI 就能推断出这首歌的情绪、主题和适用场景，'
+            '不需要额外爬取歌词或评论数据。',
+      ),
+      (
+        '批量处理与断点续传',
+        '生成时每批处理 50 首歌，每批完成后立即保存到本地。'
+            '如果中途中断（退出 App、网络问题等），下次点击生成会自动跳过已处理的歌曲，'
+            '只处理剩余部分。',
+      ),
+      (
+        '增量更新',
+        '当曲库新增或删除歌曲后，点击「更新」只会处理新增的歌曲，'
+            '并清理已删除歌曲的缓存，不会重复处理已有歌曲。',
+      ),
+      (
+        '存储位置',
+        '知识库以 JSON 文件形式保存在 App 私有目录下，不会上传到任何服务器，'
+            '完全本地化存储。',
+      ),
+      (
+        '共享曲库场景',
+        '如果多人共用同一个 NAS 音乐库，生成一次知识库后可以导出分享给其他人，'
+            '避免每个人各自重复调用 AI 生成，节省 API 调用成本。',
+      ),
+    ];
+  }
+
+  List<(String, String)> _playlistExplanationParagraphs() {
+    return const [
+      (
+        '候选歌曲预筛',
+        '生成歌单前，会先用知识库标签在本地做预筛选，从曲库中挑出与需求最相关的'
+            '约 300 首歌作为候选，而不是把整个曲库都发给 AI，从而降低 token 消耗、'
+            '提升响应速度和推荐精准度。',
+      ),
+      (
+        '三种生成模式',
+        '「最近常听」：从最近播放歌曲的知识标签中提取高频关键词，在全曲库中找相似的歌；\n'
+            '「场景」：将场景（如"开车兜风"）映射为一组标签关键词进行匹配；\n'
+            '「自由描述」：从用户输入文本中提取关键词进行匹配。',
+      ),
+      (
+        '用户画像注入',
+        '生成时会把常听歌手/风格、反复完整播放的歌曲、经常跳过的歌曲（负向信号）、'
+            '高评分歌曲、当前时段等信息一并提供给 AI，让推荐更贴合个人习惯，'
+            '而不只是通用推荐。',
+      ),
+      (
+        '只从曲库内选歌',
+        'AI 只会从你曲库中已有的歌曲里选择，确保生成的歌单可以直接保存并播放，'
+            '不会出现曲库里没有的歌。',
+      ),
+      (
+        '结果可编辑',
+        '生成的歌单可以在保存前左滑删除不想要的歌曲，满意后再保存为正式歌单。',
+      ),
+    ];
+  }
+
+  void _showExplanationSheet({
+    required String title,
+    required List<(String, String)> paragraphs,
+  }) {
+    final isDark = _isDark;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.3,
+        maxChildSize: 0.92,
+        snap: true,
+        snapSizes: const [0.75],
+        expand: false,
+        builder: (context, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 20),
+            for (final p in paragraphs)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      p.$1,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      p.$2,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.6)
+                            : Colors.black.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

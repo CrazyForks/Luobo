@@ -292,7 +292,7 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get refresh;
 
-  /// Error message when songs fail to load
+  /// Error state title when songs fail to load
   ///
   /// In en, this message translates to:
   /// **'Error loading songs'**
@@ -304,13 +304,13 @@ abstract class AppLocalizations {
   /// **'No songs in this genre'**
   String get noSongsInGenre;
 
-  /// Error message when albums fail to load
+  /// Error state title when albums fail to load
   ///
   /// In en, this message translates to:
   /// **'Error loading albums'**
   String get errorLoadingAlbums;
 
-  /// Message when there are no top rated albums
+  /// Empty state when there are no top rated albums
   ///
   /// In en, this message translates to:
   /// **'No top rated albums'**
@@ -502,16 +502,16 @@ abstract class AppLocalizations {
   /// **'Remove from Playlist'**
   String get removeFromPlaylist;
 
-  /// Add to favorites option
+  /// Tooltip to add to favorites
   ///
   /// In en, this message translates to:
-  /// **'Add to Favorites'**
+  /// **'Add to favorites'**
   String get addToFavorites;
 
-  /// Remove from favorites option
+  /// Tooltip to remove from favorites
   ///
   /// In en, this message translates to:
-  /// **'Remove from Favorites'**
+  /// **'Remove from favorites'**
   String get removeFromFavorites;
 
   /// Download button label
@@ -1282,6 +1282,12 @@ abstract class AppLocalizations {
   /// **'Display'**
   String get tabDisplay;
 
+  /// No description provided for @tabAiPlaylist.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Playlist'**
+  String get tabAiPlaylist;
+
   /// No description provided for @tabSupport.
   ///
   /// In en, this message translates to:
@@ -1438,7 +1444,7 @@ abstract class AppLocalizations {
   /// **'SERVER CONNECTION'**
   String get sectionServerConnection;
 
-  /// No description provided for @serverType.
+  /// Section title for server type selector
   ///
   /// In en, this message translates to:
   /// **'Server Type'**
@@ -1738,10 +1744,10 @@ abstract class AppLocalizations {
   /// **'All downloads deleted'**
   String get downloadsDeleted;
 
-  /// No description provided for @noSongsAvailable.
+  /// Empty state when no songs are available
   ///
   /// In en, this message translates to:
-  /// **'No songs available. Please load your library first.'**
+  /// **'No songs available'**
   String get noSongsAvailable;
 
   /// Storage settings section header for BPM analysis
@@ -1876,7 +1882,7 @@ abstract class AppLocalizations {
   /// **'Rate Song ({rating} {stars})'**
   String rateSongValue(int rating, String stars);
 
-  /// No description provided for @ratingRemoved.
+  /// Snackbar after removing a rating
   ///
   /// In en, this message translates to:
   /// **'Rating removed'**
@@ -2014,7 +2020,7 @@ abstract class AppLocalizations {
   /// **'Album not found'**
   String get albumNotFound;
 
-  /// Album duration in hours and minutes
+  /// Album duration formatted as hours and minutes
   ///
   /// In en, this message translates to:
   /// **'{hours} HR {minutes} MIN'**
@@ -2080,13 +2086,13 @@ abstract class AppLocalizations {
   /// **'Error loading playlists: {error}'**
   String errorLoadingPlaylists(Object error);
 
-  /// Message when a playlist cannot be found
+  /// Empty state when playlist cannot be found
   ///
   /// In en, this message translates to:
   /// **'Playlist not found'**
   String get playlistNotFound;
 
-  /// Empty state message for a playlist with no songs
+  /// Empty state when playlist has no songs
   ///
   /// In en, this message translates to:
   /// **'No songs in this playlist'**
@@ -2104,13 +2110,13 @@ abstract class AppLocalizations {
   /// **'No favorite albums yet'**
   String get noFavoriteAlbumsYet;
 
-  /// Title of the listening history screen
+  /// App bar title for listening history screen
   ///
   /// In en, this message translates to:
   /// **'Listening History'**
   String get listeningHistory;
 
-  /// Empty state headline on the history screen
+  /// Empty state title for listening history
   ///
   /// In en, this message translates to:
   /// **'No Listening History'**
@@ -2200,19 +2206,19 @@ abstract class AppLocalizations {
   /// **'Copy Stream URL'**
   String get copyStreamUrl;
 
-  /// Error state message on the radio screen
+  /// Error state title when radio stations fail to load
   ///
   /// In en, this message translates to:
   /// **'Failed to load radio stations'**
   String get failedToLoadRadioStations;
 
-  /// Empty state headline on the radio screen
+  /// Empty state title when there are no radio stations
   ///
   /// In en, this message translates to:
   /// **'No Radio Stations'**
   String get noRadioStations;
 
-  /// Empty state subtitle on the radio screen
+  /// Empty state hint for radio stations
   ///
   /// In en, this message translates to:
   /// **'Add radio stations in your Navidrome server settings to see them here.'**
@@ -2308,7 +2314,7 @@ abstract class AppLocalizations {
   /// **'Authenticate this client using a certificate (requires mTLS-enabled server)'**
   String get clientCertificateSubtitle;
 
-  /// Button label to open the client certificate file picker
+  /// File picker dialog title for client certificate
   ///
   /// In en, this message translates to:
   /// **'Select Client Certificate'**
@@ -2446,7 +2452,7 @@ abstract class AppLocalizations {
   /// **'Use Local Files'**
   String get useLocalFiles;
 
-  /// Initial status message when a local file scan begins
+  /// Scan status shown when starting a music scan
   ///
   /// In en, this message translates to:
   /// **'Starting scan...'**
@@ -3844,6 +3850,90 @@ abstract class AppLocalizations {
   /// **'Model Name'**
   String get modelName;
 
+  /// AI connection settings section title
+  ///
+  /// In en, this message translates to:
+  /// **'AI Connection'**
+  String get aiConnectionSettings;
+
+  /// Button/title to export song knowledge base
+  ///
+  /// In en, this message translates to:
+  /// **'Export Knowledge Base'**
+  String get exportKnowledgeBase;
+
+  /// Subtitle for exporting knowledge base
+  ///
+  /// In en, this message translates to:
+  /// **'Export as a file to share with others on the same NAS library'**
+  String get exportKnowledgeBaseSubtitle;
+
+  /// Export button label
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get export;
+
+  /// Snackbar after successful export
+  ///
+  /// In en, this message translates to:
+  /// **'Exported to {path}'**
+  String exportedTo(String path);
+
+  /// Snackbar after failed export
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: {error}'**
+  String exportFailed(String error);
+
+  /// Button/title to import song knowledge base
+  ///
+  /// In en, this message translates to:
+  /// **'Import Knowledge Base'**
+  String get importKnowledgeBase;
+
+  /// Subtitle for importing knowledge base
+  ///
+  /// In en, this message translates to:
+  /// **'Import a knowledge base file shared by someone else'**
+  String get importKnowledgeBaseSubtitle;
+
+  /// Import button label
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get import;
+
+  /// Snackbar after successful import
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} songs into knowledge base'**
+  String knowledgeImported(int count);
+
+  /// Snackbar after failed import
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: {error}'**
+  String importFailed(String error);
+
+  /// Section title explaining AI features
+  ///
+  /// In en, this message translates to:
+  /// **'How It Works'**
+  String get howItWorks;
+
+  /// Title for knowledge base explanation sheet
+  ///
+  /// In en, this message translates to:
+  /// **'How the Knowledge Base Works'**
+  String get knowledgeBaseExplanation;
+
+  /// Title for playlist generation explanation sheet
+  ///
+  /// In en, this message translates to:
+  /// **'How Playlist Generation Works'**
+  String get playlistGenerationExplanation;
+
   /// WiFi network type label
   ///
   /// In en, this message translates to:
@@ -4047,6 +4137,792 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Library appears to be empty or failed to load. Make sure your server supports full library scanning.'**
   String get libraryEmptyOrFailed;
+
+  /// Menu option to add song to liked songs
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Liked Songs'**
+  String get addToLikedSongs;
+
+  /// Menu option to remove song from liked songs
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from Liked Songs'**
+  String get removeFromLikedSongs;
+
+  /// Rate song menu item showing current rating
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Song ({rating} {rating, plural, =1{star} other{stars}})'**
+  String rateSongWithRating(int rating);
+
+  /// Snackbar after setting a rating
+  ///
+  /// In en, this message translates to:
+  /// **'Rated {rating} {rating, plural, =1{star} other{stars}}'**
+  String songRated(int rating);
+
+  /// Snackbar after removing a song from playlist
+  ///
+  /// In en, this message translates to:
+  /// **'Song removed from playlist'**
+  String get songRemovedFromPlaylist;
+
+  /// Snackbar when removing a song fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error removing song: {error}'**
+  String errorRemovingSong(Object error);
+
+  /// Snackbar when removing multiple songs fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error removing songs: {error}'**
+  String errorRemovingSongs(Object error);
+
+  /// Snackbar when reordering songs fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error reordering song: {error}'**
+  String errorReorderingSong(Object error);
+
+  /// Dialog title for removing multiple songs
+  ///
+  /// In en, this message translates to:
+  /// **'Remove songs'**
+  String get removeSongs;
+
+  /// Confirmation dialog for removing songs
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {count} {count, plural, =1{song} other{songs}} from this playlist?'**
+  String removeSongsConfirm(int count);
+
+  /// Snackbar after removing songs from playlist
+  ///
+  /// In en, this message translates to:
+  /// **'{count} {count, plural, =1{song} other{songs}} removed from playlist'**
+  String songsRemovedFromPlaylist(int count);
+
+  /// Title for reorder songs mode
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder Songs'**
+  String get reorderSongs;
+
+  /// Tooltip for finishing reorder mode
+  ///
+  /// In en, this message translates to:
+  /// **'Done reordering'**
+  String get doneReordering;
+
+  /// Button to select all songs
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get selectAll;
+
+  /// Button to deselect all songs
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all'**
+  String get deselectAll;
+
+  /// Tooltip to remove selected songs
+  ///
+  /// In en, this message translates to:
+  /// **'Remove selected'**
+  String get removeSelected;
+
+  /// Tooltip to enter multi-select mode
+  ///
+  /// In en, this message translates to:
+  /// **'Select songs'**
+  String get selectSongs;
+
+  /// Tooltip to download a playlist
+  ///
+  /// In en, this message translates to:
+  /// **'Download playlist'**
+  String get downloadPlaylist;
+
+  /// Confirmation dialog for removing a single song
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{title}\" from this playlist?'**
+  String removeSongFromPlaylistConfirm(String title);
+
+  /// Snackbar after downloading songs
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded {count} {count, plural, =1{song} other{songs}} from {name}'**
+  String downloadedSongsFrom(int count, String name);
+
+  /// Snackbar when download starts in background
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {count} {count, plural, =1{song} other{songs}} in background…'**
+  String downloadingSongsInBackground(int count);
+
+  /// Playlist subtitle with song count and duration
+  ///
+  /// In en, this message translates to:
+  /// **'{count} {count, plural, =1{song} other{songs}} • {duration}'**
+  String songsCountWithDuration(int count, String duration);
+
+  /// Empty state hint for playlists screen
+  ///
+  /// In en, this message translates to:
+  /// **'Create a playlist to get started'**
+  String get createPlaylistToStart;
+
+  /// Login error hint for self-signed certificate issue
+  ///
+  /// In en, this message translates to:
+  /// **'Try enabling \"Allow Self-Signed Certificates\" below.'**
+  String get enableSelfSignedCertsHint;
+
+  /// Login error hint for wrong credentials
+  ///
+  /// In en, this message translates to:
+  /// **'Check your username and password and try again.'**
+  String get checkCredentialsHint;
+
+  /// Login error hint for wrong server URL path
+  ///
+  /// In en, this message translates to:
+  /// **'Verify the server URL path (e.g. /navidrome, /airsonic).'**
+  String get verifyServerUrlHint;
+
+  /// Login error hint for server timeout
+  ///
+  /// In en, this message translates to:
+  /// **'The server took too long to respond. Check your network.'**
+  String get serverTimeoutHint;
+
+  /// Tooltip to copy the login error message
+  ///
+  /// In en, this message translates to:
+  /// **'Copy error'**
+  String get copyError;
+
+  /// Snackbar after copying the error message
+  ///
+  /// In en, this message translates to:
+  /// **'Error copied to clipboard'**
+  String get errorCopiedToClipboard;
+
+  /// Hint on touch devices to enable self-signed certificates
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to enable self-signed certificates'**
+  String get tapToEnableSelfSignedCerts;
+
+  /// Hint on desktop to enable self-signed certificates
+  ///
+  /// In en, this message translates to:
+  /// **'Click to enable self-signed certificates'**
+  String get clickToEnableSelfSignedCerts;
+
+  /// Fallback error message when login fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to connect to server'**
+  String get failedToConnectToServer;
+
+  /// Scan status shown while picking music files on iOS
+  ///
+  /// In en, this message translates to:
+  /// **'Select your music files...'**
+  String get selectMusicFiles;
+
+  /// Snackbar when no music files were selected
+  ///
+  /// In en, this message translates to:
+  /// **'No files selected. Tap \"Use Local Files\" and pick your music files.'**
+  String get noFilesSelected;
+
+  /// Description of YouTube Music login option
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube Music streams music directly from YouTube. No account required — tap Connect to start.'**
+  String get youtubeMusicDescription;
+
+  /// Section title for saved server profiles
+  ///
+  /// In en, this message translates to:
+  /// **'Saved Profiles'**
+  String get savedProfiles;
+
+  /// Helper text for saved profiles section
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a profile to connect • tap × to delete'**
+  String get tapProfileToConnect;
+
+  /// App bar title for theme manager screen
+  ///
+  /// In en, this message translates to:
+  /// **'Now Playing Themes'**
+  String get nowPlayingThemesTitle;
+
+  /// Default name for a newly created theme
+  ///
+  /// In en, this message translates to:
+  /// **'New Theme'**
+  String get newThemeDefaultName;
+
+  /// Default author for a newly created theme
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get newThemeDefaultAuthor;
+
+  /// Snackbar when a theme is deactivated
+  ///
+  /// In en, this message translates to:
+  /// **'Theme deactivated (using default)'**
+  String get themeDeactivated;
+
+  /// Snackbar when default theme is activated
+  ///
+  /// In en, this message translates to:
+  /// **'Default theme activated'**
+  String get defaultThemeActivated;
+
+  /// Snackbar when a theme is activated
+  ///
+  /// In en, this message translates to:
+  /// **'{name} activated'**
+  String themeActivated(String name);
+
+  /// Prefilled name when duplicating a theme
+  ///
+  /// In en, this message translates to:
+  /// **'{name} Copy'**
+  String themeCopyName(String name);
+
+  /// Snackbar after duplicating a theme
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicated as \"{name}\"'**
+  String themeDuplicated(String name);
+
+  /// File save dialog title for exporting a theme
+  ///
+  /// In en, this message translates to:
+  /// **'Export Theme'**
+  String get exportThemeTitle;
+
+  /// Snackbar after exporting a theme
+  ///
+  /// In en, this message translates to:
+  /// **'Exported to {path}'**
+  String themeExported(String path);
+
+  /// Snackbar after importing a theme
+  ///
+  /// In en, this message translates to:
+  /// **'Theme imported'**
+  String get themeImported;
+
+  /// Snackbar after importing a theme in safe mode
+  ///
+  /// In en, this message translates to:
+  /// **'Theme imported (Safe Mode)'**
+  String get themeImportedSafeMode;
+
+  /// Snackbar after successful theme import
+  ///
+  /// In en, this message translates to:
+  /// **'Theme imported successfully'**
+  String get themeImportedSuccess;
+
+  /// Dialog title when theme import fails
+  ///
+  /// In en, this message translates to:
+  /// **'Import Failed'**
+  String get importFailedTitle;
+
+  /// Dialog content listing theme file errors
+  ///
+  /// In en, this message translates to:
+  /// **'The theme file contains errors:'**
+  String get themeFileErrors;
+
+  /// Dialog title warning about theme security
+  ///
+  /// In en, this message translates to:
+  /// **'Security Warning'**
+  String get securityWarning;
+
+  /// Dialog content warning about custom code in theme
+  ///
+  /// In en, this message translates to:
+  /// **'This theme contains custom Flutter code which may pose security risks.'**
+  String get customCodeSecurityRisk;
+
+  /// Dialog section title for theme details
+  ///
+  /// In en, this message translates to:
+  /// **'Theme Details:'**
+  String get themeDetailsLabel;
+
+  /// Generic label for a name field
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get nameLabel;
+
+  /// Generic label for an author field
+  ///
+  /// In en, this message translates to:
+  /// **'Author'**
+  String get authorLabel;
+
+  /// Dialog section title for custom widgets
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Widgets:'**
+  String get customWidgetsLabel;
+
+  /// Dialog section title for dependencies
+  ///
+  /// In en, this message translates to:
+  /// **'Dependencies:'**
+  String get dependenciesLabel;
+
+  /// Button to import a theme in safe mode
+  ///
+  /// In en, this message translates to:
+  /// **'Safe Mode'**
+  String get safeModeButton;
+
+  /// Button to import a theme with custom code enabled
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Code'**
+  String get enableCodeButton;
+
+  /// Dialog title for deleting a theme
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Theme'**
+  String get deleteTheme;
+
+  /// Confirmation dialog for deleting a theme
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \"{name}\"?'**
+  String deleteThemeConfirm(String name);
+
+  /// Snackbar after deleting a theme
+  ///
+  /// In en, this message translates to:
+  /// **'{name} deleted'**
+  String themeDeleted(String name);
+
+  /// Snackbar when safe mode is turned off
+  ///
+  /// In en, this message translates to:
+  /// **'Safe Mode disabled'**
+  String get safeModeDisabled;
+
+  /// Snackbar when safe mode is turned on
+  ///
+  /// In en, this message translates to:
+  /// **'Safe Mode enabled'**
+  String get safeModeEnabled;
+
+  /// Dialog title for duplicating a theme
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Theme'**
+  String get duplicateTheme;
+
+  /// Hint text for the new theme name field
+  ///
+  /// In en, this message translates to:
+  /// **'New theme name'**
+  String get newThemeNameHint;
+
+  /// Button to confirm duplicating a theme
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateButton;
+
+  /// Theme editor tab for general info
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get themeTabInfo;
+
+  /// Theme editor tab for background
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get themeTabBackground;
+
+  /// Theme editor tab for text styles
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get themeTabText;
+
+  /// Theme editor tab for artwork
+  ///
+  /// In en, this message translates to:
+  /// **'Artwork'**
+  String get themeTabArtwork;
+
+  /// Theme editor tab for progress bar
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get themeTabProgress;
+
+  /// Theme editor tab for controls
+  ///
+  /// In en, this message translates to:
+  /// **'Controls'**
+  String get themeTabControls;
+
+  /// Theme editor tab for animations
+  ///
+  /// In en, this message translates to:
+  /// **'Animations'**
+  String get themeTabAnimations;
+
+  /// Label for the theme name field
+  ///
+  /// In en, this message translates to:
+  /// **'Theme Name'**
+  String get themeNameLabel;
+
+  /// Label for background type dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Background Type'**
+  String get backgroundTypeLabel;
+
+  /// Label for first color picker
+  ///
+  /// In en, this message translates to:
+  /// **'Color 1'**
+  String get color1Label;
+
+  /// Label for second color picker
+  ///
+  /// In en, this message translates to:
+  /// **'Color 2'**
+  String get color2Label;
+
+  /// Label for opacity slider
+  ///
+  /// In en, this message translates to:
+  /// **'Opacity'**
+  String get opacityLabel;
+
+  /// Label for blur radius slider
+  ///
+  /// In en, this message translates to:
+  /// **'Blur Sigma'**
+  String get blurSigmaLabel;
+
+  /// Generic label for a color picker
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get colorLabel;
+
+  /// Label for font size slider
+  ///
+  /// In en, this message translates to:
+  /// **'Font Size'**
+  String get fontSizeLabel;
+
+  /// Label for font weight dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Font Weight'**
+  String get fontWeightLabel;
+
+  /// Generic label for a shape dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Shape'**
+  String get shapeLabel;
+
+  /// Label for size factor slider
+  ///
+  /// In en, this message translates to:
+  /// **'Size Factor'**
+  String get sizeFactorLabel;
+
+  /// Label for corner radius slider
+  ///
+  /// In en, this message translates to:
+  /// **'Corner Radius'**
+  String get cornerRadiusLabel;
+
+  /// Label for shadow switch
+  ///
+  /// In en, this message translates to:
+  /// **'Shadow'**
+  String get shadowLabel;
+
+  /// Label for rotation animation switch
+  ///
+  /// In en, this message translates to:
+  /// **'Rotation Animation'**
+  String get rotationAnimationLabel;
+
+  /// Label for active color picker
+  ///
+  /// In en, this message translates to:
+  /// **'Active Color'**
+  String get activeColorLabel;
+
+  /// Label for inactive color picker
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive Color'**
+  String get inactiveColorLabel;
+
+  /// Label for height slider
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get heightLabel;
+
+  /// Label for thumb visibility switch
+  ///
+  /// In en, this message translates to:
+  /// **'Thumb Visible'**
+  String get thumbVisibleLabel;
+
+  /// Label for button color picker
+  ///
+  /// In en, this message translates to:
+  /// **'Button Color'**
+  String get buttonColorLabel;
+
+  /// Label for play button color picker
+  ///
+  /// In en, this message translates to:
+  /// **'Play Button Color'**
+  String get playButtonColorLabel;
+
+  /// Label for play button size slider
+  ///
+  /// In en, this message translates to:
+  /// **'Play Button Size'**
+  String get playButtonSizeLabel;
+
+  /// Label for play button shape dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Play Button Shape'**
+  String get playButtonShapeLabel;
+
+  /// Label for cover rotation switch
+  ///
+  /// In en, this message translates to:
+  /// **'Cover Rotation'**
+  String get coverRotationLabel;
+
+  /// Label for rotation speed slider
+  ///
+  /// In en, this message translates to:
+  /// **'Rotation Speed (s/turn)'**
+  String get rotationSpeedLabel;
+
+  /// Label for pulse effect switch
+  ///
+  /// In en, this message translates to:
+  /// **'Pulse Effect'**
+  String get pulseEffectLabel;
+
+  /// Label for fade in switch
+  ///
+  /// In en, this message translates to:
+  /// **'Fade In'**
+  String get fadeInLabel;
+
+  /// Empty state when there are no favorite songs
+  ///
+  /// In en, this message translates to:
+  /// **'No favorite songs yet'**
+  String get noFavoriteSongs;
+
+  /// Empty state when there are no favorite albums
+  ///
+  /// In en, this message translates to:
+  /// **'No favorite albums yet'**
+  String get noFavoriteAlbums;
+
+  /// Empty state hint for listening history
+  ///
+  /// In en, this message translates to:
+  /// **'Songs you play will appear here'**
+  String get listeningHistoryHint;
+
+  /// Sort option by title ascending
+  ///
+  /// In en, this message translates to:
+  /// **'Title (A-Z)'**
+  String get sortTitleAz;
+
+  /// Sort option by title descending
+  ///
+  /// In en, this message translates to:
+  /// **'Title (Z-A)'**
+  String get sortTitleZa;
+
+  /// Sort option by artist ascending
+  ///
+  /// In en, this message translates to:
+  /// **'Artist (A-Z)'**
+  String get sortArtistAz;
+
+  /// Sort option by artist descending
+  ///
+  /// In en, this message translates to:
+  /// **'Artist (Z-A)'**
+  String get sortArtistZa;
+
+  /// Sort option by album ascending
+  ///
+  /// In en, this message translates to:
+  /// **'Album (A-Z)'**
+  String get sortAlbumAz;
+
+  /// Sort option by album descending
+  ///
+  /// In en, this message translates to:
+  /// **'Album (Z-A)'**
+  String get sortAlbumZa;
+
+  /// Search field placeholder in library search
+  ///
+  /// In en, this message translates to:
+  /// **'Search in Library...'**
+  String get searchInLibrary;
+
+  /// Empty state hint for library search
+  ///
+  /// In en, this message translates to:
+  /// **'Search your library'**
+  String get searchYourLibrary;
+
+  /// Empty state when no playlists match search
+  ///
+  /// In en, this message translates to:
+  /// **'No playlists found'**
+  String get noPlaylistsFound;
+
+  /// Desktop songs table column header for title
+  ///
+  /// In en, this message translates to:
+  /// **'TITLE'**
+  String get tableHeaderTitle;
+
+  /// Desktop songs table column header for album
+  ///
+  /// In en, this message translates to:
+  /// **'ALBUM'**
+  String get tableHeaderAlbum;
+
+  /// Desktop songs table column header for duration
+  ///
+  /// In en, this message translates to:
+  /// **'TIME'**
+  String get tableHeaderTime;
+
+  /// Snackbar showing the radio stream URL
+  ///
+  /// In en, this message translates to:
+  /// **'Stream URL: {url}'**
+  String streamUrl(String url);
+
+  /// App bar title for new releases screen
+  ///
+  /// In en, this message translates to:
+  /// **'New Releases'**
+  String get newReleases;
+
+  /// Empty state when there are no new releases
+  ///
+  /// In en, this message translates to:
+  /// **'No new releases'**
+  String get noNewReleases;
+
+  /// Tooltip to download an album
+  ///
+  /// In en, this message translates to:
+  /// **'Download album'**
+  String get downloadAlbum;
+
+  /// Album duration formatted as minutes only
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} MIN'**
+  String durationMinutesOnly(int minutes);
+
+  /// Empty state when the playback queue is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No songs in queue'**
+  String get noSongsInQueue;
+
+  /// Subtitle for radio playback in mini player
+  ///
+  /// In en, this message translates to:
+  /// **'Internet Radio • LIVE'**
+  String get internetRadioLive;
+
+  /// Tooltip for stop playback button
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stop;
+
+  /// Placeholder label showing the custom widget name
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Widget: {name}'**
+  String customWidgetLabel(String name);
+
+  /// Error message when a custom widget fails
+  ///
+  /// In en, this message translates to:
+  /// **'Custom widget error: {error}'**
+  String customWidgetError(String error);
+
+  /// Fallback error message
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown error'**
+  String get unknownError;
+
+  /// Placeholder label when a custom widget is disabled in safe mode
+  ///
+  /// In en, this message translates to:
+  /// **'Safe Mode: {name} disabled'**
+  String safeModeDisabledLabel(String name);
+
+  /// Status text while a custom widget is compiling
+  ///
+  /// In en, this message translates to:
+  /// **'Compiling...'**
+  String get compiling;
+
+  /// Button to exit the app on the emulator warning screen
+  ///
+  /// In en, this message translates to:
+  /// **'Exit App'**
+  String get exitApp;
 }
 
 class _AppLocalizationsDelegate

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/artist.dart';
 import '../theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 import 'album_artwork.dart';
 
 class ArtistCard extends StatefulWidget {
@@ -133,7 +134,10 @@ class _ArtistCardState extends State<ArtistCard> {
               ),
               if (widget.artist.albumCount != null)
                 Text(
-                  '${widget.artist.albumCount} albums',
+                  AppLocalizations.of(
+                    context,
+                  )!
+                      .albumsCount(widget.artist.albumCount!),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: isDark
                         ? AppTheme.darkSecondaryText

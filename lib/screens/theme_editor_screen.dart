@@ -60,6 +60,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
@@ -100,14 +101,14 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
           indicatorColor: AppTheme.appleMusicRed,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white.withOpacity(0.6),
-          tabs: const [
-            Tab(text: 'Info'),
-            Tab(text: 'Background'),
-            Tab(text: 'Text'),
-            Tab(text: 'Artwork'),
-            Tab(text: 'Progress'),
-            Tab(text: 'Controls'),
-            Tab(text: 'Animations'),
+          tabs: [
+            Tab(text: l10n.themeTabInfo),
+            Tab(text: l10n.themeTabBackground),
+            Tab(text: l10n.themeTabText),
+            Tab(text: l10n.themeTabArtwork),
+            Tab(text: l10n.themeTabProgress),
+            Tab(text: l10n.themeTabControls),
+            Tab(text: l10n.themeTabAnimations),
           ],
         ),
       ),
@@ -127,11 +128,12 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
   }
 
   Widget _buildInfoTab() {
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildTextField(
-          label: 'Theme Name',
+          label: l10n.themeNameLabel,
           value: _draft.themeName,
           onChanged: (val) => _updateDraft(
             (d) => d.copyWith(themeName: val),
@@ -139,7 +141,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildTextField(
-          label: 'Author',
+          label: l10n.authorLabel,
           value: _draft.author,
           onChanged: (val) => _updateDraft(
             (d) => d.copyWith(author: val),
@@ -147,7 +149,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildTextField(
-          label: 'Version',
+          label: l10n.version,
           value: _draft.version,
           onChanged: (val) => _updateDraft(
             (d) => d.copyWith(version: val),
@@ -158,11 +160,12 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
   }
 
   Widget _buildBackgroundTab() {
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildDropdown(
-          label: 'Background Type',
+          label: l10n.backgroundTypeLabel,
           value: _draft.background.type,
           items: const ['solid', 'gradient', 'dynamic_blur'],
           onChanged: (val) => _updateDraft(
@@ -178,7 +181,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildColorPicker(
-          label: 'Color 1',
+          label: l10n.color1Label,
           color: _draft.background.getColor(0),
           onChanged: (color) {
             final hex = color.value.toRadixString(16).substring(2);
@@ -203,7 +206,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         if (_draft.background.type == 'gradient') ...[
           const SizedBox(height: 16),
           _buildColorPicker(
-            label: 'Color 2',
+            label: l10n.color2Label,
             color: _draft.background.getColor(1),
             onChanged: (color) {
               final hex = color.value.toRadixString(16).substring(2);
@@ -227,7 +230,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ],
         const SizedBox(height: 16),
         _buildSlider(
-          label: 'Opacity',
+          label: l10n.opacityLabel,
           value: _draft.background.opacity,
           min: 0.0,
           max: 1.0,
@@ -245,7 +248,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         if (_draft.background.type == 'dynamic_blur') ...[
           const SizedBox(height: 16),
           _buildSlider(
-            label: 'Blur Sigma',
+            label: l10n.blurSigmaLabel,
             value: _draft.background.blurSigma,
             min: 0.0,
             max: 50.0,
@@ -320,10 +323,11 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
     TextStyleConfig config,
     void Function(TextStyleConfig) onUpdate,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         _buildColorPicker(
-          label: 'Color',
+          label: l10n.colorLabel,
           color: config.getColor(),
           onChanged: (color) {
             final hex = color.value.toRadixString(16).substring(2);
@@ -339,7 +343,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildSlider(
-          label: 'Font Size',
+          label: l10n.fontSizeLabel,
           value: config.fontSize,
           min: 8.0,
           max: 48.0,
@@ -356,7 +360,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildDropdown(
-          label: 'Font Weight',
+          label: l10n.fontWeightLabel,
           value: config.fontWeight,
           items: const [
             'normal',
@@ -387,11 +391,12 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
   }
 
   Widget _buildArtworkTab() {
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildDropdown(
-          label: 'Shape',
+          label: l10n.shapeLabel,
           value: _draft.artwork.shape,
           items: const ['square', 'circle', 'rounded_rect'],
           onChanged: (val) => _updateDraft(
@@ -408,7 +413,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildSlider(
-          label: 'Size Factor',
+          label: l10n.sizeFactorLabel,
           value: _draft.artwork.sizeFactor,
           min: 0.1,
           max: 1.0,
@@ -427,7 +432,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         if (_draft.artwork.shape == 'square') ...[
           const SizedBox(height: 16),
           _buildSlider(
-            label: 'Corner Radius',
+            label: l10n.cornerRadiusLabel,
             value: _draft.artwork.cornerRadius,
             min: 0.0,
             max: 50.0,
@@ -446,7 +451,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ],
         const SizedBox(height: 16),
         _buildSwitch(
-          label: 'Shadow',
+          label: l10n.shadowLabel,
           value: _draft.artwork.shadow,
           onChanged: (val) => _updateDraft(
             (d) => d.copyWith(
@@ -462,7 +467,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildSwitch(
-          label: 'Rotation Animation',
+          label: l10n.rotationAnimationLabel,
           value: _draft.artwork.rotation,
           onChanged: (val) => _updateDraft(
             (d) => d.copyWith(
@@ -481,11 +486,12 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
   }
 
   Widget _buildProgressTab() {
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildColorPicker(
-          label: 'Active Color',
+          label: l10n.activeColorLabel,
           color: _draft.progressBar.getActiveColor(),
           onChanged: (color) {
             final hex = color.value.toRadixString(16).substring(2);
@@ -505,7 +511,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildColorPicker(
-          label: 'Inactive Color',
+          label: l10n.inactiveColorLabel,
           color: _draft.progressBar.getInactiveColor(),
           onChanged: (color) {
             final hex = color.value.toRadixString(16);
@@ -525,7 +531,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildSlider(
-          label: 'Height',
+          label: l10n.heightLabel,
           value: _draft.progressBar.height,
           min: 1.0,
           max: 10.0,
@@ -544,7 +550,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildDropdown(
-          label: 'Shape',
+          label: l10n.shapeLabel,
           value: _draft.progressBar.shape,
           items: const ['rounded', 'square'],
           onChanged: (val) => _updateDraft(
@@ -562,7 +568,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildSwitch(
-          label: 'Thumb Visible',
+          label: l10n.thumbVisibleLabel,
           value: _draft.progressBar.thumbVisible,
           onChanged: (val) => _updateDraft(
             (d) => d.copyWith(
@@ -582,11 +588,12 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
   }
 
   Widget _buildControlsTab() {
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildColorPicker(
-          label: 'Button Color',
+          label: l10n.buttonColorLabel,
           color: _draft.controls.getColor(),
           onChanged: (color) {
             final hex = color.value.toRadixString(16).substring(2);
@@ -605,7 +612,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildColorPicker(
-          label: 'Play Button Color',
+          label: l10n.playButtonColorLabel,
           color: _draft.controls.getPlayButtonColor(),
           onChanged: (color) {
             final hex = color.value.toRadixString(16).substring(2);
@@ -624,7 +631,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildSlider(
-          label: 'Play Button Size',
+          label: l10n.playButtonSizeLabel,
           value: _draft.controls.size,
           min: 40.0,
           max: 100.0,
@@ -642,7 +649,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildDropdown(
-          label: 'Play Button Shape',
+          label: l10n.playButtonShapeLabel,
           value: _draft.controls.playShape,
           items: const ['circle', 'rounded_rect'],
           onChanged: (val) => _updateDraft(
@@ -662,11 +669,12 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
   }
 
   Widget _buildAnimationsTab() {
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildSwitch(
-          label: 'Cover Rotation',
+          label: l10n.coverRotationLabel,
           value: _draft.animations.coverRotation,
           onChanged: (val) => _updateDraft(
             (d) => d.copyWith(
@@ -682,7 +690,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         if (_draft.animations.coverRotation) ...[
           const SizedBox(height: 16),
           _buildSlider(
-            label: 'Rotation Speed (s/turn)',
+            label: l10n.rotationSpeedLabel,
             value: _draft.animations.rotationSpeed,
             min: 3.0,
             max: 60.0,
@@ -700,7 +708,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ],
         const SizedBox(height: 16),
         _buildSwitch(
-          label: 'Pulse Effect',
+          label: l10n.pulseEffectLabel,
           value: _draft.animations.pulse,
           onChanged: (val) => _updateDraft(
             (d) => d.copyWith(
@@ -715,7 +723,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         ),
         const SizedBox(height: 16),
         _buildSwitch(
-          label: 'Fade In',
+          label: l10n.fadeInLabel,
           value: _draft.animations.fadeIn,
           onChanged: (val) => _updateDraft(
             (d) => d.copyWith(

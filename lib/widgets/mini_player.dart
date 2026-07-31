@@ -10,6 +10,7 @@ import '../providers/player_provider.dart';
 import '../services/player_ui_settings_service.dart';
 import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/screen_helper.dart';
 import 'album_artwork.dart';
 
@@ -43,7 +44,7 @@ class MiniPlayer extends StatelessWidget {
 
         if (isPlayingRadio && currentRadioStation != null) {
           title = currentRadioStation.name;
-          subtitle = 'Internet Radio • LIVE';
+          subtitle = AppLocalizations.of(context)!.internetRadioLive;
           coverArt = null;
         } else if (currentSong != null) {
           title = currentSong.title;
@@ -230,7 +231,9 @@ class _MiniPlayerRow extends StatelessWidget {
                       ],
                       Expanded(
                         child: Text(
-                          isPlayingRadio ? 'Internet Radio' : subtitle!,
+                          isPlayingRadio
+                              ? AppLocalizations.of(context)!.internetRadio
+                              : subtitle!,
                           style: theme.textTheme.bodySmall,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

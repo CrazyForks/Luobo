@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../providers/player_provider.dart';
 import '../services/subsonic_service.dart';
 import '../theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 
 class RadioScreen extends StatefulWidget {
   const RadioScreen({super.key});
@@ -61,7 +62,9 @@ class _RadioScreenState extends State<RadioScreen> {
   Future<void> _openHomePage(RadioStation station) async {
     if (station.homePageUrl == null || station.homePageUrl!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No homepage URL available')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.noHomepageUrl),
+        ),
       );
       return;
     }
@@ -116,7 +119,7 @@ class _RadioScreenState extends State<RadioScreen> {
                   color: AppTheme.appleMusicRed,
                 ),
                 title: Text(
-                  'Play Station',
+                  AppLocalizations.of(context)!.playStation,
                   style: TextStyle(color: isDark ? Colors.white : Colors.black),
                 ),
                 onTap: () {
@@ -132,7 +135,7 @@ class _RadioScreenState extends State<RadioScreen> {
                     color: isDark ? Colors.white70 : Colors.black54,
                   ),
                   title: Text(
-                    'Open Homepage',
+                    AppLocalizations.of(context)!.openHomepage,
                     style: TextStyle(
                       color: isDark ? Colors.white : Colors.black,
                     ),
@@ -157,14 +160,21 @@ class _RadioScreenState extends State<RadioScreen> {
                   color: isDark ? Colors.white70 : Colors.black54,
                 ),
                 title: Text(
-                  'Copy Stream URL',
+                  AppLocalizations.of(context)!.copyStreamUrl,
                   style: TextStyle(color: isDark ? Colors.white : Colors.black),
                 ),
                 onTap: () {
                   Navigator.pop(context);
                   
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Stream URL: ${station.streamUrl}')),
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(
+                          context,
+                        )!
+                            .streamUrl(station.streamUrl),
+                      ),
+                    ),
                   );
                 },
               ),
@@ -182,13 +192,13 @@ class _RadioScreenState extends State<RadioScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Radio Stations'),
+        title: Text(AppLocalizations.of(context)!.radioStations),
         backgroundColor: isDark ? AppTheme.darkBackground : Colors.white,
         actions: [
           IconButton(
             icon: const Icon(CupertinoIcons.refresh),
             onPressed: _loadStations,
-            tooltip: 'Refresh',
+            tooltip: AppLocalizations.of(context)!.refresh,
           ),
         ],
       ),
@@ -214,9 +224,12 @@ class _RadioScreenState extends State<RadioScreen> {
                 color: Colors.orange,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Failed to load radio stations',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context)!.failedToLoadRadioStations,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -228,7 +241,7 @@ class _RadioScreenState extends State<RadioScreen> {
               ElevatedButton.icon(
                 onPressed: _loadStations,
                 icon: const Icon(CupertinoIcons.refresh),
-                label: const Text('Retry'),
+                label: Text(AppLocalizations.of(context)!.retry),
               ),
             ],
           ),
@@ -249,13 +262,16 @@ class _RadioScreenState extends State<RadioScreen> {
                 color: Colors.grey[400],
               ),
               const SizedBox(height: 16),
-              const Text(
-                'No Radio Stations',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context)!.noRadioStations,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Add radio stations in your Navidrome server settings to see them here.',
+                AppLocalizations.of(context)!.noRadioStationsHint,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey[600]),
               ),

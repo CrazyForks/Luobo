@@ -54,6 +54,7 @@ class _TopRatedScreenState extends State<TopRatedScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: CustomScrollView(
@@ -99,7 +100,7 @@ class _TopRatedScreenState extends State<TopRatedScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Error loading albums',
+                      l10n.errorLoadingAlbums,
                       style: theme.textTheme.headlineSmall,
                     ),
                   ],
@@ -119,7 +120,7 @@ class _TopRatedScreenState extends State<TopRatedScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'No top rated albums',
+                      l10n.noTopRatedAlbums,
                       style: theme.textTheme.headlineSmall,
                     ),
                   ],

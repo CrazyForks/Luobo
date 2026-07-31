@@ -3,19 +3,23 @@ import 'package:flutter/cupertino.dart';
 import '../providers/library_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
+import '../l10n/app_localizations.dart';
 import 'playlist_screen.dart';
 
 class LibrarySearchDelegate extends SearchDelegate<String> {
   final LibraryProvider libraryProvider;
   final bool isDark;
 
-  LibrarySearchDelegate({required this.libraryProvider, required this.isDark})
-    : super(
-        searchFieldLabel: 'Search in Library...',
-        searchFieldStyle: TextStyle(
-          color: isDark ? Colors.white : Colors.black,
-        ),
-      );
+  LibrarySearchDelegate({
+    required this.libraryProvider,
+    required this.isDark,
+    String? searchFieldLabel,
+  }) : super(
+          searchFieldLabel: searchFieldLabel ?? 'Search in Library...',
+          searchFieldStyle: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+          ),
+        );
 
   @override
   ThemeData appBarTheme(BuildContext context) {
@@ -67,7 +71,7 @@ class LibrarySearchDelegate extends SearchDelegate<String> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Search your library',
+              AppLocalizations.of(context)!.searchYourLibrary,
               style: TextStyle(
                 color: isDark ? Colors.white54 : Colors.black45,
                 fontSize: 16,
@@ -99,7 +103,7 @@ class LibrarySearchDelegate extends SearchDelegate<String> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No playlists found',
+              AppLocalizations.of(context)!.noPlaylistsFound,
               style: TextStyle(
                 color: isDark ? Colors.white54 : Colors.black45,
                 fontSize: 16,
@@ -115,7 +119,7 @@ class LibrarySearchDelegate extends SearchDelegate<String> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            'Playlists',
+            AppLocalizations.of(context)!.playlists,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -138,7 +142,12 @@ class LibrarySearchDelegate extends SearchDelegate<String> {
               ),
             ),
             title: Text(playlist.name),
-            subtitle: Text('${playlist.songCount} songs'),
+            subtitle: Text(
+              AppLocalizations.of(
+                context,
+              )!
+                  .songsCount(playlist.songCount ?? 0),
+            ),
             onTap: () {
               close(context, '');
               NavigationHelper.push(

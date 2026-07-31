@@ -928,6 +928,7 @@ class _PlaylistCard extends StatelessWidget {
     final coverArtUrl = playlist.coverArt != null
         ? subsonicService.getCoverArtUrl(playlist.coverArt!, size: 300)
         : null;
+    final l10n = AppLocalizations.of(context)!;
 
     return GestureDetector(
       onTap: onTap,
@@ -1005,7 +1006,7 @@ class _PlaylistCard extends StatelessWidget {
             const SizedBox(height: 2),
             if (playlist.songCount != null)
               Text(
-                '${playlist.songCount} songs',
+                l10n.songsCount(playlist.songCount!),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: isDark ? Colors.white60 : Colors.black54,
                     ),
@@ -1061,6 +1062,7 @@ class _DesktopSongTableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     final labelStyle = TextStyle(
       fontSize: 11,
       fontWeight: FontWeight.w600,
@@ -1078,12 +1080,12 @@ class _DesktopSongTableHeader extends StatelessWidget {
           const SizedBox(width: 12),
           const SizedBox(width: 40),
           const SizedBox(width: 12),
-          Expanded(flex: 5, child: Text('TITLE', style: labelStyle)),
-          Expanded(flex: 3, child: Text('ALBUM', style: labelStyle)),
+          Expanded(flex: 5, child: Text(l10n.tableHeaderTitle, style: labelStyle)),
+          Expanded(flex: 3, child: Text(l10n.tableHeaderAlbum, style: labelStyle)),
           const SizedBox(width: 40),
           SizedBox(
             width: 52,
-            child: Text('TIME', style: labelStyle, textAlign: TextAlign.right),
+            child: Text(l10n.tableHeaderTime, style: labelStyle, textAlign: TextAlign.right),
           ),
           const SizedBox(width: 8),
         ],

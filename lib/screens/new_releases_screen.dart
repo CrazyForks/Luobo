@@ -4,6 +4,7 @@ import '../services/subsonic_service.dart';
 import '../models/album.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
+import '../l10n/app_localizations.dart';
 import 'album_screen.dart';
 
 class NewReleasesScreen extends StatefulWidget {
@@ -53,6 +54,7 @@ class _NewReleasesScreenState extends State<NewReleasesScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: CustomScrollView(
@@ -62,7 +64,7 @@ class _NewReleasesScreenState extends State<NewReleasesScreen> {
             expandedHeight: 140,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                'New Releases',
+                l10n.newReleases,
                 style: theme.appBarTheme.titleTextStyle,
               ),
               titlePadding: const EdgeInsets.only(left: 52, bottom: 16),
@@ -98,7 +100,7 @@ class _NewReleasesScreenState extends State<NewReleasesScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Error loading albums',
+                      l10n.errorLoadingAlbums,
                       style: theme.textTheme.headlineSmall,
                     ),
                   ],
@@ -118,7 +120,7 @@ class _NewReleasesScreenState extends State<NewReleasesScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'No new releases',
+                      l10n.noNewReleases,
                       style: theme.textTheme.headlineSmall,
                     ),
                   ],

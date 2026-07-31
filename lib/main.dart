@@ -109,7 +109,7 @@ class _EmulatorWarningScreen extends StatelessWidget {
                         exit(0);
                       },
                       icon: const Icon(Icons.exit_to_app),
-                      label: const Text('Exit App'),
+                      label: Text(l10n.exitApp),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size(200, 50),
                       ),
@@ -400,7 +400,7 @@ class _ServerUnreachableScreen extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: () => authProvider.retryConnection(),
                   icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Retry'),
+                  label: Text(AppLocalizations.of(context)!.retry),
                 ),
               ),
               const SizedBox(height: 12),

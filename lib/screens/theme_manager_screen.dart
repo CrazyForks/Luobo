@@ -9,6 +9,7 @@ import '../models/now_playing_theme.dart';
 import '../services/now_playing_theme_service.dart';
 import '../widgets/theme_preview_card.dart';
 import '../theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 import 'theme_editor_screen.dart';
 
 class ThemeManagerScreen extends StatefulWidget {
@@ -21,13 +22,14 @@ class ThemeManagerScreen extends StatefulWidget {
 class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         backgroundColor: AppTheme.darkSurface,
-        title: const Text(
-          'Now Playing Themes',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          l10n.nowPlayingThemesTitle,
+          style: const TextStyle(color: Colors.white),
         ),
         leading: IconButton(
           icon: const Icon(CupertinoIcons.back, color: Colors.white),
@@ -95,11 +97,12 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
 
   Future<void> _createNewTheme(BuildContext context) async {
     final service = context.read<NowPlayingThemeService>();
+    final l10n = AppLocalizations.of(context)!;
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
     final newTheme = NowPlayingTheme(
       id: newId,
-      themeName: 'New Theme',
-      author: 'Me',
+      themeName: l10n.newThemeDefaultName,
+      author: l10n.newThemeDefaultAuthor,
       createdAt: DateTime.now(),
     );
 
@@ -122,13 +125,14 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
   ) async {
     final isCurrentlyActive = service.activeTheme?.id == theme.id;
     final isDefault = theme.id == 'default';
+    final l10n = AppLocalizations.of(context)!;
 
     if (isCurrentlyActive && !isDefault) {
       // Deactivate
       await service.setActiveTheme(null);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Theme deactivated (using default)')),
+          SnackBar(content: Text(l10n.themeDeactivated)),
         );
       }
     } else if (isDefault) {
@@ -136,7 +140,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
       await service.setActiveTheme(null);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Default theme activated')),
+          SnackBar(content: Text(l10n.defaultThemeActivated)),
         );
       }
     } else {
@@ -144,7 +148,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
       await service.setActiveTheme(theme.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${theme.themeName} activated')),
+          SnackBar(content: Text(l10n.themeActivated(theme.themeName))),
         );
       }
     }
@@ -164,10 +168,11 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
     NowPlayingTheme theme,
     NowPlayingThemeService service,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => _DuplicateThemeDialog(
-        initialName: '${theme.themeName} Copy',
+        initialName: l10n.themeCopyName(theme.themeName),
       ),
     );
 
@@ -175,7 +180,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
       await service.duplicateTheme(theme.id, result);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Duplicated as "$result"')),
+          SnackBar(content: Text(l10n.themeDuplicated(result))),
         );
       }
     }
@@ -187,6 +192,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
     NowPlayingThemeService service,
   ) async {
     try {
+      final l10n = AppLocalizations.of(context)!;
       final json = service.exportTheme(theme.id);
       final fileName = '${theme.themeName.replaceAll(' ', '_')}_theme.json';
 
@@ -194,7 +200,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
         // Mobile: FilePicker.saveFile requires bytes on Android & iOS
         final bytes = Uint8List.fromList(utf8.encode(json));
         final result = await FilePicker.platform.saveFile(
-          dialogTitle: 'Export Theme',
+          dialogTitle: l10n.exportThemeTitle,
           fileName: fileName,
           type: FileType.custom,
           allowedExtensions: ['json'],
@@ -203,13 +209,13 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
 
         if (result != null && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Exported to $result')),
+            SnackBar(content: Text(l10n.themeExported(result))),
           );
         }
       } else {
         // Desktop: use file picker to save
         final result = await FilePicker.platform.saveFile(
-          dialogTitle: 'Export Theme',
+          dialogTitle: l10n.exportThemeTitle,
           fileName: fileName,
         );
 
@@ -218,7 +224,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
           await file.writeAsString(json);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Exported to $result')),
+              SnackBar(content: Text(l10n.themeExported(result))),
             );
           }
         }
@@ -226,7 +232,11 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.exportFailed(e.toString()),
+            ),
+          ),
         );
       }
     }
@@ -263,10 +273,11 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
         await service.saveTheme(finalTheme);
 
         if (context.mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Theme imported${safeMode ? ' (Safe Mode)' : ''}',
+                safeMode ? l10n.themeImportedSafeMode : l10n.themeImported,
               ),
             ),
           );
@@ -275,35 +286,42 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
         await service.saveTheme(importResult.theme!);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Theme imported successfully')),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.themeImportedSuccess),
+            ),
           );
         }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Import failed: $e')),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.importFailed(e.toString()),
+            ),
+          ),
         );
       }
     }
   }
 
   void _showErrorDialog(BuildContext context, List<String> errors) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.darkSurface,
-        title: const Text(
-          'Import Failed',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          l10n.importFailedTitle,
+          style: const TextStyle(color: Colors.white),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'The theme file contains errors:',
-              style: TextStyle(color: Colors.white),
+            Text(
+              l10n.themeFileErrors,
+              style: const TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 12),
             ...errors.map(
@@ -328,9 +346,9 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'OK',
-              style: TextStyle(color: AppTheme.appleMusicRed),
+            child: Text(
+              l10n.ok,
+              style: const TextStyle(color: AppTheme.appleMusicRed),
             ),
           ),
         ],
@@ -342,6 +360,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
     BuildContext context,
     ImportResult result,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return showDialog(
       context: context,
       barrierDismissible: false,
@@ -355,9 +374,9 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
               size: 24,
             ),
             const SizedBox(width: 12),
-            const Text(
-              'Security Warning',
-              style: TextStyle(color: Colors.white),
+            Text(
+              l10n.securityWarning,
+              style: const TextStyle(color: Colors.white),
             ),
           ],
         ),
@@ -367,25 +386,25 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'This theme contains custom Flutter code which may pose security risks.',
+                l10n.customCodeSecurityRisk,
                 style: TextStyle(color: Colors.white.withOpacity(0.9)),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Theme Details:',
-                style: TextStyle(
+              Text(
+                l10n.themeDetailsLabel,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              _buildDetailRow('Name', result.theme!.themeName),
-              _buildDetailRow('Author', result.theme!.author),
-              _buildDetailRow('Version', result.theme!.version),
+              _buildDetailRow(l10n.nameLabel, result.theme!.themeName),
+              _buildDetailRow(l10n.authorLabel, result.theme!.author),
+              _buildDetailRow(l10n.version, result.theme!.version),
               const SizedBox(height: 12),
-              const Text(
-                'Custom Widgets:',
-                style: TextStyle(
+              Text(
+                l10n.customWidgetsLabel,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -412,9 +431,9 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
               ),
               if (result.dependencies.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                const Text(
-                  'Dependencies:',
-                  style: TextStyle(
+                Text(
+                  l10n.dependenciesLabel,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
@@ -437,22 +456,22 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              'Cancel',
+              l10n.cancel,
               style: TextStyle(color: Colors.white.withOpacity(0.7)),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'safe'),
-            child: const Text(
-              'Safe Mode',
-              style: TextStyle(color: Colors.orange),
+            child: Text(
+              l10n.safeModeButton,
+              style: const TextStyle(color: Colors.orange),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Enable Code',
-              style: TextStyle(
+            child: Text(
+              l10n.enableCodeButton,
+              style: const TextStyle(
                 color: AppTheme.appleMusicRed,
                 fontWeight: FontWeight.bold,
               ),
@@ -492,31 +511,32 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
     NowPlayingTheme theme,
     NowPlayingThemeService service,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.darkSurface,
-        title: const Text(
-          'Delete Theme',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          l10n.deleteTheme,
+          style: const TextStyle(color: Colors.white),
         ),
         content: Text(
-          'Are you sure you want to delete "${theme.themeName}"?',
+          l10n.deleteThemeConfirm(theme.themeName),
           style: const TextStyle(color: Colors.white),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              'Cancel',
+              l10n.cancel,
               style: TextStyle(color: Colors.white.withOpacity(0.7)),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(
                 color: AppTheme.appleMusicRed,
                 fontWeight: FontWeight.bold,
               ),
@@ -530,7 +550,7 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
       await service.deleteTheme(theme.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${theme.themeName} deleted')),
+          SnackBar(content: Text(l10n.themeDeleted(theme.themeName))),
         );
       }
     }
@@ -543,10 +563,11 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
   ) async {
     await service.toggleSafeMode(theme.id);
     if (context.mounted) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Safe Mode ${theme.safeMode ? 'disabled' : 'enabled'}',
+            theme.safeMode ? l10n.safeModeDisabled : l10n.safeModeEnabled,
           ),
         ),
       );
@@ -579,18 +600,19 @@ class _DuplicateThemeDialogState extends State<_DuplicateThemeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
       backgroundColor: AppTheme.darkSurface,
-      title: const Text(
-        'Duplicate Theme',
-        style: TextStyle(color: Colors.white),
+      title: Text(
+        l10n.duplicateTheme,
+        style: const TextStyle(color: Colors.white),
       ),
       content: TextField(
         controller: _controller,
         autofocus: true,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          hintText: 'New theme name',
+          hintText: l10n.newThemeNameHint,
           hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
           enabledBorder: UnderlineInputBorder(
             borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
@@ -604,7 +626,7 @@ class _DuplicateThemeDialogState extends State<_DuplicateThemeDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(
-            'Cancel',
+            l10n.cancel,
             style: TextStyle(color: Colors.white.withOpacity(0.7)),
           ),
         ),
@@ -614,9 +636,9 @@ class _DuplicateThemeDialogState extends State<_DuplicateThemeDialog> {
               Navigator.pop(context, _controller.text.trim());
             }
           },
-          child: const Text(
-            'Duplicate',
-            style: TextStyle(
+          child: Text(
+            l10n.duplicateButton,
+            style: const TextStyle(
               color: AppTheme.appleMusicRed,
               fontWeight: FontWeight.bold,
             ),

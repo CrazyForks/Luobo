@@ -112,6 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildErrorCard(ThemeData theme) {
     final error = _loginError;
     if (error == null) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
 
     final type = _categoriseError(error);
 
@@ -124,20 +125,20 @@ class _LoginScreenState extends State<LoginScreen> {
         icon = CupertinoIcons.lock_slash;
         color = const Color(0xFFFF9500); 
         if (!_allowSelfSignedCertificates) {
-          hint = 'Try enabling "Allow Self-Signed Certificates" below.';
+          hint = l10n.enableSelfSignedCertsHint;
         }
       case _LoginErrorType.credentials:
         icon = CupertinoIcons.person_badge_minus;
         color = AppTheme.appleMusicRed;
-        hint = 'Check your username and password and try again.';
+        hint = l10n.checkCredentialsHint;
       case _LoginErrorType.notFound:
         icon = CupertinoIcons.question_circle;
         color = const Color(0xFFFF9500);
-        hint = 'Verify the server URL path (e.g. /navidrome, /airsonic).';
+        hint = l10n.verifyServerUrlHint;
       case _LoginErrorType.timeout:
         icon = CupertinoIcons.timer;
         color = const Color(0xFFFF9500);
-        hint = 'The server took too long to respond. Check your network.';
+        hint = l10n.serverTimeoutHint;
       case _LoginErrorType.connection:
         icon = CupertinoIcons.wifi_slash;
         color = const Color(0xFFFF9500);
@@ -145,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
       case _LoginErrorType.format:
         icon = CupertinoIcons.link;
         color = const Color(0xFFFF9500);
-        hint = 'URL must start with http:// or https://';
+        hint = l10n.serverUrlMustStartWith;
       case _LoginErrorType.generic:
         icon = CupertinoIcons.exclamationmark_triangle;
         color = AppTheme.appleMusicRed;
@@ -182,15 +183,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 IconButton(
                   icon: Icon(Icons.copy_rounded, size: 16, color: color.withValues(alpha: 0.7)),
-                  tooltip: 'Copy error',
+                  tooltip: l10n.copyError,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: error));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Error copied to clipboard'),
-                        duration: Duration(seconds: 2),
+                      SnackBar(
+                        content: Text(l10n.errorCopiedToClipboard),
+                        duration: const Duration(seconds: 2),
                         behavior: SnackBarBehavior.floating,
                         width: 260,
                       ),
@@ -226,8 +227,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   child: Text(
                     Platform.isIOS || Platform.isAndroid
-                        ? 'Tap to enable self-signed certificates'
-                        : 'Click to enable self-signed certificates',
+                        ? l10n.tapToEnableSelfSignedCerts
+                        : l10n.clickToEnableSelfSignedCerts,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: color,
                       fontWeight: FontWeight.w600,
@@ -269,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['p12', 'pfx', 'pem'],
-        dialogTitle: 'Select Client Certificate',
+        dialogTitle: AppLocalizations.of(context)!.selectClientCertificate,
       );
       if (result != null && result.files.single.path != null) {
         setState(() {
@@ -298,7 +299,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pem', 'crt', 'cer', 'p12', 'pfx', 'der'],
-        dialogTitle: 'Select TLS/SSL Certificate',
+        dialogTitle: AppLocalizations.of(context)!.selectCertificate,
       );
 
       if (result != null && result.files.single.path != null) {
@@ -365,7 +366,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!success && mounted) {
       setState(
-        () => _loginError = authProvider.error ?? 'Failed to connect to server',
+        () => _loginError =
+            authProvider.error ??
+            AppLocalizations.of(context)!.failedToConnectToServer,
       );
     }
     
@@ -405,7 +408,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!success && mounted) {
       setState(
-        () => _loginError = authProvider.error ?? 'Failed to connect to server',
+        () => _loginError =
+            authProvider.error ??
+            AppLocalizations.of(context)!.failedToConnectToServer,
       );
     } else if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -440,7 +445,7 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _isScanning = true;
         _scanProgress = 0.0;
-        _scanStatus = 'Select your music files...';
+        _scanStatus = AppLocalizations.of(context)!.selectMusicFiles;
       });
       try {
         final added = await localService.pickAndAddFiles();
@@ -452,7 +457,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(added == 0
-                    ? 'No files selected. Tap "Use Local Files" and pick your music files.'
+                    ? AppLocalizations.of(context)!.noFilesSelected
                     : AppLocalizations.of(context)!.noMusicFilesFound),
                 backgroundColor: Colors.orange,
               ),
@@ -468,7 +473,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _isScanning = true;
       _scanProgress = 0.0;
-      _scanStatus = 'Starting scan...';
+      _scanStatus = AppLocalizations.of(context)!.startingScan;
     });
 
     void updateProgress() {
@@ -631,7 +636,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'YouTube Music streams music directly from YouTube. No account required — tap Connect to start.',
+                              AppLocalizations.of(
+                                context,
+                              )!
+                                  .youtubeMusicDescription,
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Theme.of(context).brightness == Brightness.dark
@@ -1253,11 +1261,12 @@ class _SavedProfilesSwitcherState extends State<_SavedProfilesSwitcher> {
         if (profiles.isEmpty) return const SizedBox.shrink();
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final l10n = AppLocalizations.of(context)!;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Saved Profiles',
+              l10n.savedProfiles,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -1297,7 +1306,7 @@ class _SavedProfilesSwitcherState extends State<_SavedProfilesSwitcher> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Tap a profile to connect • tap × to delete',
+              l10n.tapProfileToConnect,
               style: TextStyle(
                 fontSize: 11,
                 color: isDark ? Colors.white38 : Colors.black38,
@@ -1323,6 +1332,7 @@ class _ServerFamilyToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final labelColor = isDark ? Colors.white70 : Colors.black87;
+    final l10n = AppLocalizations.of(context)!;
 
     final chips = [
       (
@@ -1349,7 +1359,7 @@ class _ServerFamilyToggle extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Server Type',
+          l10n.serverType,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,

@@ -96,6 +96,46 @@ class SongKnowledgeCache {
     if (await metaFile.exists()) await metaFile.delete();
   }
 
+  /// Exports the knowledge base as a shareable JSON string.
+  /// Includes a small metadata header so recipients (sharing the same NAS
+  /// library) can identify what this file is and when it was generated.
+  String exportAsJson() {
+    final payload = {
+      'type': 'luobo_song_knowledge_base',
+      'version': 1,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'songCount': (_cache ?? {}).length,
+      'tags': _cache ?? {},
+    };
+    return const JsonEncoder.withIndent('  ').convert(payload);
+  }
+
+  /// Imports a previously exported knowledge base JSON string.
+  /// Existing entries are merged with (and take precedence over) the
+  /// imported ones unless [overwrite] is true.
+  /// Returns the number of new/updated entries imported.
+  Future<int> importFromJson(String jsonStr, {bool overwrite = false}) async {
+    final decoded = json.decode(jsonStr) as Map<String, dynamic>;
+    final rawTags = decoded['tags'];
+    if (rawTags is! Map) {
+      throw const FormatException('无效的知识库文件：缺少 tags 字段');
+    }
+    final importedTags = rawTags.map(
+      (k, v) => MapEntry(k.toString(), v.toString()),
+    );
+
+    _cache ??= {};
+    int count = 0;
+    for (final entry in importedTags.entries) {
+      if (overwrite || !_cache!.containsKey(entry.key)) {
+        _cache![entry.key] = entry.value;
+        count++;
+      }
+    }
+    await flush();
+    return count;
+  }
+
   // ── Private ──────────────────────────────────────────────────────────
 
   Future<File> _getCacheFile() async {

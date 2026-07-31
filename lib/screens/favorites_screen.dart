@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/subsonic_service.dart';
 import '../widgets/widgets.dart';
+import '../l10n/app_localizations.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -49,9 +50,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Favorites'),
+        title: Text(l10n.favorites),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
@@ -60,13 +62,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             child: Row(
               children: [
                 _TabButton(
-                  title: 'Songs',
+                  title: l10n.songs,
                   isSelected: _selectedTab == 0,
                   onTap: () => setState(() => _selectedTab = 0),
                 ),
                 const SizedBox(width: 8),
                 _TabButton(
-                  title: 'Albums',
+                  title: l10n.albums,
                   isSelected: _selectedTab == 1,
                   onTap: () => setState(() => _selectedTab = 1),
                 ),
@@ -85,13 +87,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Widget _buildSongsList() {
     if (_favoriteSongs.isEmpty) {
-      return const Center(
+      final l10n = AppLocalizations.of(context)!;
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.favorite_border, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No favorite songs yet'),
+            const Icon(Icons.favorite_border, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(l10n.noFavoriteSongs),
           ],
         ),
       );
@@ -143,9 +146,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               const SizedBox(height: 16),
               ListTile(
                 leading: const Icon(Icons.heart_broken, color: Colors.red),
-                title: const Text(
-                  'Remove from Favorites',
-                  style: TextStyle(color: Colors.white),
+                title: Text(
+                  AppLocalizations.of(context)!.removeFromFavorites,
+                  style: const TextStyle(color: Colors.white),
                 ),
                 onTap: () async {
                   Navigator.pop(context);
@@ -169,13 +172,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     try {
       await subsonicService.unstar(id: song.id);
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         setState(() {
           _favoriteSongs.removeAt(index);
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Removed from favorites'),
-            duration: Duration(seconds: 1),
+          SnackBar(
+            content: Text(l10n.removedFromFavorites),
+            duration: const Duration(seconds: 1),
           ),
         );
       }
@@ -183,7 +187,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('${AppLocalizations.of(context)!.error}: $e'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -193,13 +197,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Widget _buildAlbumsList() {
     if (_favoriteAlbums.isEmpty) {
-      return const Center(
+      final l10n = AppLocalizations.of(context)!;
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.favorite_border, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No favorite albums yet'),
+            const Icon(Icons.favorite_border, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(l10n.noFavoriteAlbums),
           ],
         ),
       );

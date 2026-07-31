@@ -90,7 +90,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get errorLoadingAlbums => '加载专辑出错';
 
   @override
-  String get noTopRatedAlbums => '暂无评分最高的专辑';
+  String get noTopRatedAlbums => '暂无高分专辑';
 
   @override
   String get login => '登录';
@@ -191,7 +191,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addToFavorites => '添加到收藏';
 
   @override
-  String get removeFromFavorites => '从收藏移除';
+  String get removeFromFavorites => '从收藏中移除';
 
   @override
   String get download => '下载';
@@ -610,6 +610,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tabDisplay => '显示';
 
   @override
+  String get tabAiPlaylist => 'AI 歌单';
+
+  @override
   String get tabSupport => '支持';
 
   @override
@@ -850,7 +853,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get downloadsDeleted => '所有下载已删除';
 
   @override
-  String get noSongsAvailable => '没有可用歌曲。请先加载您的音乐库。';
+  String get noSongsAvailable => '暂无可用歌曲';
 
   @override
   String get sectionBpmAnalysis => 'BPM 分析';
@@ -1052,7 +1055,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get playlistNotFound => '未找到歌单';
 
   @override
-  String get noSongsInPlaylist => '该歌单中没有歌曲';
+  String get noSongsInPlaylist => '此歌单中没有歌曲';
 
   @override
   String get noFavoriteSongsYet => '还没有喜欢的歌曲';
@@ -1061,10 +1064,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noFavoriteAlbumsYet => '还没有喜欢的专辑';
 
   @override
-  String get listeningHistory => '收听历史';
+  String get listeningHistory => '播放历史';
 
   @override
-  String get noListeningHistory => '没有收听历史';
+  String get noListeningHistory => '暂无播放历史';
 
   @override
   String get songsWillAppearHere => '您播放的歌曲将显示在这里';
@@ -1112,10 +1115,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get failedToLoadRadioStations => '加载电台失败';
 
   @override
-  String get noRadioStations => '没有电台';
+  String get noRadioStations => '暂无电台';
 
   @override
-  String get noRadioStationsHint => '在您的 Navidrome 服务器设置中添加电台以在此处查看。';
+  String get noRadioStationsHint => '请在 Navidrome 服务器设置中添加电台，即可在这里看到。';
 
   @override
   String get connectToServerSubtitle => '连接到您的 Subsonic 服务器';
@@ -1234,7 +1237,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get useLocalFiles => '使用本地文件';
 
   @override
-  String get startingScan => '正在开始扫描...';
+  String get startingScan => '开始扫描...';
 
   @override
   String get storagePermissionRequired => '需要存储权限才能扫描本地文件';
@@ -1990,6 +1993,56 @@ class AppLocalizationsZh extends AppLocalizations {
   String get modelName => '模型名称';
 
   @override
+  String get aiConnectionSettings => 'AI 连接配置';
+
+  @override
+  String get exportKnowledgeBase => '导出知识库';
+
+  @override
+  String get exportKnowledgeBaseSubtitle => '导出为文件，分享给共用同一 NAS 曲库的其他人';
+
+  @override
+  String get export => '导出';
+
+  @override
+  String exportedTo(String path) {
+    return '已导出到 $path';
+  }
+
+  @override
+  String exportFailed(String error) {
+    return '导出失败：$error';
+  }
+
+  @override
+  String get importKnowledgeBase => '导入知识库';
+
+  @override
+  String get importKnowledgeBaseSubtitle => '导入他人分享的知识库文件';
+
+  @override
+  String get import => '导入';
+
+  @override
+  String knowledgeImported(int count) {
+    return '已导入 $count 首歌到知识库';
+  }
+
+  @override
+  String importFailed(String error) {
+    return '导入失败：$error';
+  }
+
+  @override
+  String get howItWorks => '工作原理';
+
+  @override
+  String get knowledgeBaseExplanation => '歌曲知识库生成原理';
+
+  @override
+  String get playlistGenerationExplanation => 'AI 歌单生成原理';
+
+  @override
   String get networkWifi => 'WiFi';
 
   @override
@@ -2096,4 +2149,442 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get libraryEmptyOrFailed => '曲库为空或加载失败，请确认您的服务器支持全曲库扫描。';
+
+  @override
+  String get addToLikedSongs => '添加到喜欢的歌曲';
+
+  @override
+  String get removeFromLikedSongs => '从喜欢的歌曲中移除';
+
+  @override
+  String rateSongWithRating(int rating) {
+    return '为歌曲评分（$rating 星）';
+  }
+
+  @override
+  String songRated(int rating) {
+    return '已评分 $rating 星';
+  }
+
+  @override
+  String get songRemovedFromPlaylist => '歌曲已从歌单中移除';
+
+  @override
+  String errorRemovingSong(Object error) {
+    return '移除歌曲出错：$error';
+  }
+
+  @override
+  String errorRemovingSongs(Object error) {
+    return '批量移除歌曲出错：$error';
+  }
+
+  @override
+  String errorReorderingSong(Object error) {
+    return '重新排序歌曲出错：$error';
+  }
+
+  @override
+  String get removeSongs => '移除歌曲';
+
+  @override
+  String removeSongsConfirm(int count) {
+    return '从该歌单中移除 $count 首歌曲？';
+  }
+
+  @override
+  String songsRemovedFromPlaylist(int count) {
+    return '已从歌单中移除 $count 首歌曲';
+  }
+
+  @override
+  String get reorderSongs => '重新排序歌曲';
+
+  @override
+  String get doneReordering => '完成排序';
+
+  @override
+  String get selectAll => '全选';
+
+  @override
+  String get deselectAll => '取消全选';
+
+  @override
+  String get removeSelected => '移除所选';
+
+  @override
+  String get selectSongs => '选择歌曲';
+
+  @override
+  String get downloadPlaylist => '下载歌单';
+
+  @override
+  String removeSongFromPlaylistConfirm(String title) {
+    return '从该歌单中移除「$title」？';
+  }
+
+  @override
+  String downloadedSongsFrom(int count, String name) {
+    return '已从 $name 下载 $count 首歌曲';
+  }
+
+  @override
+  String downloadingSongsInBackground(int count) {
+    return '正在后台下载 $count 首歌曲…';
+  }
+
+  @override
+  String songsCountWithDuration(int count, String duration) {
+    return '$count 首歌曲 • $duration';
+  }
+
+  @override
+  String get createPlaylistToStart => '创建一个歌单开始吧';
+
+  @override
+  String get enableSelfSignedCertsHint => '请尝试在下方开启“允许自签名证书”。';
+
+  @override
+  String get checkCredentialsHint => '请检查用户名和密码后重试。';
+
+  @override
+  String get verifyServerUrlHint => '请检查服务器 URL 路径（例如 /navidrome、/airsonic）。';
+
+  @override
+  String get serverTimeoutHint => '服务器响应超时，请检查网络连接。';
+
+  @override
+  String get copyError => '复制错误';
+
+  @override
+  String get errorCopiedToClipboard => '错误已复制到剪贴板';
+
+  @override
+  String get tapToEnableSelfSignedCerts => '点击开启自签名证书';
+
+  @override
+  String get clickToEnableSelfSignedCerts => '点击开启自签名证书';
+
+  @override
+  String get failedToConnectToServer => '连接服务器失败';
+
+  @override
+  String get selectMusicFiles => '选择您的音乐文件...';
+
+  @override
+  String get noFilesSelected => '未选择文件。请点击“使用本地文件”并选择您的音乐文件。';
+
+  @override
+  String get youtubeMusicDescription =>
+      'YouTube Music 直接从 YouTube 播放音乐，无需账号——点击“连接”即可开始。';
+
+  @override
+  String get savedProfiles => '已保存的账号';
+
+  @override
+  String get tapProfileToConnect => '点击账号连接 • 点击 × 删除';
+
+  @override
+  String get nowPlayingThemesTitle => '正在播放主题';
+
+  @override
+  String get newThemeDefaultName => '新主题';
+
+  @override
+  String get newThemeDefaultAuthor => '我';
+
+  @override
+  String get themeDeactivated => '主题已停用（使用默认主题）';
+
+  @override
+  String get defaultThemeActivated => '已激活默认主题';
+
+  @override
+  String themeActivated(String name) {
+    return '已激活「$name」';
+  }
+
+  @override
+  String themeCopyName(String name) {
+    return '$name 副本';
+  }
+
+  @override
+  String themeDuplicated(String name) {
+    return '已复制为「$name」';
+  }
+
+  @override
+  String get exportThemeTitle => '导出主题';
+
+  @override
+  String themeExported(String path) {
+    return '已导出到 $path';
+  }
+
+  @override
+  String get themeImported => '主题已导入';
+
+  @override
+  String get themeImportedSafeMode => '主题已导入（安全模式）';
+
+  @override
+  String get themeImportedSuccess => '主题导入成功';
+
+  @override
+  String get importFailedTitle => '导入失败';
+
+  @override
+  String get themeFileErrors => '主题文件包含错误：';
+
+  @override
+  String get securityWarning => '安全警告';
+
+  @override
+  String get customCodeSecurityRisk => '该主题包含自定义 Flutter 代码，可能存在安全风险。';
+
+  @override
+  String get themeDetailsLabel => '主题详情：';
+
+  @override
+  String get nameLabel => '名称';
+
+  @override
+  String get authorLabel => '作者';
+
+  @override
+  String get customWidgetsLabel => '自定义组件：';
+
+  @override
+  String get dependenciesLabel => '依赖项：';
+
+  @override
+  String get safeModeButton => '安全模式';
+
+  @override
+  String get enableCodeButton => '启用代码';
+
+  @override
+  String get deleteTheme => '删除主题';
+
+  @override
+  String deleteThemeConfirm(String name) {
+    return '确定要删除「$name」吗？';
+  }
+
+  @override
+  String themeDeleted(String name) {
+    return '已删除「$name」';
+  }
+
+  @override
+  String get safeModeDisabled => '安全模式已停用';
+
+  @override
+  String get safeModeEnabled => '安全模式已启用';
+
+  @override
+  String get duplicateTheme => '复制主题';
+
+  @override
+  String get newThemeNameHint => '新主题名称';
+
+  @override
+  String get duplicateButton => '复制';
+
+  @override
+  String get themeTabInfo => '信息';
+
+  @override
+  String get themeTabBackground => '背景';
+
+  @override
+  String get themeTabText => '文字';
+
+  @override
+  String get themeTabArtwork => '封面';
+
+  @override
+  String get themeTabProgress => '进度条';
+
+  @override
+  String get themeTabControls => '控件';
+
+  @override
+  String get themeTabAnimations => '动画';
+
+  @override
+  String get themeNameLabel => '主题名称';
+
+  @override
+  String get backgroundTypeLabel => '背景类型';
+
+  @override
+  String get color1Label => '颜色 1';
+
+  @override
+  String get color2Label => '颜色 2';
+
+  @override
+  String get opacityLabel => '不透明度';
+
+  @override
+  String get blurSigmaLabel => '模糊半径';
+
+  @override
+  String get colorLabel => '颜色';
+
+  @override
+  String get fontSizeLabel => '字体大小';
+
+  @override
+  String get fontWeightLabel => '字重';
+
+  @override
+  String get shapeLabel => '形状';
+
+  @override
+  String get sizeFactorLabel => '大小比例';
+
+  @override
+  String get cornerRadiusLabel => '圆角半径';
+
+  @override
+  String get shadowLabel => '阴影';
+
+  @override
+  String get rotationAnimationLabel => '旋转动画';
+
+  @override
+  String get activeColorLabel => '激活颜色';
+
+  @override
+  String get inactiveColorLabel => '未激活颜色';
+
+  @override
+  String get heightLabel => '高度';
+
+  @override
+  String get thumbVisibleLabel => '显示滑块';
+
+  @override
+  String get buttonColorLabel => '按钮颜色';
+
+  @override
+  String get playButtonColorLabel => '播放按钮颜色';
+
+  @override
+  String get playButtonSizeLabel => '播放按钮大小';
+
+  @override
+  String get playButtonShapeLabel => '播放按钮形状';
+
+  @override
+  String get coverRotationLabel => '封面旋转';
+
+  @override
+  String get rotationSpeedLabel => '旋转速度（秒/圈）';
+
+  @override
+  String get pulseEffectLabel => '脉冲效果';
+
+  @override
+  String get fadeInLabel => '淡入';
+
+  @override
+  String get noFavoriteSongs => '还没有收藏的歌曲';
+
+  @override
+  String get noFavoriteAlbums => '还没有收藏的专辑';
+
+  @override
+  String get listeningHistoryHint => '您播放的歌曲会显示在这里';
+
+  @override
+  String get sortTitleAz => '标题（A-Z）';
+
+  @override
+  String get sortTitleZa => '标题（Z-A）';
+
+  @override
+  String get sortArtistAz => '艺术家（A-Z）';
+
+  @override
+  String get sortArtistZa => '艺术家（Z-A）';
+
+  @override
+  String get sortAlbumAz => '专辑（A-Z）';
+
+  @override
+  String get sortAlbumZa => '专辑（Z-A）';
+
+  @override
+  String get searchInLibrary => '在曲库中搜索...';
+
+  @override
+  String get searchYourLibrary => '搜索您的曲库';
+
+  @override
+  String get noPlaylistsFound => '未找到歌单';
+
+  @override
+  String get tableHeaderTitle => '标题';
+
+  @override
+  String get tableHeaderAlbum => '专辑';
+
+  @override
+  String get tableHeaderTime => '时长';
+
+  @override
+  String streamUrl(String url) {
+    return '流媒体地址：$url';
+  }
+
+  @override
+  String get newReleases => '新发行';
+
+  @override
+  String get noNewReleases => '暂无新发行';
+
+  @override
+  String get downloadAlbum => '下载专辑';
+
+  @override
+  String durationMinutesOnly(int minutes) {
+    return '$minutes 分钟';
+  }
+
+  @override
+  String get noSongsInQueue => '队列中没有歌曲';
+
+  @override
+  String get internetRadioLive => '网络电台 • 直播';
+
+  @override
+  String get stop => '停止';
+
+  @override
+  String customWidgetLabel(String name) {
+    return '自定义组件：$name';
+  }
+
+  @override
+  String customWidgetError(String error) {
+    return '自定义组件错误：$error';
+  }
+
+  @override
+  String get unknownError => '未知错误';
+
+  @override
+  String safeModeDisabledLabel(String name) {
+    return '安全模式：$name 已停用';
+  }
+
+  @override
+  String get compiling => '正在编译...';
+
+  @override
+  String get exitApp => '退出应用';
 }

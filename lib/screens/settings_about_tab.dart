@@ -169,7 +169,7 @@ class _SettingsAboutTabState extends State<SettingsAboutTab> {
               title: Text(AppLocalizations.of(context)!.deviceId, style: const TextStyle(fontSize: 16)),
               subtitle: Text(
                 _analyticsEnabled
-                    ? AppLocalizations.of(context)!.anonymousIdLabel(_deviceId ?? "Loading...")
+                    ? AppLocalizations.of(context)!.anonymousIdLabel(_deviceId ?? AppLocalizations.of(context)!.loading)
                     : AppLocalizations.of(context)!.enableAnalyticsToSeeId,
                 style: const TextStyle(fontSize: 12),
               ),

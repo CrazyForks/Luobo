@@ -620,6 +620,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tabDisplay => 'Display';
 
   @override
+  String get tabAiPlaylist => 'AI Playlist';
+
+  @override
   String get tabSupport => 'Support';
 
   @override
@@ -2039,6 +2042,58 @@ class AppLocalizationsSv extends AppLocalizations {
   String get modelName => 'Model Name';
 
   @override
+  String get aiConnectionSettings => 'AI Connection';
+
+  @override
+  String get exportKnowledgeBase => 'Export Knowledge Base';
+
+  @override
+  String get exportKnowledgeBaseSubtitle =>
+      'Export as a file to share with others on the same NAS library';
+
+  @override
+  String get export => 'Export';
+
+  @override
+  String exportedTo(String path) {
+    return 'Exported to $path';
+  }
+
+  @override
+  String exportFailed(String error) {
+    return 'Export failed: $error';
+  }
+
+  @override
+  String get importKnowledgeBase => 'Import Knowledge Base';
+
+  @override
+  String get importKnowledgeBaseSubtitle =>
+      'Import a knowledge base file shared by someone else';
+
+  @override
+  String get import => 'Import';
+
+  @override
+  String knowledgeImported(int count) {
+    return 'Imported $count songs into knowledge base';
+  }
+
+  @override
+  String importFailed(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String get howItWorks => 'How It Works';
+
+  @override
+  String get knowledgeBaseExplanation => 'How the Knowledge Base Works';
+
+  @override
+  String get playlistGenerationExplanation => 'How Playlist Generation Works';
+
+  @override
   String get networkWifi => 'WiFi';
 
   @override
@@ -2150,4 +2205,493 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get libraryEmptyOrFailed =>
       'Library appears to be empty or failed to load. Make sure your server supports full library scanning.';
+
+  @override
+  String get addToLikedSongs => 'Add to Liked Songs';
+
+  @override
+  String get removeFromLikedSongs => 'Remove from Liked Songs';
+
+  @override
+  String rateSongWithRating(int rating) {
+    String _temp0 = intl.Intl.pluralLogic(
+      rating,
+      locale: localeName,
+      other: 'stars',
+      one: 'star',
+    );
+    return 'Rate Song ($rating $_temp0)';
+  }
+
+  @override
+  String songRated(int rating) {
+    String _temp0 = intl.Intl.pluralLogic(
+      rating,
+      locale: localeName,
+      other: 'stars',
+      one: 'star',
+    );
+    return 'Rated $rating $_temp0';
+  }
+
+  @override
+  String get songRemovedFromPlaylist => 'Song removed from playlist';
+
+  @override
+  String errorRemovingSong(Object error) {
+    return 'Error removing song: $error';
+  }
+
+  @override
+  String errorRemovingSongs(Object error) {
+    return 'Error removing songs: $error';
+  }
+
+  @override
+  String errorReorderingSong(Object error) {
+    return 'Error reordering song: $error';
+  }
+
+  @override
+  String get removeSongs => 'Remove songs';
+
+  @override
+  String removeSongsConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'songs',
+      one: 'song',
+    );
+    return 'Remove $count $_temp0 from this playlist?';
+  }
+
+  @override
+  String songsRemovedFromPlaylist(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'songs',
+      one: 'song',
+    );
+    return '$count $_temp0 removed from playlist';
+  }
+
+  @override
+  String get reorderSongs => 'Reorder Songs';
+
+  @override
+  String get doneReordering => 'Done reordering';
+
+  @override
+  String get selectAll => 'Select all';
+
+  @override
+  String get deselectAll => 'Deselect all';
+
+  @override
+  String get removeSelected => 'Remove selected';
+
+  @override
+  String get selectSongs => 'Select songs';
+
+  @override
+  String get downloadPlaylist => 'Download playlist';
+
+  @override
+  String removeSongFromPlaylistConfirm(String title) {
+    return 'Remove \"$title\" from this playlist?';
+  }
+
+  @override
+  String downloadedSongsFrom(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'songs',
+      one: 'song',
+    );
+    return 'Downloaded $count $_temp0 from $name';
+  }
+
+  @override
+  String downloadingSongsInBackground(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'songs',
+      one: 'song',
+    );
+    return 'Downloading $count $_temp0 in background…';
+  }
+
+  @override
+  String songsCountWithDuration(int count, String duration) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'songs',
+      one: 'song',
+    );
+    return '$count $_temp0 • $duration';
+  }
+
+  @override
+  String get createPlaylistToStart => 'Create a playlist to get started';
+
+  @override
+  String get enableSelfSignedCertsHint =>
+      'Try enabling \"Allow Self-Signed Certificates\" below.';
+
+  @override
+  String get checkCredentialsHint =>
+      'Check your username and password and try again.';
+
+  @override
+  String get verifyServerUrlHint =>
+      'Verify the server URL path (e.g. /navidrome, /airsonic).';
+
+  @override
+  String get serverTimeoutHint =>
+      'The server took too long to respond. Check your network.';
+
+  @override
+  String get copyError => 'Copy error';
+
+  @override
+  String get errorCopiedToClipboard => 'Error copied to clipboard';
+
+  @override
+  String get tapToEnableSelfSignedCerts =>
+      'Tap to enable self-signed certificates';
+
+  @override
+  String get clickToEnableSelfSignedCerts =>
+      'Click to enable self-signed certificates';
+
+  @override
+  String get failedToConnectToServer => 'Failed to connect to server';
+
+  @override
+  String get selectMusicFiles => 'Select your music files...';
+
+  @override
+  String get noFilesSelected =>
+      'No files selected. Tap \"Use Local Files\" and pick your music files.';
+
+  @override
+  String get youtubeMusicDescription =>
+      'YouTube Music streams music directly from YouTube. No account required — tap Connect to start.';
+
+  @override
+  String get savedProfiles => 'Saved Profiles';
+
+  @override
+  String get tapProfileToConnect =>
+      'Tap a profile to connect • tap × to delete';
+
+  @override
+  String get nowPlayingThemesTitle => 'Now Playing Themes';
+
+  @override
+  String get newThemeDefaultName => 'New Theme';
+
+  @override
+  String get newThemeDefaultAuthor => 'Me';
+
+  @override
+  String get themeDeactivated => 'Theme deactivated (using default)';
+
+  @override
+  String get defaultThemeActivated => 'Default theme activated';
+
+  @override
+  String themeActivated(String name) {
+    return '$name activated';
+  }
+
+  @override
+  String themeCopyName(String name) {
+    return '$name Copy';
+  }
+
+  @override
+  String themeDuplicated(String name) {
+    return 'Duplicated as \"$name\"';
+  }
+
+  @override
+  String get exportThemeTitle => 'Export Theme';
+
+  @override
+  String themeExported(String path) {
+    return 'Exported to $path';
+  }
+
+  @override
+  String get themeImported => 'Theme imported';
+
+  @override
+  String get themeImportedSafeMode => 'Theme imported (Safe Mode)';
+
+  @override
+  String get themeImportedSuccess => 'Theme imported successfully';
+
+  @override
+  String get importFailedTitle => 'Import Failed';
+
+  @override
+  String get themeFileErrors => 'The theme file contains errors:';
+
+  @override
+  String get securityWarning => 'Security Warning';
+
+  @override
+  String get customCodeSecurityRisk =>
+      'This theme contains custom Flutter code which may pose security risks.';
+
+  @override
+  String get themeDetailsLabel => 'Theme Details:';
+
+  @override
+  String get nameLabel => 'Name';
+
+  @override
+  String get authorLabel => 'Author';
+
+  @override
+  String get customWidgetsLabel => 'Custom Widgets:';
+
+  @override
+  String get dependenciesLabel => 'Dependencies:';
+
+  @override
+  String get safeModeButton => 'Safe Mode';
+
+  @override
+  String get enableCodeButton => 'Enable Code';
+
+  @override
+  String get deleteTheme => 'Delete Theme';
+
+  @override
+  String deleteThemeConfirm(String name) {
+    return 'Are you sure you want to delete \"$name\"?';
+  }
+
+  @override
+  String themeDeleted(String name) {
+    return '$name deleted';
+  }
+
+  @override
+  String get safeModeDisabled => 'Safe Mode disabled';
+
+  @override
+  String get safeModeEnabled => 'Safe Mode enabled';
+
+  @override
+  String get duplicateTheme => 'Duplicate Theme';
+
+  @override
+  String get newThemeNameHint => 'New theme name';
+
+  @override
+  String get duplicateButton => 'Duplicate';
+
+  @override
+  String get themeTabInfo => 'Info';
+
+  @override
+  String get themeTabBackground => 'Background';
+
+  @override
+  String get themeTabText => 'Text';
+
+  @override
+  String get themeTabArtwork => 'Artwork';
+
+  @override
+  String get themeTabProgress => 'Progress';
+
+  @override
+  String get themeTabControls => 'Controls';
+
+  @override
+  String get themeTabAnimations => 'Animations';
+
+  @override
+  String get themeNameLabel => 'Theme Name';
+
+  @override
+  String get backgroundTypeLabel => 'Background Type';
+
+  @override
+  String get color1Label => 'Color 1';
+
+  @override
+  String get color2Label => 'Color 2';
+
+  @override
+  String get opacityLabel => 'Opacity';
+
+  @override
+  String get blurSigmaLabel => 'Blur Sigma';
+
+  @override
+  String get colorLabel => 'Color';
+
+  @override
+  String get fontSizeLabel => 'Font Size';
+
+  @override
+  String get fontWeightLabel => 'Font Weight';
+
+  @override
+  String get shapeLabel => 'Shape';
+
+  @override
+  String get sizeFactorLabel => 'Size Factor';
+
+  @override
+  String get cornerRadiusLabel => 'Corner Radius';
+
+  @override
+  String get shadowLabel => 'Shadow';
+
+  @override
+  String get rotationAnimationLabel => 'Rotation Animation';
+
+  @override
+  String get activeColorLabel => 'Active Color';
+
+  @override
+  String get inactiveColorLabel => 'Inactive Color';
+
+  @override
+  String get heightLabel => 'Height';
+
+  @override
+  String get thumbVisibleLabel => 'Thumb Visible';
+
+  @override
+  String get buttonColorLabel => 'Button Color';
+
+  @override
+  String get playButtonColorLabel => 'Play Button Color';
+
+  @override
+  String get playButtonSizeLabel => 'Play Button Size';
+
+  @override
+  String get playButtonShapeLabel => 'Play Button Shape';
+
+  @override
+  String get coverRotationLabel => 'Cover Rotation';
+
+  @override
+  String get rotationSpeedLabel => 'Rotation Speed (s/turn)';
+
+  @override
+  String get pulseEffectLabel => 'Pulse Effect';
+
+  @override
+  String get fadeInLabel => 'Fade In';
+
+  @override
+  String get noFavoriteSongs => 'No favorite songs yet';
+
+  @override
+  String get noFavoriteAlbums => 'No favorite albums yet';
+
+  @override
+  String get listeningHistoryHint => 'Songs you play will appear here';
+
+  @override
+  String get sortTitleAz => 'Title (A-Z)';
+
+  @override
+  String get sortTitleZa => 'Title (Z-A)';
+
+  @override
+  String get sortArtistAz => 'Artist (A-Z)';
+
+  @override
+  String get sortArtistZa => 'Artist (Z-A)';
+
+  @override
+  String get sortAlbumAz => 'Album (A-Z)';
+
+  @override
+  String get sortAlbumZa => 'Album (Z-A)';
+
+  @override
+  String get searchInLibrary => 'Search in Library...';
+
+  @override
+  String get searchYourLibrary => 'Search your library';
+
+  @override
+  String get noPlaylistsFound => 'No playlists found';
+
+  @override
+  String get tableHeaderTitle => 'TITLE';
+
+  @override
+  String get tableHeaderAlbum => 'ALBUM';
+
+  @override
+  String get tableHeaderTime => 'TIME';
+
+  @override
+  String streamUrl(String url) {
+    return 'Stream URL: $url';
+  }
+
+  @override
+  String get newReleases => 'New Releases';
+
+  @override
+  String get noNewReleases => 'No new releases';
+
+  @override
+  String get downloadAlbum => 'Download album';
+
+  @override
+  String durationMinutesOnly(int minutes) {
+    return '$minutes MIN';
+  }
+
+  @override
+  String get noSongsInQueue => 'No songs in queue';
+
+  @override
+  String get internetRadioLive => 'Internet Radio • LIVE';
+
+  @override
+  String get stop => 'Stop';
+
+  @override
+  String customWidgetLabel(String name) {
+    return 'Custom Widget: $name';
+  }
+
+  @override
+  String customWidgetError(String error) {
+    return 'Custom widget error: $error';
+  }
+
+  @override
+  String get unknownError => 'Unknown error';
+
+  @override
+  String safeModeDisabledLabel(String name) {
+    return 'Safe Mode: $name disabled';
+  }
+
+  @override
+  String get compiling => 'Compiling...';
+
+  @override
+  String get exitApp => 'Exit App';
 }

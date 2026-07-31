@@ -4,6 +4,7 @@ import '../models/album.dart';
 import '../models/artist.dart';
 import '../services/subsonic_service.dart';
 import '../widgets/widgets.dart';
+import '../l10n/app_localizations.dart';
 import 'album_screen.dart';
 
 class AlbumsScreen extends StatefulWidget {
@@ -118,7 +119,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Albums')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.albums)),
       body: _albums.isEmpty && _isLoading
           ? GridView.builder(
               padding: const EdgeInsets.all(16).copyWith(bottom: 150),

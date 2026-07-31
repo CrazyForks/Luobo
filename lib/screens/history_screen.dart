@@ -5,6 +5,7 @@ import '../services/recommendation_service.dart';
 import '../providers/library_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
+import '../l10n/app_localizations.dart';
 import 'listening_report_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -106,7 +107,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Listening History'),
+        title: Text(AppLocalizations.of(context)!.listeningHistory),
         actions: [
           IconButton(
             onPressed: () {
@@ -138,7 +139,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'No Listening History',
+                        AppLocalizations.of(context)!.noListeningHistory,
                         style: theme.textTheme.headlineMedium?.copyWith(
                           color: isDark
                               ? AppTheme.darkSecondaryText
@@ -147,7 +148,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Songs you play will appear here',
+                        AppLocalizations.of(context)!.listeningHistoryHint,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: isDark
                               ? AppTheme.darkSecondaryText

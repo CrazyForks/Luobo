@@ -7,6 +7,7 @@ import 'settings_server_tab.dart';
 import 'settings_display_tab.dart';
 import 'settings_about_tab.dart';
 import 'settings_support_tab.dart';
+import 'settings_ai_playlist_tab.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -25,7 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
   }
 
   @override
@@ -84,6 +85,10 @@ class _SettingsScreenState extends State<SettingsScreen>
               text: l10n.tabDisplay,
             ),
             Tab(
+              icon: const Icon(Icons.auto_awesome, size: 20),
+              text: l10n.tabAiPlaylist,
+            ),
+            Tab(
               icon: const Icon(CupertinoIcons.heart_fill, size: 20),
               text: l10n.tabSupport,
             ),
@@ -101,6 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           SettingsStorageTab(),
           SettingsServerTab(),
           SettingsDisplayTab(),
+          SettingsAiPlaylistTab(),
           SettingsSupportTab(),
           SettingsAboutTab(),
         ],
