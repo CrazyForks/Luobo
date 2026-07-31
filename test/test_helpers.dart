@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:musly/l10n/app_localizations.dart';
+import 'package:luobo/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:musly/providers/providers.dart';
-import 'package:musly/services/services.dart';
-import 'package:musly/services/audio_handler.dart';
-import 'package:musly/services/transcoding_service.dart';
+import 'package:luobo/providers/providers.dart';
+import 'package:luobo/services/services.dart';
+import 'package:luobo/services/audio_handler.dart';
+import 'package:luobo/services/transcoding_service.dart';
 
 class FakeCastService extends CastService {
   @override

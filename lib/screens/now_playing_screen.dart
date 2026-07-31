@@ -342,21 +342,43 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                   1.0,
                 ),
               transformAlignment: Alignment.center,
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showLyrics = true;
-                  });
-                },
-                child: _SwipeableAlbumArtwork(
-                  currentImageUrl: _cachedImageUrl ?? '',
-                  currentThumbnailUrl: _cachedThumbnailUrl,
-                  previewImageUrl: _getPreviewArtworkUrl(_previewSong),
-                  hasPreviewSong: _previewSong != null,
-                  size: artworkSize,
-                  swipeProgress: _swipeProgress,
-                  horizontalDragOffset: _horizontalDragOffset,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Song title above the artwork, same width, 1-2 lines.
+                  SizedBox(
+                    width: artworkSize,
+                    child: Text(
+                      song.title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showLyrics = true;
+                      });
+                    },
+                    child: _SwipeableAlbumArtwork(
+                      currentImageUrl: _cachedImageUrl ?? '',
+                      currentThumbnailUrl: _cachedThumbnailUrl,
+                      previewImageUrl: _getPreviewArtworkUrl(_previewSong),
+                      hasPreviewSong: _previewSong != null,
+                      size: artworkSize,
+                      swipeProgress: _swipeProgress,
+                      horizontalDragOffset: _horizontalDragOffset,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -650,33 +672,63 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                                                     1.0,
                                                     1.0,
                                                   ),
-                                                transformAlignment:
-                                                    Alignment.center,
-                                                child: GestureDetector(
-                                                  onTap: () {
-                                                    setState(() {
-                                                      _showLyrics = true;
-                                                    });
-                                                  },
-                                                  child: _SwipeableAlbumArtwork(
-                                                    currentImageUrl:
-                                                        _cachedImageUrl ?? '',
-                                                    currentThumbnailUrl:
-                                                        _cachedThumbnailUrl,
-                                                    previewImageUrl:
-                                                        _getPreviewArtworkUrl(
-                                                      _previewSong,
+                                              transformAlignment:
+                                                  Alignment.center,
+                                              child: Column(
+                                                mainAxisSize:
+                                                    MainAxisSize.min,
+                                                children: [
+                                                  // Song title above the
+                                                  // artwork, same width,
+                                                  // 1-2 lines.
+                                                  SizedBox(
+                                                    width: artworkSize,
+                                                    child: Text(
+                                                      song.title,
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        height: 1.25,
+                                                      ),
+                                                      maxLines: 2,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
-                                                    hasPreviewSong:
-                                                        _previewSong != null,
-                                                    size: artworkSize,
-                                                    swipeProgress:
-                                                        _swipeProgress,
-                                                    horizontalDragOffset:
-                                                        _horizontalDragOffset,
                                                   ),
-                                                ),
+                                                  const SizedBox(height: 3),
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        _showLyrics = true;
+                                                      });
+                                                    },
+                                                    child:
+                                                        _SwipeableAlbumArtwork(
+                                                      currentImageUrl:
+                                                          _cachedImageUrl ??
+                                                              '',
+                                                      currentThumbnailUrl:
+                                                          _cachedThumbnailUrl,
+                                                      previewImageUrl:
+                                                          _getPreviewArtworkUrl(
+                                                        _previewSong,
+                                                      ),
+                                                      hasPreviewSong:
+                                                          _previewSong != null,
+                                                      size: artworkSize,
+                                                      swipeProgress:
+                                                          _swipeProgress,
+                                                      horizontalDragOffset:
+                                                          _horizontalDragOffset,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
+                                            ),
                                               SizedBox(height: middleSpacing),
                                               AnimatedOpacity(
                                                 duration: animDuration,

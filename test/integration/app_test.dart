@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:musly/main.dart';
-import 'package:musly/providers/auth_provider.dart';
-import 'package:musly/services/services.dart';
-import 'package:musly/services/locale_service.dart';
-import 'package:musly/services/theme_service.dart';
+import 'package:luobo/main.dart';
+import 'package:luobo/providers/auth_provider.dart';
+import 'package:luobo/services/services.dart';
+import 'package:luobo/services/locale_service.dart';
+import 'package:luobo/services/theme_service.dart';
 import '../bootstrap.dart';
 
 void main() {

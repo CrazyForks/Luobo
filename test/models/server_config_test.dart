@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:musly/models/server_config.dart';
+import 'package:luobo/models/server_config.dart';
 
 void main() {
   group('ServerConfig', () {

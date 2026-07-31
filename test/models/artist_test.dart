@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:musly/models/artist.dart';
+import 'package:luobo/models/artist.dart';
 
 void main() {
   group('Artist', () {

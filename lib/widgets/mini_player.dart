@@ -156,6 +156,16 @@ class MiniPlayer extends StatelessWidget {
   }
 }
 
+/// Measures a single-line text width at the given font size.
+double _textWidth(String text, TextStyle base, double fontSize) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: base.copyWith(fontSize: fontSize)),
+    maxLines: 1,
+    textDirection: TextDirection.ltr,
+  )..layout();
+  return painter.width;
+}
+
 class _MiniPlayerRow extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -191,20 +201,65 @@ class _MiniPlayerRow extends StatelessWidget {
               child: const Icon(Icons.radio, color: Colors.white, size: 24),
             )
           else
-            AlbumArtwork(coverArt: coverArt, size: 44, borderRadius: 6),
+            GestureDetector(
+              onLongPress: () {
+                final subsonic =
+                    Provider.of<SubsonicService>(context, listen: false);
+                final isLan = subsonic.isUsingLocalUrl;
+                final label = isLan ? '局域网' : '外网';
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Text('$label：${subsonic.activeBaseUrl}'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+              },
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: _networkBorderColor(context),
+                    width: 1.5,
+                  ),
+                ),
+                child: AlbumArtwork(
+                  coverArt: coverArt,
+                  size: 44,
+                  borderRadius: 6,
+                ),
+              ),
+            ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                // Title shrinks down to 12px so longer titles stay fully
+                // visible; only extreme lengths fall back to ellipsis.
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final baseStyle = theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ) ??
+                        const TextStyle(fontSize: 16, fontWeight: FontWeight.w600);
+                    final baseSize = baseStyle.fontSize ?? 16;
+                    var size = baseSize;
+                    while (size > 12 &&
+                        _textWidth(title, baseStyle, size) > constraints.maxWidth) {
+                      size -= 1;
+                    }
+                    return Text(
+                      title,
+                      style: baseStyle.copyWith(fontSize: size),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  },
                 ),
                 if (subtitle != null)
                   Row(
@@ -245,7 +300,6 @@ class _MiniPlayerRow extends StatelessWidget {
               ],
             ),
           ),
-          if (!isPlayingRadio) const _NetworkIndicatorIcon(),
           _MiniPlayerControls(isRadio: isPlayingRadio),
         ],
       ),
@@ -369,43 +423,18 @@ class _MiniPlayerControls extends StatelessWidget {
   }
 }
 
-/// Tappable network indicator in the mini player: green WiFi icon when the
-/// server is on the local network (LAN), orange when remote (WAN). Tapping
-/// shows the connection details.
-class _NetworkIndicatorIcon extends StatelessWidget {
-  const _NetworkIndicatorIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    final subsonicService =
-        Provider.of<SubsonicService>(context, listen: false);
-    final isLan = subsonicService.isUsingLocalUrl;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isLan
-        ? (isDark ? Colors.green.shade300 : Colors.green.shade700)
-        : (isDark ? Colors.orange.shade300 : Colors.orange.shade700);
-    final label = isLan ? '局域网' : '外网';
-    final url = subsonicService.activeBaseUrl;
-
-    return IconButton(
-      icon: Icon(
-        isLan ? Icons.wifi_rounded : Icons.public_rounded,
-        size: 18,
-        color: color,
-      ),
-      tooltip: '$label\n$url',
-      visualDensity: VisualDensity.compact,
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      onPressed: () {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text('$label：$url'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-      },
-    );
-  }
+/// Semi-transparent border color for the mini player artwork showing
+/// whether the server connection is local (Wi‑Fi / LAN, green) or remote
+/// (WAN, orange). Deliberately subtle so it doesn't steal attention.
+Color _networkBorderColor(BuildContext context) {
+  final isLan =
+      Provider.of<SubsonicService>(context, listen: false).isUsingLocalUrl;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return isLan
+      ? (isDark
+          ? const Color(0x804CAF50)
+          : const Color(0x4D43A047))
+      : (isDark
+          ? const Color(0x80FB8C00)
+          : const Color(0x4DFB8C00));
 }

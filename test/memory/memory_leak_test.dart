@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:musly/providers/auth_provider.dart';
-import 'package:musly/providers/library_provider.dart';
-import 'package:musly/providers/player_provider.dart';
-import 'package:musly/services/services.dart';
-import 'package:musly/services/audio_handler.dart';
+import 'package:luobo/providers/auth_provider.dart';
+import 'package:luobo/providers/library_provider.dart';
+import 'package:luobo/providers/player_provider.dart';
+import 'package:luobo/services/services.dart';
+import 'package:luobo/services/audio_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers.dart';
