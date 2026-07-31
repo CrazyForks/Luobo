@@ -27,6 +27,8 @@ class Song {
   final List<ArtistRef>? artistParticipants;
   final DateTime? created;
   final bool? hasDolbyAtmos;
+  final int? samplingRate;
+  final int? bitDepth;
 
   Song({
     required this.id,
@@ -55,6 +57,8 @@ class Song {
     this.artistParticipants,
     this.created,
     this.hasDolbyAtmos,
+    this.samplingRate,
+    this.bitDepth,
   });
 
   factory Song.fromJson(Map<String, dynamic> json) {
@@ -89,6 +93,8 @@ class Song {
           ? DateTime.tryParse(json['created'].toString())
           : null,
       hasDolbyAtmos: json['hasDolbyAtmos'] as bool?,
+      samplingRate: json['samplingRate'] as int?,
+      bitDepth: json['bitDepth'] as int?,
     );
   }
 
@@ -121,6 +127,8 @@ class Song {
         'artists': artistParticipants!.map((a) => a.toJson()).toList(),
       'created': created?.toIso8601String(),
       if (hasDolbyAtmos != null) 'hasDolbyAtmos': hasDolbyAtmos,
+      if (samplingRate != null) 'samplingRate': samplingRate,
+      if (bitDepth != null) 'bitDepth': bitDepth,
     };
   }
 
@@ -129,6 +137,30 @@ class Song {
     final minutes = duration! ~/ 60;
     final seconds = duration! % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  /// Human readable file size, e.g. "28.14 MB".
+  String get formattedSize {
+    final bytes = size;
+    if (bytes == null || bytes <= 0) return '';
+    if (bytes >= 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+    }
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    }
+    if (bytes >= 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '$bytes B';
+  }
+
+  /// Sample rate in kHz (e.g. "44.1 kHz"), empty when unknown.
+  String get formattedSampleRate {
+    final hz = samplingRate;
+    if (hz == null || hz <= 0) return '';
+    if (hz % 1000 == 0) return '${hz ~/ 1000} kHz';
+    return '${(hz / 1000).toStringAsFixed(1)} kHz';
   }
 
   Song copyWith({
@@ -158,6 +190,8 @@ class Song {
     List<ArtistRef>? artistParticipants,
     DateTime? created,
     bool? hasDolbyAtmos,
+    int? samplingRate,
+    int? bitDepth,
   }) {
     return Song(
       id: id ?? this.id,
@@ -186,6 +220,8 @@ class Song {
       artistParticipants: artistParticipants ?? this.artistParticipants,
       created: created ?? this.created,
       hasDolbyAtmos: hasDolbyAtmos ?? this.hasDolbyAtmos,
+      samplingRate: samplingRate ?? this.samplingRate,
+      bitDepth: bitDepth ?? this.bitDepth,
     );
   }
 }

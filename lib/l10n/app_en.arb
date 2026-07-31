@@ -2540,5 +2540,12 @@
   "compiling": "Compiling...",
   "@compiling": { "description": "Status text while a custom widget is compiling" },
   "exitApp": "Exit App",
-  "@exitApp": { "description": "Button to exit the app on the emulator warning screen" }
+  "@exitApp": { "description": "Button to exit the app on the emulator warning screen" },
+
+  "noTranscoding": "Original (not transcoded)",
+  "@noTranscoding": { "description": "Audio quality status when transcoding is off" },
+  "streamWillTranscode": "Will transcode on current network",
+  "@streamWillTranscode": { "description": "Status label when playback will be transcoded on the current network" },
+  "transcodedTo": "Transcoded to {format} {bitrate}kbps ({network})",
+  "@transcodedTo": { "description": "Audio quality status when transcoding is enabled", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } }
 }

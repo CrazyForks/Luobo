@@ -2694,4 +2694,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get exitApp => 'Exit App';
+
+  @override
+  String get noTranscoding => 'Original (not transcoded)';
+
+  @override
+  String get streamWillTranscode => 'Will transcode on current network';
+
+  @override
+  String transcodedTo(String format, int bitrate, String network) {
+    return 'Transcoded to $format ${bitrate}kbps ($network)';
+  }
 }

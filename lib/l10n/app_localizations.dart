@@ -4923,6 +4923,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Exit App'**
   String get exitApp;
+
+  /// Audio quality status when transcoding is off
+  ///
+  /// In en, this message translates to:
+  /// **'Original (not transcoded)'**
+  String get noTranscoding;
+
+  /// Status label when playback will be transcoded on the current network
+  ///
+  /// In en, this message translates to:
+  /// **'Will transcode on current network'**
+  String get streamWillTranscode;
+
+  /// Audio quality status when transcoding is enabled
+  ///
+  /// In en, this message translates to:
+  /// **'Transcoded to {format} {bitrate}kbps ({network})'**
+  String transcodedTo(String format, int bitrate, String network);
 }
 
 class _AppLocalizationsDelegate

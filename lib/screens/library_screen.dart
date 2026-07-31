@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:lpinyin/lpinyin.dart';
 import '../models/server_config.dart';
 import '../models/song.dart';
 import '../models/album.dart';
+import '../models/artist.dart';
 import '../providers/providers.dart';
 import '../services/subsonic_service.dart';
 import '../services/local_music_service.dart';
@@ -34,6 +36,55 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> {
   String _selectedFilter = 'Faves';
+  double _swipeDelta = 0;
+
+  // Artists tab scrubber
+  final ScrollController _artistsScrollController = ScrollController();
+  String? _selectedLetter;
+  Map<String, int> _letterIndexMap = {};
+
+  @override
+  void dispose() {
+    _artistsScrollController.dispose();
+    super.dispose();
+  }
+
+  // Reuse generated cover URLs across rebuilds (stable per server+coverArt+size).
+  static final Map<String, String> _coverUrlCache = {};
+
+  static String _coverUrl(SubsonicService service, String coverArt) {
+    final key = '${service.activeBaseUrl}_${coverArt}_120';
+    return _coverUrlCache.putIfAbsent(
+      key,
+      () => service.getCoverArtUrl(coverArt, size: 120),
+    );
+  }
+
+  /// First letter grouping for the Artists tab index. Uses pinyin for
+  /// Chinese characters so 周杰伦 → Z, 韩红 → H, etc. ASCII A-Z stay as
+  /// themselves. Everything else (numbers, symbols) goes to '#'.
+  static String _firstLetter(String name) {
+    if (name.isEmpty) return '#';
+    final first = name[0];
+    final code = first.codeUnitAt(0);
+    // ASCII A-Z / a-z
+    if ((code >= 0x41 && code <= 0x5A) || (code >= 0x61 && code <= 0x7A)) {
+      return first.toUpperCase();
+    }
+    // Chinese → pinyin first letter (getShortPinyin returns lowercase)
+    if (RegExp(r'[\u4e00-\u9fff]').hasMatch(first)) {
+      try {
+        final py = PinyinHelper.getShortPinyin(first);
+        if (py.isNotEmpty) {
+          final letter = py[0].toUpperCase();
+          if (letter.codeUnitAt(0) >= 0x41 && letter.codeUnitAt(0) <= 0x5A) {
+            return letter;
+          }
+        }
+      } catch (_) {}
+    }
+    return '#';
+  }
 
   List<String> _getFilters(BuildContext context) {
     final libraryProvider =
@@ -50,7 +101,25 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: CustomScrollView(
+      body: GestureDetector(
+        onHorizontalDragUpdate: (details) {
+          _swipeDelta += details.delta.dx;
+        },
+        onHorizontalDragEnd: (details) {
+          final filters = _getFilters(context);
+          final idx = filters.indexOf(_selectedFilter);
+          final velocity = details.primaryVelocity ?? 0;
+          final distance = _swipeDelta.abs();
+          _swipeDelta = 0;
+          // Require both enough distance AND speed to avoid accidental triggers
+          if (distance < 50 || velocity.abs() < 500) return;
+          if (velocity < 0 && idx < filters.length - 1) {
+            setState(() => _selectedFilter = filters[idx + 1]);
+          } else if (velocity > 0 && idx > 0) {
+            setState(() => _selectedFilter = filters[idx - 1]);
+          }
+        },
+        child: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
@@ -158,7 +227,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ),
           ),
           SliverToBoxAdapter(
-            child: Column(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Column(
+                key: ValueKey(_selectedFilter),
               children: [
                 if (_selectedFilter == 'Faves') ...[
                   // Playlists folder
@@ -208,11 +280,146 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ),
                 ],
               ],
-            ),
-          ),
+            ),          // Column (AnimatedSwitcher child)
+          ),            // AnimatedSwitcher
+          ),            // SliverToBoxAdapter
           Consumer<LibraryProvider>(
             builder: (context, libraryProvider, _) {
               final items = _getFilteredItems(context, libraryProvider);
+
+              if (items.isEmpty && _selectedFilter != 'Artists') {
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _LibraryEmptyState(
+                    isLocalMode: libraryProvider.isLocalOnlyMode,
+                  ),
+                );
+              }
+
+              // Artists tab: chip waterfall grouped by pinyin first letter,
+              // with a right-edge scrubber for quick navigation.
+              if (_selectedFilter == 'Artists') {
+                final artists = libraryProvider.artists.toList()
+                  ..sort((a, b) => a.name.compareTo(b.name));
+                if (artists.isEmpty) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _LibraryEmptyState(
+                      isLocalMode: libraryProvider.isLocalOnlyMode,
+                    ),
+                  );
+                }
+                final isDark =
+                    Theme.of(context).brightness == Brightness.dark;
+                final groups = <String, List<Artist>>{};
+                for (final a in artists) {
+                  final letter = _firstLetter(a.name);
+                  groups.putIfAbsent(letter, () => []).add(a);
+                }
+                final letters = groups.keys.toList()..sort();
+                _letterIndexMap = {};
+                double offset = 0;
+                const headerH = 30.0;
+                const chipRowH = 36.0;
+                for (final letter in letters) {
+                  _letterIndexMap[letter] = offset.round();
+                  offset += headerH;
+                  final rows = (groups[letter]!.length / 3).ceil();
+                  offset += rows * chipRowH + 8;
+                }
+                return SliverFillRemaining(
+                  hasScrollBody: true,
+                  child: Stack(
+                    children: [
+                      ListView(
+                        controller: _artistsScrollController,
+                        padding: const EdgeInsets.only(bottom: 80),
+                        children: [
+                          for (final letter in letters) ...[
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                              child: Text(
+                                letter,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AppTheme.darkSecondaryText
+                                      : AppTheme.lightSecondaryText,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 0, 28, 8),
+                              child: Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: groups[letter]!.map((a) {
+                                  return GestureDetector(
+                                    onTap: () => _openItem(
+                                      context,
+                                      _LibraryItem(
+                                        type: 'Artist',
+                                        id: a.id,
+                                        name: a.name,
+                                        subtitle: '',
+                                      ),
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.white10
+                                            : Colors.black.withValues(alpha: 0.06),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        a.name,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Positioned(
+                        right: 0, top: 0, bottom: 0,
+                        child: _ArtistScrubber(
+                          letters: letters,
+                          selectedLetter: _selectedLetter,
+                          onLetterDown: (letter) {
+                            final idx = _letterIndexMap[letter];
+                            if (idx != null &&
+                                _artistsScrollController.hasClients) {
+                              _artistsScrollController.jumpTo(
+                                idx.toDouble().clamp(
+                                  0.0,
+                                  _artistsScrollController
+                                      .position.maxScrollExtent,
+                                ),
+                              );
+                            }
+                            setState(() => _selectedLetter = letter);
+                          },
+                          onLetterUp: () =>
+                              setState(() => _selectedLetter = null),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
 
               if (items.isEmpty) {
                 return SliverFillRemaining(
@@ -233,8 +440,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 150)),
         ],
-      ),
-    );
+      ),          // CustomScrollView
+    ),            // GestureDetector
+  );              // Scaffold
   }
 
   List<_LibraryItem> _getFilteredItems(
@@ -395,22 +603,83 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Widget _buildLibraryItem(BuildContext context, _LibraryItem item) {
+    // Alphabetical section header (Artists tab).
+    if (item.type == 'SectionHeader') {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+        child: Text(
+          item.name,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: isDark
+                ? AppTheme.darkSecondaryText
+                : AppTheme.lightSecondaryText,
+          ),
+        ),
+      );
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
+
+    // Artist rows: text-only (icons all grey placeholders).
+    if (item.type == 'Artist') {
+      return InkWell(
+        onTap: () => _openItem(context, item),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      item.name,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.subtitle,
+                      style: TextStyle(
+                        color: isDark ? Colors.white60 : Colors.black54,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // All other item types: standard artwork + text layout.
     final subsonicService = Provider.of<SubsonicService>(
       context,
       listen: false,
     );
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final l10n = AppLocalizations.of(context)!;
     final coverArtUrl = item.coverArt != null
         ? (isLocalFilePath(item.coverArt)
             ? item.coverArt!
-            : subsonicService.getCoverArtUrl(item.coverArt!, size: 120))
+            : _coverUrl(subsonicService, item.coverArt!))
         : null;
 
     final String typeLabel = switch (item.type) {
       'Playlist' => l10n.filterPlaylists,
       'Album' => l10n.filterAlbums,
-      'Artist' => l10n.filterArtists,
       'Song' => l10n.songs,
       _ => item.type,
     };
@@ -902,6 +1171,65 @@ class _LibraryEmptyState extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Right-edge letter scrubber for the Artists tab.
+class _ArtistScrubber extends StatelessWidget {
+  final List<String> letters;
+  final String? selectedLetter;
+  final ValueChanged<String> onLetterDown;
+  final VoidCallback onLetterUp;
+
+  const _ArtistScrubber({
+    required this.letters,
+    required this.selectedLetter,
+    required this.onLetterDown,
+    required this.onLetterUp,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (letters.length <= 1) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
+      onVerticalDragDown: (d) => _onPos(d.localPosition, context.size?.height ?? 1),
+      onVerticalDragUpdate: (d) => _onPos(d.localPosition, context.size?.height ?? 1),
+      onVerticalDragEnd: (_) => onLetterUp(),
+      onLongPressMoveUpdate: (d) => _onPos(d.localPosition, context.size?.height ?? 1),
+      child: Container(
+        width: 28,
+        padding: const EdgeInsets.only(right: 4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: letters.map((l) {
+            final isSelected = l == selectedLetter;
+            return Expanded(
+              child: Center(
+                child: Text(
+                  l,
+                  style: TextStyle(
+                    fontSize: isSelected ? 12 : 10,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected
+                        ? AppTheme.appleMusicRed
+                        : (isDark ? Colors.white54 : Colors.black45),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  void _onPos(Offset local, double height) {
+    final fraction = (local.dy / height).clamp(0.0, 1.0);
+    final idx = (fraction * letters.length).floor().clamp(0, letters.length - 1);
+    onLetterDown(letters[idx]);
   }
 }
 

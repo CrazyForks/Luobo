@@ -13,15 +13,9 @@ bool isLocalFilePath(String? s) {
 }
 
 class _ImageUrlCache {
-  static final Map<String, String> _cache = {};
-
   static String getUrl(SubsonicService service, String? coverArt, int size) {
     if (coverArt == null || coverArt.isEmpty) return '';
-    final key = '${coverArt}_$size';
-    return _cache.putIfAbsent(
-      key,
-      () => service.getCoverArtUrl(coverArt, size: size),
-    );
+    return service.getCoverArtUrl(coverArt);
   }
 }
 
@@ -201,6 +195,8 @@ class AlbumArtwork extends StatelessWidget {
           cacheKey: '${coverArt}_natural_$cacheSize',
           key: ValueKey('${coverArt}_natural_$cacheSize'),
           fit: BoxFit.contain,
+          memCacheWidth: cacheSize,
+          memCacheHeight: cacheSize,
           fadeInDuration: const Duration(milliseconds: 100),
           fadeOutDuration: Duration.zero,
           useOldImageOnUrlChange: true,

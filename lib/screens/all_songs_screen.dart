@@ -31,6 +31,7 @@ class _AllSongsScreenState extends State<AllSongsScreen> {
   bool _isLoading = true;
   final ScrollController _scrollController = ScrollController();
   SongSortOption _currentSort = SongSortOption.titleAsc;
+  LibraryProvider? _libraryProvider;
 
   @override
   void initState() {
@@ -41,18 +42,37 @@ class _AllSongsScreenState extends State<AllSongsScreen> {
 
   @override
   void dispose() {
+    _libraryProvider?.removeListener(_onLibraryChanged);
     _scrollController.dispose();
     super.dispose();
   }
 
   void _onScroll() {}
 
+  void _onLibraryChanged() {
+    if (!mounted) return;
+    final provider = _libraryProvider;
+    if (provider == null) return;
+    final songs = provider.cachedAllSongs;
+    if (songs.length != _songs.length || songs.isEmpty != _songs.isEmpty) {
+      setState(() {
+        _songs = songs;
+        _sortSongs();
+        _isLoading = false;
+      });
+    }
+  }
+
   Future<void> _loadCachedData() async {
     final libraryProvider = Provider.of<LibraryProvider>(
       context,
       listen: false,
     );
+    _libraryProvider = libraryProvider;
+    libraryProvider.addListener(_onLibraryChanged);
 
+    // Returns immediately when the cache is empty; the background sync
+    // notifies this screen via _onLibraryChanged when data is ready.
     await libraryProvider.ensureLibraryLoaded();
 
     if (mounted) {

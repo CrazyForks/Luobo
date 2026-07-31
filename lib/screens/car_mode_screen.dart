@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter/cupertino.dart' hide RepeatMode;
 import 'package:flutter/services.dart';
@@ -9,6 +8,9 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../providers/player_provider.dart';
 import '../services/subsonic_service.dart';
 import '../services/offline_service.dart';
+import '../services/storage_service.dart';
+import '../services/lrclib_service.dart';
+import '../services/netease_lyrics_service.dart';
 import '../models/lyrics.dart';
 import '../models/song.dart';
 import '../widgets/album_artwork.dart' show isLocalFilePath;
@@ -20,10 +22,23 @@ class CarModeScreen extends StatefulWidget {
   State<CarModeScreen> createState() => _CarModeScreenState();
 }
 
-class _CarModeScreenState extends State<CarModeScreen> {
+class _CarModeScreenState extends State<CarModeScreen>
+    with TickerProviderStateMixin {
   SyncedLyrics? _lyrics;
   bool _lyricsLoading = true;
   String? _currentSongId;
+
+  // Triple-tap to favorite
+  int _tapCount = 0;
+  Timer? _tapTimer;
+  DateTime _lastTapTime = DateTime.now();
+  bool? _favOverride; // 本地记忆收藏状态（歌曲对象不会自动更新 starred）
+  Set<String>? _starredIds; // 本次车载会话缓存的已收藏歌曲 ID（权威来源 getStarred）
+  bool _starredFetching = false;
+  bool _feedbackVisible = false;
+  bool _feedbackFavorited = true;
+  bool _feedbackFailed = false;
+  late final AnimationController _feedbackController;
 
   // Drag-to-dismiss state
   double _dragOffset = 0.0;
@@ -40,14 +55,45 @@ class _CarModeScreenState extends State<CarModeScreen> {
   void initState() {
     super.initState();
     WakelockPlus.enable();
+    _feedbackController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          setState(() => _feedbackVisible = false);
+        }
+      });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadLyricsForCurrentSong();
+      _ensureStarredIds();
     });
+  }
+
+  /// 从服务端拉取已收藏歌曲 ID 列表（每个车载会话只拉一次），
+  /// 用于在 song.starred 缺失/过期时判断当前歌曲是否已收藏。
+  Future<void> _ensureStarredIds() async {
+    if (_starredIds != null || _starredFetching) return;
+    _starredFetching = true;
+    try {
+      final subsonic = Provider.of<SubsonicService>(context, listen: false);
+      final starred = await subsonic.getStarred();
+      if (!mounted) return;
+      setState(() {
+        _starredIds = starred.songs.map((s) => s.id).toSet();
+      });
+    } catch (_) {
+      // 失败时置空，避免后续重复请求
+      _starredIds = const {};
+    } finally {
+      _starredFetching = false;
+    }
   }
 
   @override
   void dispose() {
     WakelockPlus.disable();
+    _feedbackController.dispose();
+    _tapTimer?.cancel();
     super.dispose();
   }
 
@@ -57,6 +103,7 @@ class _CarModeScreenState extends State<CarModeScreen> {
     if (song == null) return;
     if (_currentSongId == song.id) return;
     _currentSongId = song.id;
+    _favOverride = null;
 
     setState(() {
       _lyricsLoading = true;
@@ -131,6 +178,141 @@ class _CarModeScreenState extends State<CarModeScreen> {
         }
       }
 
+      // ── LRCLIB fallback（与歌词页面一致）──────────────────────────────
+      final storageService = StorageService();
+      final lrcLibEnabled = await storageService.getLrcLibFallback();
+      if (lrcLibEnabled && song.artist != null) {
+        final lrclib = LrcLibService();
+        final fallbackLyrics = await lrclib.searchLyrics(
+          artist: song.artist!,
+          title: song.title,
+          durationSeconds: song.duration,
+        );
+        if (fallbackLyrics != null) {
+          // 缓存到本地，避免重复请求
+          final cacheMap = <String, dynamic>{};
+          if (fallbackLyrics.containsKey('structuredLyrics')) {
+            cacheMap['lyricsList'] = fallbackLyrics;
+          } else {
+            cacheMap['lyrics'] = fallbackLyrics;
+          }
+          await offlineService.saveLyrics(song.id, cacheMap);
+
+          if (fallbackLyrics.containsKey('structuredLyrics')) {
+            final structured = fallbackLyrics['structuredLyrics'];
+            if (structured is List && structured.isNotEmpty) {
+              final entry = structured.cast<Map<String, dynamic>>().firstWhere(
+                    (l) => l['synced'] == true,
+                    orElse: () => <String, dynamic>{},
+                  );
+              final lines = entry['line'] as List?;
+              if (lines != null && lines.isNotEmpty) {
+                final parsedLines = lines
+                    .map<LyricLine>((line) {
+                      final start = line['start'] as int? ?? 0;
+                      return LyricLine(
+                        timestamp: Duration(milliseconds: start),
+                        text: line['value']?.toString() ?? '',
+                      );
+                    })
+                    .where((line) => line.text.isNotEmpty)
+                    .toList();
+                if (parsedLines.isNotEmpty && mounted) {
+                  setState(() {
+                    _lyrics = SyncedLyrics(lines: parsedLines);
+                    _lyricsLoading = false;
+                  });
+                  return;
+                }
+              }
+            }
+          } else {
+            final value = fallbackLyrics['value']?.toString();
+            if (value != null && value.isNotEmpty && mounted) {
+              if (value.contains('[') && value.contains(':')) {
+                setState(() {
+                  _lyrics = SyncedLyrics.fromLrc(value);
+                  _lyricsLoading = false;
+                });
+              } else {
+                setState(() {
+                  _lyrics = SyncedLyrics.fromPlainText(value);
+                  _lyricsLoading = false;
+                });
+              }
+              return;
+            }
+          }
+        }
+      }
+
+      // ── NetEase Cloud Music fallback（与歌词页面一致）─────────────────
+      final neteaseEnabled = await storageService.getNeteaseFallback();
+      if (neteaseEnabled && song.artist != null) {
+        final netease = NeteaseLyricsService();
+        final neteaseLyrics = await netease.searchLyrics(
+          artist: song.artist!,
+          title: song.title,
+          durationSeconds: song.duration,
+        );
+        if (neteaseLyrics != null) {
+          // 缓存到本地，避免重复请求
+          final cacheMap = <String, dynamic>{};
+          if (neteaseLyrics.containsKey('structuredLyrics')) {
+            cacheMap['lyricsList'] = neteaseLyrics;
+          } else {
+            cacheMap['lyrics'] = neteaseLyrics;
+          }
+          await offlineService.saveLyrics(song.id, cacheMap);
+
+          if (neteaseLyrics.containsKey('structuredLyrics')) {
+            final structured = neteaseLyrics['structuredLyrics'];
+            if (structured is List && structured.isNotEmpty) {
+              final entry = structured.cast<Map<String, dynamic>>().firstWhere(
+                    (l) => l['synced'] == true,
+                    orElse: () => <String, dynamic>{},
+                  );
+              final lines = entry['line'] as List?;
+              if (lines != null && lines.isNotEmpty) {
+                final parsedLines = lines
+                    .map<LyricLine>((line) {
+                      final start = line['start'] as int? ?? 0;
+                      return LyricLine(
+                        timestamp: Duration(milliseconds: start),
+                        text: line['value']?.toString() ?? '',
+                      );
+                    })
+                    .where((line) => line.text.isNotEmpty)
+                    .toList();
+                if (parsedLines.isNotEmpty && mounted) {
+                  setState(() {
+                    _lyrics = SyncedLyrics(lines: parsedLines);
+                    _lyricsLoading = false;
+                  });
+                  return;
+                }
+              }
+            }
+          } else {
+            final value = neteaseLyrics['value']?.toString();
+            if (value != null && value.isNotEmpty && mounted) {
+              if (value.contains('[') && value.contains(':')) {
+                setState(() {
+                  _lyrics = SyncedLyrics.fromLrc(value);
+                  _lyricsLoading = false;
+                });
+              } else {
+                setState(() {
+                  _lyrics = SyncedLyrics.fromPlainText(value);
+                  _lyricsLoading = false;
+                });
+              }
+              return;
+            }
+          }
+        }
+      }
+
       setState(() => _lyricsLoading = false);
     } catch (_) {
       if (mounted) setState(() => _lyricsLoading = false);
@@ -141,7 +323,126 @@ class _CarModeScreenState extends State<CarModeScreen> {
     if (song == null) return null;
     if (isLocalFilePath(song.coverArt)) return song.coverArt;
     final subsonic = Provider.of<SubsonicService>(context, listen: false);
-    return subsonic.getCoverArtUrl(song.coverArt, size: 600);
+    return subsonic.getCoverArtUrl(song.coverArt);
+  }
+
+  /// 三连击（600ms 内连续 3 次点按）收藏当前歌曲
+  void _handleTripleTap() {
+    final now = DateTime.now();
+    if (now.difference(_lastTapTime) > const Duration(milliseconds: 600)) {
+      _tapCount = 0;
+    }
+    _lastTapTime = now;
+    _tapCount++;
+    _tapTimer?.cancel();
+    if (_tapCount >= 3) {
+      _tapCount = 0;
+      _favoriteSong();
+    } else {
+      _tapTimer = Timer(const Duration(milliseconds: 600), () {
+        _tapCount = 0;
+      });
+    }
+  }
+
+  /// 收藏当前歌曲（已收藏则只提示，不做取消操作）
+  Future<void> _favoriteSong() async {
+    final player = Provider.of<PlayerProvider>(context, listen: false);
+    final song = player.currentSong;
+    if (song == null) return;
+    final subsonic = Provider.of<SubsonicService>(context, listen: false);
+    final isFavorite = _favOverride ??
+        (_starredIds?.contains(song.id) ?? (song.starred ?? false));
+    if (isFavorite) {
+      _showFavoriteFeedback(favorited: true, failed: false);
+      return;
+    }
+    try {
+      await subsonic.star(id: song.id);
+      _favOverride = true;
+      _starredIds = {...?_starredIds, song.id};
+      _showFavoriteFeedback(favorited: true, failed: false);
+    } catch (_) {
+      _showFavoriteFeedback(favorited: false, failed: true);
+    }
+  }
+
+  void _showFavoriteFeedback({
+    required bool favorited,
+    required bool failed,
+  }) {
+    setState(() {
+      _feedbackFavorited = favorited;
+      _feedbackFailed = failed;
+      _feedbackVisible = true;
+    });
+    _feedbackController.forward(from: 0);
+  }
+
+  /// 居中的醒目收藏反馈：大爱心 + 光晕 + 弹性弹出 + 渐隐
+  Widget _buildFeedbackOverlay() {
+    return IgnorePointer(
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _feedbackController,
+          builder: (context, _) {
+            final t = _feedbackController.value;
+            final popT = (t / 0.35).clamp(0.0, 1.0);
+            final scale = Curves.elasticOut.transform(popT);
+            final opacity = t <= 0.55 ? 1.0 : (1.0 - (t - 0.55) / 0.45);
+            final color = _feedbackFailed
+                ? Colors.grey
+                : (_feedbackFavorited
+                    ? Colors.redAccent
+                    : Colors.blueGrey);
+            return Opacity(
+              opacity: opacity.clamp(0.0, 1.0),
+              child: Transform.scale(
+                scale: scale,
+                child: Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.6),
+                        blurRadius: 30,
+                        spreadRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _feedbackFailed
+                            ? Icons.error_outline_rounded
+                            : Icons.favorite_rounded,
+                        color: color,
+                        size: 64,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _feedbackFailed
+                            ? '操作失败'
+                            : (_feedbackFavorited ? '已收藏' : '已取消收藏'),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -183,7 +484,10 @@ class _CarModeScreenState extends State<CarModeScreen> {
               });
             }
           },
-          child: AnimatedOpacity(
+          onTap: _handleTripleTap,
+          child: Stack(
+            children: [
+              AnimatedOpacity(
             duration: _isDragging
                 ? Duration.zero
                 : const Duration(milliseconds: 250),
@@ -211,6 +515,9 @@ class _CarModeScreenState extends State<CarModeScreen> {
               builder: (context, player, _) {
                 final song = player.currentSong;
                 final coverUrl = _getCoverArtUrl(context, song);
+                final isFavorited = _favOverride ??
+                    (_starredIds?.contains(song?.id) ??
+                        (song?.starred ?? false));
 
                 // Reload lyrics if song changed
                 if (song != null && song.id != _currentSongId) {
@@ -239,16 +546,32 @@ class _CarModeScreenState extends State<CarModeScreen> {
                     // Song title + artist
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Text(
-                        song?.title ?? '',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              song?.title ?? '',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isFavorited) ...[
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.favorite_border_rounded,
+                              color: Colors.redAccent,
+                              size: 18,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -315,10 +638,12 @@ class _CarModeScreenState extends State<CarModeScreen> {
           ),
           ),
           ),
-          ),
         ),
+              if (_feedbackVisible) _buildFeedbackOverlay(),
+            ],
+          ),
       ),
-    );
+    ));
   }
 }
 
@@ -432,7 +757,7 @@ class _CarModeControls extends StatelessWidget {
       initialData: player.position,
       builder: (context, snapshot) {
         final position = snapshot.data ?? Duration.zero;
-        final duration = player.duration;
+        final duration = player.effectiveDuration;
         final progress = duration.inMilliseconds > 0
             ? (position.inMilliseconds / duration.inMilliseconds)
                 .clamp(0.0, 1.0)

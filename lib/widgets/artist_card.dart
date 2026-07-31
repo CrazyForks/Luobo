@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/artist.dart';
+import '../providers/library_provider.dart';
 import '../theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import 'album_artwork.dart';
@@ -29,6 +31,11 @@ class _ArtistCardState extends State<ArtistCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final libraryProvider = Provider.of<LibraryProvider>(
+      context,
+      listen: false,
+    );
+    final coverArt = libraryProvider.getArtistCoverArt(widget.artist);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -69,7 +76,7 @@ class _ArtistCardState extends State<ArtistCard> {
                     children: [
                       ClipOval(
                         child: AlbumArtwork(
-                          coverArt: widget.artist.coverArt,
+                          coverArt: coverArt,
                           size: widget.size,
                           borderRadius: widget.size / 2,
                           shadow: const BoxShadow(color: Colors.transparent),
@@ -163,6 +170,10 @@ class ArtistTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final libraryProvider = Provider.of<LibraryProvider>(
+      context,
+      listen: false,
+    );
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -172,7 +183,7 @@ class ArtistTile extends StatelessWidget {
         decoration: const BoxDecoration(shape: BoxShape.circle),
         child: ClipOval(
           child: AlbumArtwork(
-            coverArt: artist.coverArt,
+            coverArt: libraryProvider.getArtistCoverArt(artist),
             size: 50,
             borderRadius: 25,
             shadow: const BoxShadow(color: Colors.transparent),

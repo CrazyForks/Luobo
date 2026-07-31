@@ -4,8 +4,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 class ImageCacheConfig {
   static void configure() {
 
-    PaintingBinding.instance.imageCache.maximumSize = 100;
-    PaintingBinding.instance.imageCache.maximumSizeBytes = 50 << 20;
+    // Large enough to hold several screens of covers in memory so fast
+    // scrolling doesn't repeatedly re-decode images from disk.
+    PaintingBinding.instance.imageCache.maximumSize = 300;
+    PaintingBinding.instance.imageCache.maximumSizeBytes = 150 << 20;
   }
 }
 

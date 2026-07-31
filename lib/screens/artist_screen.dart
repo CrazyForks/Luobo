@@ -34,58 +34,132 @@ class _ArtistScreenState extends State<ArtistScreen> {
       context,
       listen: false,
     );
-    final subsonicService = libraryProvider.subsonicService;
 
-    try {
-      Artist? artist;
-      List<Song> topSongs = [];
-      List<Album> albums = [];
-
-      if (libraryProvider.isLocalOnlyMode) {
-        artist = libraryProvider.artists.firstWhere(
+    if (libraryProvider.isLocalOnlyMode) {
+      try {
+        final artist = libraryProvider.artists.firstWhere(
           (a) => a.id == widget.artistId,
           orElse: () => Artist(id: widget.artistId, name: 'Unknown Artist'),
         );
-        albums = await libraryProvider.getArtistAlbums(widget.artistId);
+        final albums = await libraryProvider.getArtistAlbums(widget.artistId);
 
-        topSongs = libraryProvider.cachedAllSongs
+        final topSongs = libraryProvider.cachedAllSongs
             .where((s) => s.artistId == widget.artistId)
             .toList();
-      } else {
-        artist = await subsonicService.getArtist(widget.artistId);
-        topSongs = await subsonicService.getArtistTopSongs(widget.artistId);
-        albums = await subsonicService.getArtistAlbums(widget.artistId);
-        if (albums.isNotEmpty) {
-          final topSongIds = topSongs.map((s) => s.id).toSet();
-          final seenIds = {...topSongIds};
-          const chunkSize = 5;
-          final allAlbumSongs = <Song>[];
-          for (var i = 0; i < albums.length; i += chunkSize) {
-            final chunk =
-                albums.sublist(i, (i + chunkSize).clamp(0, albums.length));
-            final results = await Future.wait(
-                chunk.map((a) => subsonicService.getAlbumSongs(a.id)));
-            allAlbumSongs.addAll(results
-                .expand((songs) => songs)
-                .where((s) => seenIds.add(s.id)));
-          }
-          topSongs = [...topSongs, ...allAlbumSongs];
+
+        if (mounted) {
+          setState(() {
+            _artist = artist;
+            _topSongs = topSongs;
+            _albums = albums;
+            _isLoading = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
         }
       }
-
-      if (mounted) {
-        setState(() {
-          _artist = artist;
-          _topSongs = topSongs;
-          _albums = albums;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      return;
     }
+
+    // ── Server mode: cache-first ──
+    // Render immediately from the local library cache (artists / albums /
+    // songs synced into SQLite), then refresh from the server in the
+    // background so repeated entries don't block on the network.
+    final cachedArtist = libraryProvider.artists.firstWhere(
+      (a) => a.id == widget.artistId,
+      orElse: () => Artist(id: widget.artistId, name: ''),
+    );
+    final cachedAlbums = libraryProvider.cachedAllAlbums
+        .where((a) => a.artistId == widget.artistId)
+        .toList();
+    final cachedSongs = libraryProvider.cachedAllSongs
+        .where((s) => s.artistId == widget.artistId)
+        .toList();
+
+    final hasCache = cachedArtist.name.isNotEmpty ||
+        cachedAlbums.isNotEmpty ||
+        cachedSongs.isNotEmpty;
+
+    if (hasCache && mounted) {
+      var artist = cachedArtist;
+      if (artist.name.isEmpty) {
+        final nameFromAlbum =
+            cachedAlbums.isNotEmpty ? (cachedAlbums.first.artist ?? '') : '';
+        artist = Artist(
+          id: widget.artistId,
+          name: nameFromAlbum.isNotEmpty
+              ? nameFromAlbum
+              : (cachedSongs.isNotEmpty ? (cachedSongs.first.artist ?? '') : ''),
+        );
+      }
+      setState(() {
+        _artist = artist;
+        _albums = cachedAlbums;
+        _topSongs = cachedSongs.take(50).toList();
+        _isLoading = false;
+      });
+    }
+
+    // Background refresh with fresh server data; never blocks the UI.
+    await _loadArtistFromServer();
+  }
+
+  Future<void> _loadArtistFromServer() async {
+    final libraryProvider = Provider.of<LibraryProvider>(
+      context,
+      listen: false,
+    );
+    final subsonicService = libraryProvider.subsonicService;
+
+    Artist? artist;
+    List<Song> topSongs = [];
+    List<Album> albums = [];
+
+    try {
+      artist = await subsonicService.getArtist(widget.artistId);
+    } catch (e) {
+      debugPrint('Error loading artist ${widget.artistId}: $e');
+    }
+
+    try {
+      topSongs = await subsonicService.getArtistTopSongs(
+        widget.artistId,
+        artist: artist,
+      );
+    } catch (e) {
+      debugPrint('Error loading top songs for ${widget.artistId}: $e');
+    }
+
+    try {
+      albums = await subsonicService.getArtistAlbums(
+        widget.artistId,
+        artist: artist,
+      );
+    } catch (e) {
+      debugPrint('Error loading albums for ${widget.artistId}: $e');
+    }
+
+    if (albums.isEmpty) {
+      albums = libraryProvider.cachedAllAlbums
+          .where((a) => a.artistId == widget.artistId)
+          .toList();
+    }
+    if (topSongs.isEmpty) {
+      topSongs = libraryProvider.cachedAllSongs
+          .where((s) => s.artistId == widget.artistId)
+          .take(50)
+          .toList();
+    }
+
+    if (!mounted) return;
+    setState(() {
+      if (artist != null) _artist = artist;
+      _topSongs = topSongs;
+      _albums = albums;
+      _isLoading = false;
+    });
   }
 
   Future<void> _addArtistToQueue() async {
@@ -174,6 +248,14 @@ class _ArtistScreenState extends State<ArtistScreen> {
       );
     }
 
+    final libraryProvider = Provider.of<LibraryProvider>(
+      context,
+      listen: false,
+    );
+    // Fall back to one of the artist's album covers when the server has no
+    // artist image, so the header isn't an empty gradient.
+    final artistCover = libraryProvider.getArtistCoverArt(_artist!);
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -182,7 +264,7 @@ class _ArtistScreenState extends State<ArtistScreen> {
             expandedHeight: 200,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(_artist!.name),
-              background: _artist!.coverArt != null
+              background: artistCover != null
                   ? ShaderMask(
                       shaderCallback: (rect) {
                         return LinearGradient(
@@ -195,7 +277,7 @@ class _ArtistScreenState extends State<ArtistScreen> {
                       },
                       blendMode: BlendMode.dstIn,
                       child: AlbumArtwork(
-                        coverArt: _artist!.coverArt,
+                        coverArt: artistCover,
                         size: 200,
                       ),
                     )

@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' show Random;
 
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -55,6 +54,18 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   LibraryProvider? _libraryProvider;
   RecommendationService? _recommendationService;
 
+  /// Id of the song whose playback end was already recorded, to avoid
+  /// counting the same song multiple times when multiple "song ended"
+  /// events fire (completion + index change + manual skip).
+  String? _trackedSongId;
+
+  /// Transcode settings actually applied to the CURRENT stream, captured
+  /// when the stream URL was built. null means the stream is the original
+  /// file — even if transcoding settings have changed since playback
+  /// started, the audio that is playing is still the original.
+  int? _activeStreamBitrate;
+  String? _activeStreamFormat;
+
   List<Song> _queue = [];
   int _currentIndex = -1;
   bool _isPlaying = false;
@@ -62,6 +73,12 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _shuffleEnabled = false;
   bool _gaplessEnabled = true;
   final List<String> _shuffleHistory = [];
+
+  /// Shuffled play order (indices into [_queue]) for "every song plays once
+  /// per round" semantics. When exhausted and repeat-all is on, the order is
+  /// rebuilt with a fresh shuffle so each round has a new sequence.
+  List<int> _shuffleOrder = [];
+  int _shuffleOrderPos = 0;
   RepeatMode _repeatMode = RepeatMode.off;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
@@ -512,7 +529,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
                         null
                     ? Uri.file(_offlineService.getLocalCoverArtPath(song.id)!)
                         .toString()
-                    : _subsonicService.getCoverArtUrl(song.coverArt, size: 300),
+                    : _subsonicService.getCoverArtUrl(song.coverArt),
                 'duration': (song.duration ?? 0).toString(),
               },
             )
@@ -684,7 +701,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
                       null
                   ? Uri.file(_offlineService.getLocalCoverArtPath(song.id)!)
                       .toString()
-                  : _subsonicService.getCoverArtUrl(song.coverArt, size: 300),
+                  : _subsonicService.getCoverArtUrl(song.coverArt),
               'duration': (song.duration ?? 0).toString(),
             },
           )
@@ -847,7 +864,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       }
     }
     // Request high quality for iOS Now Playing bar / Control Center (1200px)
-    final serverUrl = _subsonicService.getCoverArtUrl(coverArtId, size: 1200);
+    final serverUrl = _subsonicService.getCoverArtUrl(coverArtId);
 
     if (!_offlineService.isOfflineMode) {
       _resolvedArtworkUrl = serverUrl;
@@ -949,6 +966,18 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get isPlaying => _isPlaying;
   bool get isLoading => _isLoading;
 
+  /// Actual transcode state of the current stream (captured when the stream
+  /// URL was built). See [_activeStreamBitrate].
+  int? get activeStreamBitrate => _activeStreamBitrate;
+  String? get activeStreamFormat => _activeStreamFormat;
+  bool get isActiveStreamTranscoded => _activeStreamBitrate != null;
+
+  void _setActiveStream(int? maxBitRate, String? format) {
+    final applied = maxBitRate != null && maxBitRate > 0;
+    _activeStreamBitrate = applied ? maxBitRate : null;
+    _activeStreamFormat = applied ? format : null;
+  }
+
   /// True when audio is playing on a remote renderer (UPnP or Cast) rather
   /// than locally.  Used to suppress audio-focus and noisy-event handling that
   /// would incorrectly pause the remote device, and to route UI volume changes
@@ -959,6 +988,19 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   RepeatMode get repeatMode => _repeatMode;
   Duration get position => _position;
   Duration get duration => _duration;
+
+  /// Track duration for progress UI. Falls back to the server-reported
+  /// metadata when the player can't resolve it (e.g. on-the-fly transcoded
+  /// streams with unknown Content-Length).
+  Duration get effectiveDuration {
+    if (_duration.inMilliseconds > 0) return _duration;
+    final song = _currentSong;
+    if (song != null && song.duration != null && song.duration! > 0) {
+      return Duration(seconds: song.duration!);
+    }
+    return _duration;
+  }
+
   Song? get currentSong => _currentSong;
   bool get hasNext =>
       _queue.isNotEmpty &&
@@ -997,8 +1039,9 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   Duration? _lastPolledPosition;
 
   double get progress {
-    if (_duration.inMilliseconds == 0) return 0;
-    return _position.inMilliseconds / _duration.inMilliseconds;
+    final duration = effectiveDuration;
+    if (duration.inMilliseconds == 0) return 0;
+    return _position.inMilliseconds / duration.inMilliseconds;
   }
 
   double get playbackSpeed => _playbackSpeed;
@@ -1343,6 +1386,24 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Records how a song ended, exactly once per song:
+  /// - listened to < 80%  → counted as a skip (does NOT increase play count)
+  /// - listened to >= 80% → counted as a completed play
+  void _recordSongEnd(Song song, int playedSeconds, int totalSeconds) {
+    final service = _recommendationService;
+    if (service == null || _trackedSongId == song.id) return;
+    _trackedSongId = song.id;
+    if (totalSeconds > 0 && playedSeconds < totalSeconds * 0.8) {
+      service.trackSkip(song, secondsPlayed: playedSeconds);
+    } else if (playedSeconds > 0) {
+      service.trackSongPlay(
+        song,
+        durationPlayed: playedSeconds,
+        completed: true,
+      );
+    }
+  }
+
   Future<void> _onSongComplete() async {
     if (_currentSong != null && _currentSong!.isLocal != true) {
       _subsonicService.scrobble(_currentSong!.id, submission: true).catchError((
@@ -1352,12 +1413,8 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       });
     }
 
-    if (_currentSong != null && _recommendationService != null) {
-      _recommendationService!.trackSongPlay(
-        _currentSong!,
-        durationPlayed: _duration.inSeconds,
-        completed: true,
-      );
+    if (_currentSong != null) {
+      _recordSongEnd(_currentSong!, _duration.inSeconds, _duration.inSeconds);
     }
 
     if (_sleepTimerEndCurrentSong) {
@@ -1368,7 +1425,15 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (_concatenatingSource != null) {
       // With ConcatenatingAudioSource this only fires at the very end
       // of the queue when LoopMode is off.
-      await _handleEndOfQueue();
+      if (_shuffleEnabled &&
+          _repeatMode == RepeatMode.all &&
+          _queue.length > 1) {
+        // A shuffled round finished: rebuild with a fresh order instead of
+        // looping the same sequence.
+        await _restartShuffleRound();
+      } else {
+        await _handleEndOfQueue();
+      }
       return;
     }
 
@@ -1400,14 +1465,23 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     Song song, {
     List<Song>? playlist,
     int? startIndex,
+    bool forcePlay = false,
   }) async {
-    if (_currentSong?.id == song.id && !_isPlayingRadio) {
+    // Only treat tapping the currently-playing song as pause/resume when the
+    // request comes from the UI. Automatic transitions (skipNext/skipToIndex)
+    // pass forcePlay: true so a duplicate song id never replays the same track
+    // via togglePlayPause.
+    if (!forcePlay && _currentSong?.id == song.id && !_isPlayingRadio) {
       await togglePlayPause();
       return;
     }
 
     _isPlayingRadio = false;
     _currentRadioStation = null;
+
+    // Reset the active-stream transcode snapshot; the URL builders below
+    // re-capture whatever is actually applied to this song's stream.
+    _setActiveStream(null, null);
 
     // Jukebox mode: send to server instead of playing locally.
     if (_jukeboxService.enabled) {
@@ -1441,7 +1515,10 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         _currentIndex =
             startIndex ?? playlist.indexWhere((s) => s.id == song.id);
         if (_currentIndex == -1) _currentIndex = 0;
-        if (isNewQueue) _shuffleHistory.clear();
+        if (isNewQueue) {
+          _shuffleHistory.clear();
+          if (_shuffleEnabled) _rebuildShuffleOrder();
+        }
       } else if (_queue.isEmpty || !_queue.any((s) => s.id == song.id)) {
         _queue = [song];
         _currentIndex = 0;
@@ -1603,6 +1680,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
               final format = _transcodingService.enabled
                   ? _transcodingService.format
                   : null;
+              _setActiveStream(maxBitRate, format);
               playUrl = _subsonicService.getStreamUrl(song.id,
                   maxBitRate: maxBitRate, format: format);
             }
@@ -1612,6 +1690,14 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
           if (song.isLocal == true ||
               _offlineService.getLocalPath(song.id) != null) {
             await _audioPlayer.setUrl(playUrl);
+          } else if (_transcodingService.enabled) {
+            // Transcoding streams don't support HTTP range requests reliably.
+            // Route straight to ExoPlayer so seeking keeps the target position
+            // — LockCachingAudioSource would downgrade range requests to a
+            // full 200 response and restart playback from the beginning.
+            await _audioPlayer.setAudioSource(
+              AudioSource.uri(Uri.parse(playUrl), tag: song.id),
+            );
           } else {
             final cacheDir = await getTemporaryDirectory();
             final cacheFile = File(
@@ -1650,10 +1736,12 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       }
 
       if (_recommendationService != null) {
+        _trackedSongId = null;
         _recommendationService!.trackSongPlay(
           song,
           durationPlayed: 0,
           completed: false,
+          countPlay: false,
         );
       }
 
@@ -2022,24 +2110,14 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> seekToProgress(double progress) async {
     final position = Duration(
-      milliseconds: (progress * _duration.inMilliseconds).round(),
+      milliseconds: (progress * effectiveDuration.inMilliseconds).round(),
     );
     await seek(position);
   }
 
   Future<void> skipNext() async {
-    if (_currentSong != null && _recommendationService != null) {
-      final played = _position.inSeconds;
-      final total = _duration.inSeconds;
-      if (total > 0 && played < total * 0.8) {
-        _recommendationService!.trackSkip(_currentSong!);
-      } else if (played > 0) {
-        _recommendationService!.trackSongPlay(
-          _currentSong!,
-          durationPlayed: played,
-          completed: played >= total * 0.8,
-        );
-      }
+    if (_currentSong != null) {
+      _recordSongEnd(_currentSong!, _position.inSeconds, _duration.inSeconds);
     }
 
     if (_jukeboxService.enabled) {
@@ -2055,11 +2133,12 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (_shuffleEnabled && _queue.length > 1) {
         _shuffleHistory.add(_currentSong!.id);
         if (_shuffleHistory.length > 50) _shuffleHistory.removeAt(0);
-        int next;
-        do {
-          next = Random().nextInt(_queue.length);
-        } while (next == _currentIndex);
-        await _audioPlayer.seek(Duration.zero, index: next);
+        final next = _pickShuffleNextIndex();
+        if (next != -1) {
+          await _audioPlayer.seek(Duration.zero, index: next);
+        } else if (_repeatMode == RepeatMode.all) {
+          await _restartShuffleRound();
+        }
       } else if (_currentIndex < _queue.length - 1) {
         await _audioPlayer.seek(Duration.zero, index: _currentIndex + 1);
       } else if (_repeatMode == RepeatMode.all) {
@@ -2071,11 +2150,12 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (_shuffleEnabled && _queue.length > 1) {
       _shuffleHistory.add(_currentSong!.id);
       if (_shuffleHistory.length > 50) _shuffleHistory.removeAt(0);
-      int next;
-      do {
-        next = Random().nextInt(_queue.length);
-      } while (next == _currentIndex);
-      await skipToIndex(next);
+      final next = _pickShuffleNextIndex();
+      if (next != -1) {
+        await skipToIndex(next);
+      } else if (_repeatMode == RepeatMode.all) {
+        await _restartShuffleRound();
+      }
     } else if (_currentIndex < _queue.length - 1) {
       await skipToIndex(_currentIndex + 1);
     } else if (_repeatMode == RepeatMode.all) {
@@ -2085,6 +2165,82 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       } else {
         await skipToIndex(0);
       }
+    }
+  }
+
+  /// Builds a fresh shuffled play order (indices into [_queue]). Recently
+  /// played songs (up to 20 from [_shuffleHistory]) are pushed to the tail so
+  /// they don't immediately repeat across rounds.
+  void _rebuildShuffleOrder() {
+    _shuffleOrder = List.generate(_queue.length, (i) => i)..shuffle();
+    final recentIds = _shuffleHistory.take(20).toSet();
+    if (recentIds.isNotEmpty) {
+      final front = <int>[];
+      final back = <int>[];
+      for (final idx in _shuffleOrder) {
+        if (idx >= 0 &&
+            idx < _queue.length &&
+            recentIds.contains(_queue[idx].id)) {
+          back.add(idx);
+        } else {
+          front.add(idx);
+        }
+      }
+      _shuffleOrder = [...front, ...back];
+    }
+    _shuffleOrderPos = 0;
+  }
+
+  /// Points [_shuffleOrderPos] at the current song's position in the order so
+  /// the "next" is always the entry right after the currently playing song,
+  /// regardless of whether the track changed automatically or via seek.
+  void _syncShuffleOrderPos() {
+    if (_shuffleOrder.isEmpty) {
+      _rebuildShuffleOrder();
+      return;
+    }
+    final pos = _shuffleOrder.indexOf(_currentIndex);
+    _shuffleOrderPos = pos != -1 ? pos : 0;
+  }
+
+  /// Picks the next index for shuffle mode by walking the shuffled order, so
+  /// every song plays exactly once per round (no random re-picks). Returns -1
+  /// when the round is exhausted; the caller decides whether to restart
+  /// (repeat-all) or stop.
+  int _pickShuffleNextIndex() {
+    if (_queue.length <= 1 || _currentSong == null) return -1;
+    _syncShuffleOrderPos();
+    final currentId = _currentSong!.id;
+    for (var i = _shuffleOrderPos + 1; i < _shuffleOrder.length; i++) {
+      final idx = _shuffleOrder[i];
+      if (idx >= 0 && idx < _queue.length && _queue[idx].id != currentId) {
+        return idx;
+      }
+    }
+    return -1; // round exhausted
+  }
+
+  /// Starts a new shuffled round: fresh order, and in gapless mode the
+  /// concatenating source is rebuilt so just_audio follows the new sequence.
+  Future<void> _restartShuffleRound() async {
+    if (_queue.isEmpty) return;
+    if (_concatenatingSource != null) {
+      _queue.shuffle();
+      // Keep the current song pinned at index 0 so playback continues
+      // smoothly; the fresh order starts with a different song anyway.
+      if (_currentSong != null) {
+        _queue.remove(_currentSong);
+        _queue.insert(0, _currentSong!);
+        _currentIndex = 0;
+      }
+      _rebuildShuffleOrder();
+      final startIdx = _shuffleOrder.isNotEmpty ? _shuffleOrder.first : 0;
+      await _buildAndSetConcatenatingSource(initialIndex: startIdx);
+      await play();
+      _saveQueueState();
+    } else {
+      _rebuildShuffleOrder();
+      await skipToIndex(_shuffleOrder.isNotEmpty ? _shuffleOrder.first : 0);
     }
   }
 
@@ -2172,7 +2328,12 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (_concatenatingSource != null) {
         await _audioPlayer.seek(Duration.zero, index: index);
       } else {
-        await playSong(_queue[index], playlist: _queue, startIndex: index);
+        await playSong(
+          _queue[index],
+          playlist: _queue,
+          startIndex: index,
+          forcePlay: true,
+        );
       }
     }
   }
@@ -2186,12 +2347,16 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       _queue.remove(currentSong);
       _queue.insert(0, currentSong);
       _currentIndex = 0;
+      _rebuildShuffleOrder();
       if (_concatenatingSource != null) {
         _buildAndSetConcatenatingSource(initialIndex: 0).catchError((e) {
           debugPrint('Error rebuilding concatenating source after shuffle: $e');
         });
       }
       _saveQueueState();
+    } else {
+      _shuffleOrder = [];
+      _shuffleOrderPos = 0;
     }
     _storageService.saveShuffleMode(_shuffleEnabled);
     notifyListeners();
@@ -2201,7 +2366,10 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     switch (_repeatMode) {
       case RepeatMode.off:
         _repeatMode = RepeatMode.all;
-        _audioPlayer.setLoopMode(LoopMode.all);
+        // When shuffling, keep the player loop off so a completed round fires
+        // ProcessingState.completed and we can rebuild with a fresh shuffle
+        // order instead of looping the same sequence.
+        _audioPlayer.setLoopMode(_shuffleEnabled ? LoopMode.off : LoopMode.all);
         break;
       case RepeatMode.all:
         _repeatMode = RepeatMode.one;
@@ -2223,11 +2391,15 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void addToQueue(Song song) {
+    // Skip duplicates so the queue never contains the same song id twice.
+    if (_queue.any((s) => s.id == song.id)) return;
     _queue.add(song);
     notifyListeners();
   }
 
   Future<void> addToQueueNext(Song song) async {
+    // Skip duplicates so the queue never contains the same song id twice.
+    if (_queue.any((s) => s.id == song.id)) return;
     final insertIndex = _currentIndex + 1;
     if (insertIndex < _queue.length) {
       _queue.insert(insertIndex, song);
@@ -2250,7 +2422,11 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> addAllToQueue(Iterable<Song> songs) async {
-    final newSongs = songs.toList();
+    // Skip duplicates so the queue never contains the same song id twice.
+    final existingIds = _queue.map((s) => s.id).toSet();
+    final newSongs =
+        songs.where((s) => !existingIds.contains(s.id)).toList();
+    if (newSongs.isEmpty) return;
     _queue.addAll(newSongs);
     if (_concatenatingSource != null) {
       for (final song in newSongs) {
@@ -2404,8 +2580,20 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         _transcodingService.enabled ? _transcodingService.currentBitRate : null;
     final format =
         _transcodingService.enabled ? _transcodingService.format : null;
+    // Only the current song's source reflects the actual active stream;
+    // sources for other queue entries are prebuilt and must not overwrite it.
+    if (song.id == _currentSong?.id) {
+      _setActiveStream(maxBitRate, format);
+    }
     final url = _subsonicService.getStreamUrl(song.id,
         maxBitRate: maxBitRate, format: format);
+    // Transcoding streams don't support HTTP range requests reliably. Route
+    // them straight to ExoPlayer so seeking keeps the target position —
+    // LockCachingAudioSource would downgrade range requests to a full 200
+    // response and restart playback from the beginning (#170).
+    if (_transcodingService.enabled) {
+      return AudioSource.uri(Uri.parse(url), tag: song.id);
+    }
     // Cache remote streams locally so seeking works even when the server
     // transcodes and doesn't support HTTP range requests (issue #170).
     final cacheDir = await getTemporaryDirectory();
@@ -2447,13 +2635,29 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
           if (offlinePath != null) {
             playUrl = 'file://$offlinePath';
           } else {
-            playUrl =
-                await _subsonicService.resolveStreamUrlAsync(_currentSong!);
+            // Apply transcoding settings if enabled, matching playSong's
+            // stream URL so the restore path honors the same bitrate/format.
+            final maxBitRate = _transcodingService.enabled
+                ? _transcodingService.currentBitRate
+                : null;
+            final format = _transcodingService.enabled
+                ? _transcodingService.format
+                : null;
+            _setActiveStream(maxBitRate, format);
+            playUrl = _subsonicService.getStreamUrl(_currentSong!.id,
+                maxBitRate: maxBitRate, format: format);
           }
         }
         if (_currentSong!.isLocal == true ||
             _offlineService.getLocalPath(_currentSong!.id) != null) {
           await _audioPlayer.setUrl(playUrl);
+        } else if (_transcodingService.enabled) {
+          // Transcoding streams don't support HTTP range requests reliably;
+          // let ExoPlayer handle seeking natively instead of wrapping the
+          // stream in LockCachingAudioSource (which restarts from 0 on seek).
+          await _audioPlayer.setAudioSource(
+            AudioSource.uri(Uri.parse(playUrl), tag: _currentSong!.id),
+          );
         } else {
           final cacheDir = await getTemporaryDirectory();
           final cacheFile = File(
@@ -2503,12 +2707,8 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
           },
         );
       }
-      if (_recommendationService != null) {
-        _recommendationService!.trackSongPlay(
-          _currentSong!,
-          durationPlayed: _duration.inSeconds,
-          completed: true,
-        );
+      if (_currentSong != null) {
+        _recordSongEnd(_currentSong!, _position.inSeconds, _duration.inSeconds);
       }
     }
 
@@ -2521,6 +2721,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _currentSong = _queue[_currentIndex];
     _position = Duration.zero;
     _resolvedArtworkUrl = null;
+    if (_shuffleEnabled) _syncShuffleOrderPos();
     notifyListeners();
     _saveQueueState();
 

@@ -299,7 +299,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       context,
       listen: false,
     );
-    return subsonicService.getCoverArtUrl(song.coverArt!, size: 600);
+    return subsonicService.getCoverArtUrl(song.coverArt!);
   }
 
   String _formatDuration(Duration duration) {

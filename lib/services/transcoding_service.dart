@@ -71,11 +71,13 @@ class TranscodingService extends ChangeNotifier {
 
   int get wifiBitrate => _wifiBitrate;
   int get mobileBitrate => _mobileBitrate;
-  int get currentBitRate => _smartEnabled
-      ? (_currentConnectionType == ConnectionType.wifi
-          ? _wifiBitrate
-          : _mobileBitrate)
-      : _wifiBitrate;
+  // Always pick the bitrate matching the current connection type, regardless
+  // of smart mode: the settings UI exposes "WiFi quality" and "mobile data
+  // quality" independently, and both should take effect. Smart mode only
+  // controls whether the network is watched for automatic switching.
+  int get currentBitRate => _currentConnectionType == ConnectionType.wifi
+      ? _wifiBitrate
+      : _mobileBitrate;
   String get format => _format;
   bool get enabled => _enabled;
   bool get smartEnabled => _smartEnabled;

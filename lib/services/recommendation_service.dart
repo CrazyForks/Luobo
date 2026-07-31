@@ -33,10 +33,16 @@ class RecommendationService extends ChangeNotifier {
   static const _kTimeKey = 'rec_time_v3';
   static const _kEnabledKey = 'recommendations_enabled';
   static const _kDecayKey = 'rec_decay_ts';
+  static const _kFirstUseDateKey = 'first_use_date';
 
   bool _enabled = true;
 
   SharedPreferences? _prefs;
+
+  DateTime? _firstUseDate;
+
+  /// 第一次使用 App 的日期（用于听歌报告「陪伴天数」）
+  DateTime? get firstUseDate => _firstUseDate;
 
   Map<String, SongProfile> _profiles = {};
   Map<String, double> _artistAffinity = {};
@@ -69,6 +75,19 @@ class RecommendationService extends ChangeNotifier {
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     _enabled = _prefs!.getBool(_kEnabledKey) ?? true;
+
+    // 记录首次使用日期：没有则记为现在，已有则读取
+    final savedFirstUse = _prefs!.getInt(_kFirstUseDateKey);
+    if (savedFirstUse == null) {
+      _firstUseDate = DateTime.now();
+      await _prefs!.setInt(
+        _kFirstUseDateKey,
+        _firstUseDate!.millisecondsSinceEpoch,
+      );
+    } else {
+      _firstUseDate = DateTime.fromMillisecondsSinceEpoch(savedFirstUse);
+    }
+
     await _loadAllData();
     _applyDecay();
     notifyListeners();
@@ -98,6 +117,7 @@ class RecommendationService extends ChangeNotifier {
     Song song, {
     int durationPlayed = 0,
     bool completed = false,
+    bool countPlay = true,
   }) async {
     final id = song.id;
     final hour = DateTime.now().hour;
@@ -116,7 +136,10 @@ class RecommendationService extends ChangeNotifier {
           ),
         )
         .addPlay(
-            durationPlayed: durationPlayed, completed: completed, hour: hour);
+            durationPlayed: durationPlayed,
+            completed: completed,
+            hour: hour,
+            countPlay: countPlay);
 
     _recentlyPlayed.remove(id);
     _recentlyPlayed.insert(0, id);
@@ -694,6 +717,16 @@ class RecommendationService extends ChangeNotifier {
     try {
       final prefs = _prefs ?? await SharedPreferences.getInstance();
 
+      // Prune dailyPlays / monthlyPlays to prevent unbounded storage growth.
+      final now = DateTime.now();
+      final dayCutoff = _dateKey(now.subtract(const Duration(days: 400)));
+      final monthCutoff =
+          _monthKey(DateTime(now.year - 2, now.month));
+      for (final p in _profiles.values) {
+        p.dailyPlays.removeWhere((k, _) => k.compareTo(dayCutoff) < 0);
+        p.monthlyPlays.removeWhere((k, _) => k.compareTo(monthCutoff) < 0);
+      }
+
       final data = {
         'profiles': _profiles.map((k, v) => MapEntry(k, v.toJson())),
         'artists': _artistAffinity,
@@ -741,6 +774,8 @@ class SongProfile {
   int completedPlays = 0;
   int? userRating;
   Map<int, int> hourlyPlays = {};
+  Map<String, int> dailyPlays = {};
+  Map<String, int> monthlyPlays = {};
   late DateTime lastPlayed;
 
   SongProfile({
@@ -771,8 +806,18 @@ class SongProfile {
     return (hourlyPlays[hour] ?? 0) / maxH;
   }
 
-  void addPlay({int durationPlayed = 0, bool completed = false, int? hour}) {
-    playCount++;
+  void addPlay({
+    int durationPlayed = 0,
+    bool completed = false,
+    int? hour,
+    bool countPlay = true,
+  }) {
+    if (countPlay) {
+      playCount++;
+      final now = DateTime.now();
+      dailyPlays[_dateKey(now)] = (dailyPlays[_dateKey(now)] ?? 0) + 1;
+      monthlyPlays[_monthKey(now)] = (monthlyPlays[_monthKey(now)] ?? 0) + 1;
+    }
     totalListenTime += durationPlayed;
     if (completed) completedPlays++;
     if (hour != null) hourlyPlays[hour] = (hourlyPlays[hour] ?? 0) + 1;
@@ -793,6 +838,8 @@ class SongProfile {
         'completedPlays': completedPlays,
         'userRating': userRating,
         'hourlyPlays': hourlyPlays.map((k, v) => MapEntry(k.toString(), v)),
+        'dailyPlays': dailyPlays,
+        'monthlyPlays': monthlyPlays,
         'lastPlayed': lastPlayed.millisecondsSinceEpoch,
       };
 
@@ -815,5 +862,17 @@ class SongProfile {
         ..userRating = json['userRating'] as int?
         ..hourlyPlays = (json['hourlyPlays'] as Map<String, dynamic>?)
                 ?.map((k, v) => MapEntry(int.parse(k), v as int)) ??
+            {}
+        ..dailyPlays = (json['dailyPlays'] as Map<String, dynamic>?)
+                ?.map((k, v) => MapEntry(k, v as int)) ??
+            {}
+        ..monthlyPlays = (json['monthlyPlays'] as Map<String, dynamic>?)
+                ?.map((k, v) => MapEntry(k, v as int)) ??
             {};
 }
+
+String _dateKey(DateTime d) =>
+    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+String _monthKey(DateTime d) =>
+    '${d.year}-${d.month.toString().padLeft(2, '0')}';

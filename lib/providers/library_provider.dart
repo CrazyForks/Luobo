@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../services/services.dart';
@@ -134,7 +135,34 @@ class LibraryProvider extends ChangeNotifier {
   }
 
   String getCoverArtUrl(String? coverArt) {
-    return _subsonicService.getCoverArtUrl(coverArt, size: 300);
+    return _subsonicService.getCoverArtUrl(coverArt);
+  }
+
+  /// Cover art for an artist, falling back to one of the artist's album
+  /// covers when Navidrome has no artist image (no `artist.*` file or
+  /// external service). Keeps artist lists/cards from showing a wall of
+  /// placeholder icons.
+  String? getArtistCoverArt(Artist artist) {
+    if (artist.coverArt != null && artist.coverArt!.isNotEmpty) {
+      return artist.coverArt;
+    }
+    for (final album in cachedAllAlbums) {
+      final cover = album.coverArt;
+      if (album.artistId == artist.id && cover != null && cover.isNotEmpty) {
+        return cover;
+      }
+    }
+    // Some servers omit artistId on album entries; match by artist name.
+    final name = artist.name.toLowerCase();
+    for (final album in cachedAllAlbums) {
+      final cover = album.coverArt;
+      if ((album.artist ?? '').toLowerCase() == name &&
+          cover != null &&
+          cover.isNotEmpty) {
+        return cover;
+      }
+    }
+    return null;
   }
 
   List<Album> get recentAlbums => _recentAlbums;
@@ -204,8 +232,8 @@ class LibraryProvider extends ChangeNotifier {
     return merged;
   }
 
-  Future<void> initialize() async {
-    if (_isInitialized) return;
+  Future<void> initialize({bool force = false}) async {
+    if (_isInitialized && !force) return;
 
     _isLoading = true;
     _error = null;
@@ -295,17 +323,13 @@ class LibraryProvider extends ChangeNotifier {
       return;
     }
 
-    _isLoading = true;
-    notifyListeners();
-
     await _loadCachedData(loadFullLibrary: true);
 
     if (_cachedAllSongs.isEmpty) {
-      await _refreshAllDataInBackground();
+      // Kick off the full sync in the background without blocking the UI;
+      // screens pick up the data via notifyListeners when it completes.
+      _refreshAllDataInBackground();
     }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> _loadCachedData({bool loadFullLibrary = false}) async {
@@ -348,8 +372,9 @@ class LibraryProvider extends ChangeNotifier {
   }
 
   void _scheduleBackgroundRefresh() {
-    if (_cachedAllSongs.isEmpty) return;
-
+    // Always allow a refresh on first launch (empty cache) so the full
+    // library sync runs automatically instead of waiting for the user to
+    // open the "All Songs" screen.
     final shouldRefresh = _lastCacheUpdate == null ||
         DateTime.now().difference(_lastCacheUpdate!) > const Duration(hours: 6);
 
@@ -360,7 +385,11 @@ class LibraryProvider extends ChangeNotifier {
     }
   }
 
+  bool _isRefreshing = false;
+
   Future<void> _refreshAllDataInBackground() async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
     try {
       const pageSize = 500;
       int offset = 0;
@@ -403,22 +432,38 @@ class LibraryProvider extends ChangeNotifier {
         // instead of holding the entire album list in RAM.
         final albumCount = await _db.getAlbumCount();
         const albumBatchSize = 50;
+        const concurrentFetches = 8;
         for (int aOffset = 0;
             aOffset < albumCount;
             aOffset += albumBatchSize) {
           final albums =
               await _db.getAlbumsPaginated(limit: albumBatchSize, offset: aOffset);
-          for (final album in albums) {
-            try {
-              final albumSongs =
-                  await _subsonicService.getAlbumSongs(album.id);
-              final newSongs = albumSongs.where((s) => seenSongIds.add(s.id)).toList();
+          // Fetch songs for albums concurrently (bounded) instead of one
+          // HTTP request at a time, which made large libraries take minutes.
+          for (var i = 0; i < albums.length; i += concurrentFetches) {
+            final chunk = albums.sublist(
+              i,
+              i + concurrentFetches > albums.length
+                  ? albums.length
+                  : i + concurrentFetches,
+            );
+            final results = await Future.wait(
+              chunk.map((album) async {
+                try {
+                  return await _subsonicService.getAlbumSongs(album.id);
+                } catch (e) {
+                  failedAlbumLoads++;
+                  debugPrint('Error loading album ${album.id}: $e');
+                  return <Song>[];
+                }
+              }),
+            );
+            for (final songs in results) {
+              final newSongs =
+                  songs.where((s) => seenSongIds.add(s.id)).toList();
               if (newSongs.isNotEmpty) {
                 await _db.insertSongsBatch(newSongs);
               }
-            } catch (e) {
-              failedAlbumLoads++;
-              debugPrint('Error loading album ${album.id}: $e');
             }
           }
         }
@@ -437,6 +482,8 @@ class LibraryProvider extends ChangeNotifier {
       );
     } catch (e) {
       debugPrint('Error refreshing all data: $e');
+    } finally {
+      _isRefreshing = false;
     }
   }
 
@@ -531,29 +578,77 @@ class LibraryProvider extends ChangeNotifier {
     }
   }
 
+  /// Prefetches the first screen-worth of cover art into the shared image
+  /// cache (DefaultCacheManager, the same one CachedNetworkImage reads),
+  /// throttled so we don't fire a transcode storm at the server.
   void _preloadCoverArt() {
     Future.microtask(() async {
-      final allAlbums = [..._recentAlbums, ..._randomAlbums];
-      for (final album in allAlbums.take(20)) {
-        if (album.coverArt != null) {
-          try {
-            final url = _subsonicService.getCoverArtUrl(
-              album.coverArt,
-              size: 300,
-            );
-            if (url.isNotEmpty) {
-              _subsonicService.getCoverArtUrl(album.coverArt, size: 300);
-            }
-          } catch (_) {}
+      final urls = <String>[];
+      final seen = <String>{};
+      void addCover(String? coverArt, int size) {
+        if (coverArt == null || coverArt.isEmpty) return;
+        final url = _subsonicService.getCoverArtUrl(coverArt);
+        if (url.isNotEmpty && seen.add(url)) urls.add(url);
+      }
+
+      // Artists tab icons are requested at size 120. Prefetch the artist's
+      // effective cover (own artist image, or the album-cover fallback) so
+      // the list doesn't wait for on-demand first-hit transcodes.
+      var prefetchedArtists = 0;
+      for (final artist in _artists) {
+        if (prefetchedArtists >= 20) break;
+        final cover = getArtistCoverArt(artist);
+        if (cover == null || cover.isEmpty) continue;
+        addCover(cover, 120);
+        prefetchedArtists++;
+        if (prefetchedArtists == 1) {
+          debugPrint(
+            '[LuoboDebug] Artist cover sample: ${artist.name} '
+            'coverArt=${artist.coverArt}',
+          );
         }
       }
+      if (urls.isNotEmpty) {
+        debugPrint('[LuoboDebug] First cover URL: ${urls.first}');
+      }
+      // Album covers via AlbumArtwork default to 300.
+      for (final album in _recentAlbums.take(10)) {
+        addCover(album.coverArt, 300);
+      }
+      for (final album in _randomAlbums.take(10)) {
+        addCover(album.coverArt, 300);
+      }
+
+      final cacheManager = DefaultCacheManager();
+      const batchSize = 6;
+      var ok = 0;
+      var failed = 0;
+      for (var i = 0; i < urls.length; i += batchSize) {
+        final end = i + batchSize > urls.length ? urls.length : i + batchSize;
+        await Future.wait(
+          urls.sublist(i, end).map((url) async {
+            try {
+              await cacheManager.downloadFile(url);
+              ok++;
+            } catch (e) {
+              failed++;
+              debugPrint('[LuoboDebug] Cover prefetch failed: $url → $e');
+            }
+          }),
+        );
+      }
+      debugPrint(
+        '[LuoboDebug] Cover prefetch done: ${urls.length} urls '
+        '(artists=$prefetchedArtists), ok=$ok, failed=$failed',
+      );
     });
   }
 
   Future<void> refresh() async {
-    _isInitialized = false;
     _lastCacheUpdate = null; // force full re-sync
-    await initialize();
+    // Keep _isInitialized true so the UI does not flash a skeleton screen
+    // when the user pulls to refresh while data is already shown.
+    await initialize(force: true);
 
     // Force immediate full background refresh if server is reachable.
     if (!_serverOfflineMode && !_localOnlyMode) {

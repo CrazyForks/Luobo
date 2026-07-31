@@ -180,7 +180,7 @@ class OfflineService {
 
       try {
         if (song.coverArt != null) {
-          final coverUrl = subsonicService.getCoverArtUrl(song.coverArt, size: 600);
+          final coverUrl = subsonicService.getCoverArtUrl(song.coverArt);
           if (coverUrl.isNotEmpty) {
             final dioCover = Dio();
             await dioCover.download(coverUrl, _getCoverArtPath(song.id));

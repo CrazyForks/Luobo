@@ -85,6 +85,8 @@ dependencies:
   mobile_scanner: ^7.0.1
   image_gallery_saver_plus: ^4.0.1
   image_picker: ^1.1.2
+  easy_refresh: ^3.5.1
+  lpinyin: ^2.0.3
 
 dependency_overrides:
   ffi: ^2.1.0

@@ -488,7 +488,7 @@ class _ProgressBar extends StatelessWidget {
     );
 
     return Selector<PlayerProvider, (Duration, Duration)>(
-      selector: (_, p) => (p.position, p.duration),
+      selector: (_, p) => (p.position, p.effectiveDuration),
       builder: (context, data, _) {
         final (position, duration) = data;
         final provider = context.read<PlayerProvider>();

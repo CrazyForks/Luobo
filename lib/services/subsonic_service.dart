@@ -428,7 +428,10 @@ class SubsonicService {
     }
   }
 
-  String getCoverArtUrl(String? coverArt, {int size = 300}) {
+  /// Returns a cover-art URL. All callers share the same [size] so
+  /// `cached_network_image` hits the same disk-cache entry regardless of
+  /// context (list, player, full-screen), avoiding duplicate downloads.
+  String getCoverArtUrl(String? coverArt, {int size = 600}) {
     if (_jellyfin != null)
       return _jellyfin!.getCoverArtUrl(coverArt, size: size);
     if (_youtube != null) return _youtube!.getCoverArtUrl(coverArt, size: size);
@@ -471,6 +474,10 @@ class SubsonicService {
     if (format != null) {
       params['format'] = format;
     }
+    // Ask Navidrome (and other OpenSubsonic servers) to estimate the
+    // Content-Length of on-the-fly transcoded streams. Without it the player
+    // can't resolve the track duration nor seek reliably (issue #170).
+    params['estimateContentLength'] = 'true';
     return _buildUrl('stream', params);
   }
 
@@ -551,9 +558,14 @@ class SubsonicService {
     return [];
   }
 
-  Future<List<Album>> getArtistAlbums(String artistId) async {
+  Future<List<Album>> getArtistAlbums(String artistId, {Artist? artist}) async {
     if (_jellyfin != null) return _jellyfin!.getArtistAlbums(artistId);
     if (_youtube != null) return _youtube!.getArtistAlbums(artistId);
+    // Reuse the albums already fetched via getArtist to avoid a redundant
+    // network request when the caller has already resolved the artist.
+    if (artist != null && artist.albums.isNotEmpty) {
+      return artist.albums;
+    }
     final response = await _request('getArtist', {'id': artistId});
     final albumsData = response['artist']?['album'];
     if (albumsData is List) {
@@ -1090,16 +1102,18 @@ class SubsonicService {
   Future<List<Song>> getArtistTopSongs(
     String artistId, {
     int count = 50,
+    Artist? artist,
   }) async {
     if (_jellyfin != null)
       return _jellyfin!.getArtistTopSongs(artistId, count: count);
     if (_youtube != null)
       return _youtube!.getArtistTopSongs(artistId, count: count);
     try {
-      final artist = await getArtist(artistId);
+      // Reuse the caller-provided artist to avoid a redundant getArtist call.
+      final resolved = artist ?? await getArtist(artistId);
 
       final response = await _request('getTopSongs', {
-        'artist': artist.name,
+        'artist': resolved.name,
         'count': count.toString(),
       });
       final songsData = response['topSongs']?['song'];
@@ -1111,7 +1125,7 @@ class SubsonicService {
       return [];
     } catch (e) {
       try {
-        final albums = await getArtistAlbums(artistId);
+        final albums = await getArtistAlbums(artistId, artist: artist);
         if (albums.isEmpty) return [];
 
         final songs = <Song>[];

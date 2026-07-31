@@ -11,6 +11,7 @@ import '../services/jukebox_service.dart';
 import '../services/player_ui_settings_service.dart';
 import '../services/subsonic_service.dart';
 import '../services/offline_service.dart';
+import '../services/transcoding_service.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import 'album_artwork.dart';
@@ -133,6 +134,10 @@ class SongTile extends StatelessWidget {
                     ),
                   ),
                 ),
+              // Quality tag (original file info / actual transcode state)
+              // overlaid on the artwork corner — takes no layout space.
+              _buildQualityTag(context, isCurrentSong) ??
+                  const SizedBox.shrink(),
             ],
           );
         },
@@ -183,6 +188,70 @@ class SongTile extends StatelessWidget {
       style: theme.textTheme.bodySmall,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  /// Tiny quality tag overlaid on the artwork's bottom-right corner, e.g.
+  /// "FLAC·964" (original file info) or "Opus·192" in orange when the
+  /// current song's actual stream is transcoded. Takes no layout space.
+  Widget? _buildQualityTag(BuildContext context, bool isCurrentSong) {
+    final player = Provider.of<PlayerProvider>(context, listen: false);
+    final isTranscoded = isCurrentSong && player.isActiveStreamTranscoded;
+    final transcodeBitrate = player.activeStreamBitrate;
+    final transcodeFormat = player.activeStreamFormat;
+
+    final format = isTranscoded
+        ? TranscodeFormat.getLabel(transcodeFormat ?? '')
+        : (song.suffix?.toUpperCase() ?? '');
+    final bitrate = isTranscoded ? transcodeBitrate : song.bitRate;
+
+    final parts = <String>[];
+    if (format.isNotEmpty && format != 'Original') parts.add(format);
+    if (bitrate != null && bitrate > 0) parts.add('$bitrate');
+    if (parts.isEmpty) return null;
+    final label = parts.join('·');
+
+    final l10n = AppLocalizations.of(context)!;
+    final network =
+        Provider.of<TranscodingService>(context, listen: false)
+            .currentConnectionType ==
+        ConnectionType.wifi
+            ? l10n.networkWifi
+            : l10n.networkMobile;
+    final tooltip = isTranscoded
+        ? l10n.transcodedTo(
+            TranscodeFormat.getLabel(transcodeFormat ?? ''),
+            transcodeBitrate ?? 0,
+            network,
+          )
+        : l10n.noTranscoding;
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Tooltip(
+        message: tooltip,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+          decoration: BoxDecoration(
+            color: (isTranscoded ? const Color(0xFFE65100) : Colors.black)
+                .withValues(alpha: 0.65),
+            borderRadius:
+                const BorderRadius.vertical(bottom: Radius.circular(2)),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 7,
+              height: 1.2,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -318,7 +387,11 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
                 ],
               ),
             ),
+            // Compact audio quality info, shown directly in the sheet so no
+            // navigation / sheet-stacking is needed.
             const SizedBox(height: 16),
+            _QualityInfo(song: widget.song),
+            const SizedBox(height: 12),
             const Divider(height: 1),
             Flexible(
               child: SingleChildScrollView(
@@ -916,6 +989,109 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
             const SizedBox(height: 16),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Compact quality info shown inline in the song options sheet — no
+/// navigation or stacking. Displays original file info plus the actual
+/// transcode state of the current stream, or the settings-implied state
+/// for songs that aren't currently playing.
+class _QualityInfo extends StatelessWidget {
+  final Song song;
+
+  const _QualityInfo({required this.song});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
+    final transcoding = Provider.of<TranscodingService>(context);
+
+    // Original file info
+    final format = song.suffix?.toUpperCase() ?? '';
+    final bitrate = song.bitRate;
+    final size = song.formattedSize;
+
+    final fileParts = <String>[];
+    if (format.isNotEmpty) fileParts.add(format);
+    if (bitrate != null && bitrate > 0) fileParts.add('$bitrate kbps');
+    if (size.isNotEmpty) fileParts.add(size);
+    final fileInfo = fileParts.join(' · ');
+    final sampleInfo = song.formattedSampleRate;
+    final depthInfo = song.bitDepth != null ? '${song.bitDepth} bit' : '';
+
+    // Transcode status — actual for the current stream, settings-implied
+    // otherwise.
+    final player = Provider.of<PlayerProvider>(context, listen: false);
+    final isCurrent =
+        player.currentSong?.id == song.id && !player.isPlayingRadio;
+    final network =
+        transcoding.currentConnectionType == ConnectionType.wifi
+            ? l10n.networkWifi
+            : l10n.networkMobile;
+    String statusLabel;
+    Color? statusColor;
+    IconData statusIcon;
+    if (isCurrent && player.isActiveStreamTranscoded) {
+      statusLabel = l10n.transcodedTo(
+        TranscodeFormat.getLabel(player.activeStreamFormat ?? ''),
+        player.activeStreamBitrate ?? 0,
+        network,
+      );
+      statusColor = isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100);
+      statusIcon = Icons.speed_rounded;
+    } else if (!isCurrent && transcoding.getCurrentBitrate() != null) {
+      final wouldTranscode = l10n.transcodedTo(
+        TranscodeFormat.getLabel(transcoding.getCurrentFormat() ?? ''),
+        transcoding.getCurrentBitrate() ?? 0,
+        network,
+      );
+      statusLabel = '${l10n.streamWillTranscode}：$wouldTranscode';
+      statusIcon = Icons.speed_rounded;
+    } else {
+      statusLabel = l10n.noTranscoding;
+      statusIcon = Icons.verified_rounded;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (fileInfo.isNotEmpty)
+            Text(
+              fileInfo,
+              style: theme.textTheme.bodySmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          if (sampleInfo.isNotEmpty || depthInfo.isNotEmpty)
+            Text(
+              [sampleInfo, depthInfo].where((s) => s.isNotEmpty).join(' · '),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color:
+                    theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(statusIcon, size: 14, color: statusColor),
+              const SizedBox(width: 4),
+              Text(
+                statusLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: statusColor,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

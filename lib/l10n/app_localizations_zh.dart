@@ -2587,4 +2587,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get exitApp => '退出应用';
+
+  @override
+  String get noTranscoding => '原始格式（未转码）';
+
+  @override
+  String get streamWillTranscode => '当前网络将转码';
+
+  @override
+  String transcodedTo(String format, int bitrate, String network) {
+    return '转码为 $format ${bitrate}kbps（$network）';
+  }
 }
