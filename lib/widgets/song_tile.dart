@@ -30,6 +30,7 @@ class SongTile extends StatelessWidget {
   final bool showAlbum;
   final bool showDuration;
   final bool showTrackNumber;
+  final int titleMaxLines;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
@@ -43,6 +44,7 @@ class SongTile extends StatelessWidget {
     this.showAlbum = false,
     this.showDuration = true,
     this.showTrackNumber = false,
+    this.titleMaxLines = 1,
     this.onTap,
     this.onLongPress,
   });
@@ -69,7 +71,7 @@ class SongTile extends StatelessWidget {
                   isCurrentSong ? Theme.of(context).colorScheme.primary : null,
               fontWeight: isCurrentSong ? FontWeight.w600 : FontWeight.normal,
             ),
-            maxLines: 1,
+            maxLines: titleMaxLines,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle:
@@ -150,29 +152,27 @@ class SongTile extends StatelessWidget {
   Widget _buildSubtitleWidget(ThemeData theme) {
     if (showArtist) {
       if (showAlbum && song.album != null) {
-        return Row(
-          children: [
-            Flexible(
-              flex: 3,
-              fit: FlexFit.loose,
-              child: MultiArtistWidget(
-                artists: song.artistParticipants,
-                artistFallback: song.artist,
-                artistIdFallback: song.artistId,
-                style: theme.textTheme.bodySmall,
-              ),
-            ),
-            Flexible(
-              flex: 1,
-              fit: FlexFit.loose,
-              child: Text(
-                ' \u2022 ${song.album}',
-                style: theme.textTheme.bodySmall,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+        // Merge artist + album into a single line. Shrink the font when it
+        // doesn't fit instead of hard-splitting the width between the two.
+        final artistLabel = _artistLabel();
+        final fullText = '$artistLabel \u2022 ${song.album}';
+        final baseStyle = theme.textTheme.bodySmall ??
+            const TextStyle(fontSize: 12);
+        final baseSize = baseStyle.fontSize ?? 12;
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            var size = baseSize;
+            while (size > 10 &&
+                _textWidth(fullText, baseStyle, size) > constraints.maxWidth) {
+              size -= 1;
+            }
+            return Text(
+              fullText,
+              style: baseStyle.copyWith(fontSize: size),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            );
+          },
         );
       }
       return MultiArtistWidget(
@@ -189,6 +189,23 @@ class SongTile extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
+  }
+
+  String _artistLabel() {
+    final participants = song.artistParticipants;
+    if (participants != null && participants.isNotEmpty) {
+      return participants.map((a) => a.name).join(', ');
+    }
+    return song.artist ?? '';
+  }
+
+  static double _textWidth(String text, TextStyle base, double fontSize) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: base.copyWith(fontSize: fontSize)),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    return painter.width;
   }
 
   /// Tiny quality tag overlaid on the artwork's bottom-right corner, e.g.

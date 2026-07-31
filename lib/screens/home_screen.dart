@@ -418,6 +418,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               playlist: personalizedFeed,
                               index: personalizedFeed.indexOf(song),
                               showAlbum: true,
+                              showDuration: false,
+                              titleMaxLines: 2,
                             );
                           }),
                           const SizedBox(height: 24),
@@ -444,6 +446,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               playlist: mixes['Quick Picks']!,
                               index: mixes['Quick Picks']!.indexOf(song),
                               showAlbum: true,
+                              showDuration: false,
+                              titleMaxLines: 2,
                             );
                           }),
                           const SizedBox(height: 24),
@@ -470,6 +474,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               playlist: mixes['Discover Mix']!,
                               index: mixes['Discover Mix']!.indexOf(song),
                               showAlbum: true,
+                              showDuration: false,
+                              titleMaxLines: 2,
                             );
                           }),
                           const SizedBox(height: 24),
@@ -501,6 +507,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               playlist: entry.value,
                               index: entry.value.indexOf(song),
                               showAlbum: true,
+                              showDuration: false,
+                              titleMaxLines: 2,
                             );
                           }),
                           const SizedBox(height: 24),
@@ -529,6 +537,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               playlist: entry.value,
                               index: entry.value.indexOf(song),
                               showAlbum: true,
+                              showDuration: false,
+                              titleMaxLines: 2,
                             );
                           }),
                           const SizedBox(height: 24),
@@ -604,6 +614,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               playlist: libraryProvider.randomSongs,
                               index: index,
                               showAlbum: true,
+                              showDuration: false,
+                              titleMaxLines: 2,
                             );
                           }),
                           const SizedBox(height: 24),
