@@ -656,14 +656,24 @@ class ListeningReportScreen extends StatelessWidget {
     int weekendPlays = 0;
 
     for (final p in profiles.values) {
-      final dow = p.lastPlayed.weekday;
-      final isWeekend = dow == 6 || dow == 7;
-      if (isWeekend) {
-        weekendPlays += p.playCount;
-        if (p.artist != null) weekendArtists[p.artist!] = (weekendArtists[p.artist!] ?? 0) + p.playCount;
-      } else {
-        weekdayPlays += p.playCount;
-        if (p.artist != null) weekdayArtists[p.artist!] = (weekdayArtists[p.artist!] ?? 0) + p.playCount;
+      // Aggregate per actual listening date (dailyPlays), not by the weekday
+      // of the *last* play — otherwise the full historical play count of a
+      // song would be attributed to whichever weekday it was last played on.
+      for (final entry in p.dailyPlays.entries) {
+        final isWeekend = _isWeekendDayKey(entry.key);
+        if (isWeekend) {
+          weekendPlays += entry.value;
+          if (p.artist != null) {
+            weekendArtists[p.artist!] =
+                (weekendArtists[p.artist!] ?? 0) + entry.value;
+          }
+        } else {
+          weekdayPlays += entry.value;
+          if (p.artist != null) {
+            weekdayArtists[p.artist!] =
+                (weekdayArtists[p.artist!] ?? 0) + entry.value;
+          }
+        }
       }
     }
     if (weekdayPlays == 0 && weekendPlays == 0) return null;
@@ -672,6 +682,11 @@ class ListeningReportScreen extends StatelessWidget {
     String? topWeekend = weekendArtists.isNotEmpty ? (weekendArtists.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first.key : null;
 
     return _WeekendVsWeekday(weekdayPlays: weekdayPlays, weekendPlays: weekendPlays, topWeekdayArtist: topWeekday, topWeekendArtist: topWeekend);
+  }
+
+  bool _isWeekendDayKey(String key) {
+    final dow = _parseDayKey(key).weekday;
+    return dow == 6 || dow == 7;
   }
 
   _DroughtWarning? _buildDroughtWarning(Map<String, SongProfile> profiles) {

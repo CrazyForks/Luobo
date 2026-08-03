@@ -61,6 +61,13 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// events fire (completion + index change + manual skip).
   String? _trackedSongId;
 
+  /// Song that fired the current "completed" playback event, captured
+  /// synchronously when the event arrives. [_onSongComplete] runs
+  /// asynchronously, so the user may have already skipped to another track
+  /// by the time it executes; this lets us attribute the event to the song
+  /// that actually finished instead of the one currently playing.
+  Song? _completedSong;
+
   /// Transcode settings actually applied to the CURRENT stream, captured
   /// when the stream URL was built. null means the stream is the original
   /// file — even if transcoding settings have changed since playback
@@ -1261,6 +1268,9 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         if (state.processingState == ProcessingState.completed) {
           debugPrint(
               '[Player] ✓ Song completed: "${_currentSong?.title ?? 'unknown'}"');
+          // Capture the song synchronously: [_onSongComplete] runs async and
+          // the user may skip to another track before it executes.
+          _completedSong = _currentSong;
           _onSongComplete().catchError(
               (e) => debugPrint('[Player] _onSongComplete error: $e'));
         }
@@ -1404,11 +1414,20 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// - listened to >= 80% → counted as a completed play
   void _recordSongEnd(Song song, int playedSeconds, int totalSeconds) {
     final service = _recommendationService;
-    if (service == null || _trackedSongId == song.id) return;
+    if (service == null) return;
+    // Only the song that is actually playing right now can "end". A stale
+    // completion event arriving after the user switched tracks must not
+    // count the new song as played.
+    if (_currentSong?.id != song.id) return;
+    if (_trackedSongId == song.id) return;
     _trackedSongId = song.id;
     if (totalSeconds > 0 && playedSeconds < totalSeconds * 0.8) {
       service.trackSkip(song, secondsPlayed: playedSeconds);
-    } else if (playedSeconds > 0) {
+    } else if (playedSeconds > 0 &&
+        (totalSeconds > 0 || playedSeconds >= 30)) {
+      // When the track duration is unknown, require at least 30s of actual
+      // listening before counting it as a play — otherwise a few seconds of
+      // playback with an unresolved duration would count as a full play.
       service.trackSongPlay(
         song,
         durationPlayed: playedSeconds,
@@ -1418,16 +1437,27 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _onSongComplete() async {
-    if (_currentSong != null && _currentSong!.isLocal != true) {
-      _subsonicService.scrobble(_currentSong!.id, submission: true).catchError((
-        e,
-      ) {
-        _offlineService.queueScrobble(_currentSong!.id, submission: true);
-      });
+    final completedSong = _completedSong ?? _currentSong;
+    _completedSong = null;
+
+    // A completion event is only valid for the song that was playing when it
+    // fired. If the user already moved on (e.g. a manual skip raced with the
+    // queued event), ignore it entirely — recording/scrobbling the current
+    // song here would over-count it and advance the queue a second time.
+    if (completedSong != null && completedSong.id != _currentSong?.id) {
+      return;
     }
 
-    if (_currentSong != null) {
-      _recordSongEnd(_currentSong!, _duration.inSeconds, _duration.inSeconds);
+    if (completedSong != null && completedSong.isLocal != true) {
+      _subsonicService.scrobble(completedSong.id, submission: true).catchError(
+        (e) {
+          _offlineService.queueScrobble(completedSong.id, submission: true);
+        },
+      );
+    }
+
+    if (completedSong != null) {
+      _recordSongEnd(completedSong, _duration.inSeconds, _duration.inSeconds);
     }
 
     if (_sleepTimerEndCurrentSong) {
@@ -1455,6 +1485,9 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         (_repeatMode == RepeatMode.all && _queue.length == 1)) {
       await seek(Duration.zero);
       await play();
+      // A new loop iteration is starting: allow the next completion of the
+      // same song to be recorded again instead of being deduped away.
+      _trackedSongId = null;
     } else if (_currentIndex < _queue.length - 1 ||
         _repeatMode == RepeatMode.all ||
         _shuffleEnabled) {
@@ -3069,6 +3102,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       debugPrint(
           'UPnP: Track ended (pos=${pos.inSeconds}s, dur=${dur.inSeconds}s) — advancing');
       _upnpWasPlaying = false;
+      _completedSong = _currentSong;
       _onSongComplete()
           .catchError((e) => debugPrint('[Player] _onSongComplete error: $e'));
       return;

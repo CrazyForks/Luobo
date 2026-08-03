@@ -515,11 +515,11 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
             );
             _cachedImageUrl = subsonicService.getCoverArtUrl(
               coverId,
-              size: 300,
+              size: kCoverArtRequestSize,
             );
             _cachedThumbnailUrl = subsonicService.getCoverArtUrl(
               coverId,
-              size: 200,
+              size: kCoverArtRequestSize,
             );
           }
         }

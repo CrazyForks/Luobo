@@ -2,7 +2,7 @@
 
 **Luobo**（萝卜）是基于 [Musly](https://github.com/dddevid/Musly) 二次开发的 Navidrome / Subsonic 音乐播放客户端，使用 Flutter 构建，支持 Android 和 iOS。**相比原版 Musly 增加了车载模式、听歌报告、AI 歌单等特色功能，以及大规模国际化适配。**
 
-> **当前版本：v1.1.5**（在 Musly v1.0.13 基础上独立迭代）
+> **当前版本：v1.1.6**（在 Musly v1.0.13 基础上独立迭代）
 
 ---
 
@@ -157,7 +157,16 @@
 
 ## 🛠️ 版本历史
 
-**v1.1.5（当前）** — 音质信息、艺术家索引、缓存与性能优化：
+**v1.1.6（当前）** — 播放统计修复与封面缓存全局统一：
+- ✅ **播放完成事件竞态修复** — 捕获 `_completedSong` 快照，异步 `_onSongComplete` 不再把新歌误计为完成；手动切歌后旧事件直接丢弃
+- ✅ **听歌报告周末/工作日统计修复** — 改用 `dailyPlays` 逐日统计，不再把歌曲所有历史播放误归到最后一次播放的星期几
+- ✅ **时段偏好只统计有效播放** — `hourlyPlays` 移入 `completed` 分支，未听完的播放不再计入时段偏好
+- ✅ **未知时长保护** — `_recordSongEnd` 在 duration 未知时要求至少听满 30 秒才计为完整播放
+- ✅ **单曲循环重复记录修复** — 循环至下一轮时重置 `_trackedSongId`，同一首歌每轮独立计次
+- ✅ **封面请求尺寸全局统一为 300px** — 引入 `kCoverArtRequestSize = 300` 常量，覆盖 `album_artwork`、`home_screen`、`library_screen`、`now_playing_screen`、`car_mode_screen`、`synced_lyrics_view`、`library_search_delegate`、`offline_service`，消除多个硬编码 size 值（80/120/200/300/600）
+- ✅ **Release 构建去除调试日志** — cover prefetch 系列 `debugPrint` 加 `kDebugMode` 保护
+
+**v1.1.5** — 音质信息、艺术家索引、缓存与性能优化：
 - ✅ **歌曲音质信息** — 歌曲封面底部音质角标（`FLAC·964`），点 ⋯ 查看歌曲信息（格式/码率/采样率/位深/大小/转码状态），转码状态与实际播放流一致（非设置推断）
 - ✅ **艺术家索引重做** — 中文歌手按拼音首字母分组（A-Z + #），右侧字母擦条快速跳转，chip 瀑布流布局 + 每艺术家歌曲数
 - ✅ **音乐库搜索升级** — 顶部搜索支持歌单/艺术家/专辑/歌曲四类本地匹配

@@ -55,10 +55,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
   static final Map<String, String> _coverUrlCache = {};
 
   static String _coverUrl(SubsonicService service, String coverArt) {
-    final key = '${service.activeBaseUrl}_${coverArt}_120';
+    final key = '${service.activeBaseUrl}_${coverArt}_$kCoverArtRequestSize';
     return _coverUrlCache.putIfAbsent(
       key,
-      () => service.getCoverArtUrl(coverArt, size: 120),
+      () => service.getCoverArtUrl(coverArt, size: kCoverArtRequestSize),
     );
   }
 

@@ -538,7 +538,10 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
     } else if (isLocalFilePath(_song.coverArt)) {
       imageUrl = _song.coverArt ?? '';
     } else {
-      imageUrl = subsonicService.getCoverArtUrl(_song.coverArt);
+      imageUrl = subsonicService.getCoverArtUrl(
+        _song.coverArt,
+        size: kCoverArtRequestSize,
+      );
     }
 
     return Scaffold(

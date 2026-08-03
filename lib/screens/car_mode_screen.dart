@@ -324,7 +324,7 @@ class _CarModeScreenState extends State<CarModeScreen>
     if (song == null) return null;
     if (isLocalFilePath(song.coverArt)) return song.coverArt;
     final subsonic = Provider.of<SubsonicService>(context, listen: false);
-    return subsonic.getCoverArtUrl(song.coverArt);
+    return subsonic.getCoverArtUrl(song.coverArt, size: kCoverArtRequestSize);
   }
 
   /// 三连击（600ms 内连续 3 次点按）收藏当前歌曲

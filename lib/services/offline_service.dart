@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/song.dart';
 import '../models/playlist.dart';
+import '../utils/image_cache.dart';
 import 'subsonic_service.dart';
 
 class DownloadState {
@@ -180,7 +181,10 @@ class OfflineService {
 
       try {
         if (song.coverArt != null) {
-          final coverUrl = subsonicService.getCoverArtUrl(song.coverArt);
+          final coverUrl = subsonicService.getCoverArtUrl(
+            song.coverArt,
+            size: kCoverArtRequestSize,
+          );
           if (coverUrl.isNotEmpty) {
             final dioCover = Dio();
             await dioCover.download(coverUrl, _getCoverArtPath(song.id));

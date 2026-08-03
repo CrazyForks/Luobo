@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
+/// Single request size for cover art across the whole app. Every screen asks
+/// the server for the same pixels, so one cover = one URL = one server-side
+/// resize entry + one client disk entry + one memory decode, regardless of
+/// where it's shown. 300px is indistinguishable from larger sizes on a phone
+/// screen (see docs/图片缓存与播放性能优化技术文档.md §4.2).
+const int kCoverArtRequestSize = 300;
+
 /// Shared disk-cache manager for cover art. `DefaultCacheManager` only keeps
 /// 200 files, which thrashes on a large library (every scroll evicts older
 /// covers). This manager keeps ~1000 covers and a 60-day staleness window.

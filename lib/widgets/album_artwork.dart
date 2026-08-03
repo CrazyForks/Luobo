@@ -13,23 +13,13 @@ bool isLocalFilePath(String? s) {
   return false;
 }
 
-/// Rounds requested cover pixels to one of the fixed size tiers (120/300/600)
-/// so the same cover at similar display sizes shares one cache key.
-int _nearestCacheTier(double pixels) {
-  const tiers = [120, 300, 600];
-  var best = 120;
-  for (final tier in tiers) {
-    if ((tier - pixels).abs() < (best - pixels).abs()) best = tier;
-  }
-  return best;
-}
-
 class _ImageUrlCache {
-  static String getUrl(SubsonicService service, String? coverArt, int size) {
+  static String getUrl(SubsonicService service, String? coverArt) {
     if (coverArt == null || coverArt.isEmpty) return '';
-    // Request the same tier as the decode/disk cache so the server-side
-    // resize cache is keyed consistently with what we actually display.
-    return service.getCoverArtUrl(coverArt, size: size);
+    // One size for every scene: a cover always maps to the same URL, so the
+    // server-side resize cache and the client disk/memory cache each keep a
+    // single entry per cover.
+    return service.getCoverArtUrl(coverArt, size: kCoverArtRequestSize);
   }
 }
 
@@ -140,9 +130,6 @@ class AlbumArtwork extends StatelessWidget {
   ) {
     final validSize = size.isFinite && !size.isNaN ? size : 150.0;
 
-    final dpr = MediaQuery.devicePixelRatioOf(context);
-    final cacheSize = _nearestCacheTier(validSize * dpr);
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final resolvedShadow = _resolvedShadow(
       context,
@@ -161,7 +148,7 @@ class AlbumArtwork extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(resolvedRadius),
-          child: _buildImageNatural(isDark, cacheSize),
+          child: _buildImageNatural(isDark),
         ),
       );
     }
@@ -178,12 +165,12 @@ class AlbumArtwork extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(resolvedRadius),
-        child: _buildImage(isDark, cacheSize),
+        child: _buildImage(isDark),
       ),
     );
   }
 
-  Widget _buildImageNatural(bool isDark, int cacheSize) {
+  Widget _buildImageNatural(bool isDark) {
     if (coverArt == null || coverArt!.isEmpty) return _buildPlaceholder(isDark);
 
     if (isLocalFilePath(coverArt)) {
@@ -201,20 +188,19 @@ class AlbumArtwork extends StatelessWidget {
         final imageUrl = _ImageUrlCache.getUrl(
           Provider.of<SubsonicService>(context, listen: false),
           coverArt,
-          cacheSize,
         );
         if (imageUrl.isEmpty) return _buildPlaceholder(isDark);
         return CachedNetworkImage(
-                              cacheManager: coverCacheManager,
-                              imageUrl: imageUrl,
-          // Same key as _buildImage: one cache entry per (cover, tier)
-          // regardless of BoxFit, so the song list and mini player share it.
-          cacheKey: '${coverArt}_$cacheSize',
+          cacheManager: coverCacheManager,
+          imageUrl: imageUrl,
+          // One cache entry per cover, shared by every screen regardless of
+          // display size or BoxFit.
+          cacheKey: '${coverArt}_$kCoverArtRequestSize',
           fit: BoxFit.contain,
-          memCacheWidth: cacheSize,
-          memCacheHeight: cacheSize,
-          maxWidthDiskCache: cacheSize,
-          maxHeightDiskCache: cacheSize,
+          memCacheWidth: kCoverArtRequestSize,
+          memCacheHeight: kCoverArtRequestSize,
+          maxWidthDiskCache: kCoverArtRequestSize,
+          maxHeightDiskCache: kCoverArtRequestSize,
           fadeInDuration: const Duration(milliseconds: 100),
           fadeOutDuration: Duration.zero,
           useOldImageOnUrlChange: true,
@@ -228,7 +214,7 @@ class AlbumArtwork extends StatelessWidget {
     );
   }
 
-  Widget _buildImage(bool isDark, int cacheSize) {
+  Widget _buildImage(bool isDark) {
     if (coverArt == null || coverArt!.isEmpty) return _buildPlaceholder(isDark);
 
     if (isLocalFilePath(coverArt)) {
@@ -237,8 +223,8 @@ class AlbumArtwork extends StatelessWidget {
         artFile,
         key: ValueKey(coverArt),
         fit: BoxFit.cover,
-        cacheWidth: cacheSize,
-        cacheHeight: cacheSize,
+        cacheWidth: kCoverArtRequestSize,
+        cacheHeight: kCoverArtRequestSize,
         errorBuilder: (ctx, err, stack) => _buildPlaceholder(isDark),
       );
     }
@@ -248,18 +234,17 @@ class AlbumArtwork extends StatelessWidget {
         final imageUrl = _ImageUrlCache.getUrl(
           Provider.of<SubsonicService>(context, listen: false),
           coverArt,
-          cacheSize,
         );
         if (imageUrl.isEmpty) return _buildPlaceholder(isDark);
         return CachedNetworkImage(
-                              cacheManager: coverCacheManager,
-                              imageUrl: imageUrl,
-          cacheKey: '${coverArt}_$cacheSize',
+          cacheManager: coverCacheManager,
+          imageUrl: imageUrl,
+          cacheKey: '${coverArt}_$kCoverArtRequestSize',
           fit: BoxFit.cover,
-          memCacheWidth: cacheSize,
-          memCacheHeight: cacheSize,
-          maxWidthDiskCache: cacheSize,
-          maxHeightDiskCache: cacheSize,
+          memCacheWidth: kCoverArtRequestSize,
+          memCacheHeight: kCoverArtRequestSize,
+          maxWidthDiskCache: kCoverArtRequestSize,
+          maxHeightDiskCache: kCoverArtRequestSize,
           fadeInDuration: const Duration(milliseconds: 100),
           fadeOutDuration: Duration.zero,
           useOldImageOnUrlChange: true,

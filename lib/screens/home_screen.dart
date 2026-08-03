@@ -817,7 +817,7 @@ class _QuickAccessGrid extends StatelessWidget {
       imageUrl = item.coverArt != null
           ? (isLocalFilePath(item.coverArt)
               ? item.coverArt
-              : subsonicService.getCoverArtUrl(item.coverArt!))
+              : subsonicService.getCoverArtUrl(item.coverArt!, size: kCoverArtRequestSize))
           : null;
       onTap = () => Navigator.push(
             context,
@@ -831,7 +831,7 @@ class _QuickAccessGrid extends StatelessWidget {
       imageUrl = item.coverArt != null
           ? (isLocalFilePath(item.coverArt)
               ? item.coverArt
-              : subsonicService.getCoverArtUrl(item.coverArt!))
+              : subsonicService.getCoverArtUrl(item.coverArt!, size: kCoverArtRequestSize))
           : null;
       onTap = () => Navigator.push(
             context,
@@ -977,7 +977,10 @@ class _PlaylistCard extends StatelessWidget {
     );
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final coverArtUrl = playlist.coverArt != null
-        ? subsonicService.getCoverArtUrl(playlist.coverArt!)
+        ? subsonicService.getCoverArtUrl(
+            playlist.coverArt!,
+            size: kCoverArtRequestSize,
+          )
         : null;
     final l10n = AppLocalizations.of(context)!;
 
@@ -1251,7 +1254,7 @@ class _DesktopSongRowState extends State<_DesktopSongRow> {
                           cacheManager: coverCacheManager,
                           imageUrl: subsonicService.getCoverArtUrl(
                             song.coverArt!,
-                            size: 80,
+                            size: kCoverArtRequestSize,
                           ),
                           fit: BoxFit.cover,
                           placeholder: (ctx, url) =>

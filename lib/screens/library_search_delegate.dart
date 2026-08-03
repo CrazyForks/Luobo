@@ -5,6 +5,7 @@ import '../providers/library_provider.dart';
 import '../providers/player_provider.dart';
 import '../services/subsonic_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/image_cache.dart';
 import '../utils/navigation_helper.dart';
 import '../l10n/app_localizations.dart';
 import 'album_screen.dart';
@@ -269,7 +270,7 @@ class LibrarySearchDelegate extends SearchDelegate<String> {
       );
     }
     final url = Provider.of<SubsonicService>(context, listen: false)
-        .getCoverArtUrl(coverArt);
+        .getCoverArtUrl(coverArt, size: kCoverArtRequestSize);
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: url.isNotEmpty

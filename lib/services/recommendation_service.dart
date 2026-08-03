@@ -817,10 +817,11 @@ class SongProfile {
       final now = DateTime.now();
       dailyPlays[_dateKey(now)] = (dailyPlays[_dateKey(now)] ?? 0) + 1;
       monthlyPlays[_monthKey(now)] = (monthlyPlays[_monthKey(now)] ?? 0) + 1;
+      // 时段偏好只统计有效播放，避免「开始播放但没听完」也计入
+      if (hour != null) hourlyPlays[hour] = (hourlyPlays[hour] ?? 0) + 1;
     }
     totalListenTime += durationPlayed;
     if (completed) completedPlays++;
-    if (hour != null) hourlyPlays[hour] = (hourlyPlays[hour] ?? 0) + 1;
     lastPlayed = DateTime.now();
   }
 

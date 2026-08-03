@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../utils/image_cache.dart';
@@ -136,7 +135,7 @@ class LibraryProvider extends ChangeNotifier {
   }
 
   String getCoverArtUrl(String? coverArt) {
-    return _subsonicService.getCoverArtUrl(coverArt);
+    return _subsonicService.getCoverArtUrl(coverArt, size: kCoverArtRequestSize);
   }
 
   /// Cover art for an artist, falling back to one of the artist's album
@@ -664,14 +663,14 @@ class LibraryProvider extends ChangeNotifier {
         if (cover == null || cover.isEmpty) continue;
         addCover(cover, 120);
         prefetchedArtists++;
-        if (prefetchedArtists == 1) {
+        if (kDebugMode && prefetchedArtists == 1) {
           debugPrint(
             '[LuoboDebug] Artist cover sample: ${artist.name} '
             'coverArt=${artist.coverArt}',
           );
         }
       }
-      if (urls.isNotEmpty) {
+      if (kDebugMode && urls.isNotEmpty) {
         debugPrint('[LuoboDebug] First cover URL: ${urls.first}');
       }
       // Album covers via AlbumArtwork default to 300.
@@ -695,15 +694,19 @@ class LibraryProvider extends ChangeNotifier {
               ok++;
             } catch (e) {
               failed++;
-              debugPrint('[LuoboDebug] Cover prefetch failed: $url → $e');
+              if (kDebugMode) {
+                debugPrint('[LuoboDebug] Cover prefetch failed: $url → $e');
+              }
             }
           }),
         );
       }
-      debugPrint(
-        '[LuoboDebug] Cover prefetch done: ${urls.length} urls '
-        '(artists=$prefetchedArtists), ok=$ok, failed=$failed',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          '[LuoboDebug] Cover prefetch done: ${urls.length} urls '
+          '(artists=$prefetchedArtists), ok=$ok, failed=$failed',
+        );
+      }
     });
   }
 
