@@ -7,8 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/library_provider.dart';
-import '../services/ai_playlist_service.dart';
-import '../services/song_knowledge_cache.dart';
+import '../services/ai_knowledge_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
@@ -23,15 +22,8 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
   String _aiApiKey = '';
   String _aiBaseUrl = 'https://api.deepseek.com';
   String _aiModel = 'deepseek-v4-flash';
-  int _knowledgeCached = 0;
-  int _knowledgeTotal = 0;
-  DateTime? _knowledgeLastUpdate;
-  bool _isGeneratingKnowledge = false;
-  double _knowledgeProgress = 0;
   bool _isExporting = false;
   bool _isImporting = false;
-
-  AiPlaylistService? _aiServiceInstance;
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -47,22 +39,15 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
     final aiBaseUrl = await storageService.getAiBaseUrl();
     final aiModel = await storageService.getAiModel();
 
-    final knowledgeCache = SongKnowledgeCache();
-    await knowledgeCache.initialize();
     final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
-    final totalSongs = libraryProvider.cachedAllSongs.length;
-    final stats = knowledgeCache.getCacheStats(totalSongs);
+    await AiKnowledgeService.instance
+        .initialize(totalSongs: libraryProvider.cachedAllSongs.length);
 
     if (!mounted) return;
     setState(() {
       _aiApiKey = aiApiKey;
       _aiBaseUrl = aiBaseUrl;
       _aiModel = aiModel;
-      _knowledgeCached = stats['cached'] as int;
-      _knowledgeTotal = stats['total'] as int;
-      final lastUpdate = stats['lastUpdate'] as String?;
-      _knowledgeLastUpdate =
-          lastUpdate != null ? DateTime.tryParse(lastUpdate) : null;
     });
   }
 
@@ -345,7 +330,11 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
   Widget _buildKnowledgeSection() {
     final accent = Theme.of(context).colorScheme.primary;
     final isDark = _isDark;
-    return _buildSection(
+    return ListenableBuilder(
+      listenable: AiKnowledgeService.instance,
+      builder: (context, _) {
+        final svc = AiKnowledgeService.instance;
+        return _buildSection(
       title: AppLocalizations.of(context)!.songKnowledgeBase,
       children: [
         ListTile(
@@ -356,7 +345,7 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                AppLocalizations.of(context)!.knowledgeIndexed(_knowledgeCached, _knowledgeTotal),
+                AppLocalizations.of(context)!.knowledgeIndexed(svc.cachedCount, svc.totalSongs),
                 style: TextStyle(
                   fontSize: 13,
                   color: isDark
@@ -364,11 +353,11 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
                       : Colors.black.withValues(alpha: 0.5),
                 ),
               ),
-              if (_knowledgeLastUpdate != null)
+              if (svc.lastUpdate != null)
                 Text(
                   AppLocalizations.of(context)!.lastUpdated(
-                      '${_knowledgeLastUpdate!.month}/${_knowledgeLastUpdate!.day} '
-                      '${_knowledgeLastUpdate!.hour}:${_knowledgeLastUpdate!.minute.toString().padLeft(2, '0')}'),
+                      '${svc.lastUpdate!.month}/${svc.lastUpdate!.day} '
+                      '${svc.lastUpdate!.hour}:${svc.lastUpdate!.minute.toString().padLeft(2, '0')}'),
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark
@@ -376,18 +365,18 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
                         : Colors.black.withValues(alpha: 0.3),
                   ),
                 ),
-              if (_isGeneratingKnowledge)
+              if (svc.isGenerating)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: LinearProgressIndicator(
-                    value: _knowledgeProgress,
+                    value: svc.progress,
                     backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
                     valueColor: AlwaysStoppedAnimation<Color>(accent),
                   ),
                 ),
             ],
           ),
-          trailing: _isGeneratingKnowledge
+          trailing: svc.isGenerating
               ? IconButton(
                   icon: const Icon(CupertinoIcons.xmark_circle, size: 22),
                   onPressed: _cancelKnowledgeGeneration,
@@ -395,7 +384,7 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
               : TextButton(
                   onPressed: _aiApiKey.isEmpty ? null : _generateKnowledge,
                   child: Text(
-                    _knowledgeCached == 0 ? AppLocalizations.of(context)!.generate : AppLocalizations.of(context)!.incrementalUpdate,
+                    svc.cachedCount == 0 ? AppLocalizations.of(context)!.generate : AppLocalizations.of(context)!.incrementalUpdate,
                     style: TextStyle(color: _aiApiKey.isEmpty ? Colors.grey : accent),
                   ),
                 ),
@@ -425,10 +414,10 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : TextButton(
-                  onPressed: _knowledgeCached == 0 ? null : _exportKnowledge,
+                  onPressed: svc.cachedCount == 0 ? null : _exportKnowledge,
                   child: Text(
                     AppLocalizations.of(context)!.export,
-                    style: TextStyle(color: _knowledgeCached == 0 ? Colors.grey : accent),
+                    style: TextStyle(color: svc.cachedCount == 0 ? Colors.grey : accent),
                   ),
                 ),
         ),
@@ -464,7 +453,9 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
                   ),
                 ),
         ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -473,57 +464,27 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
     final allSongs = libraryProvider.cachedAllSongs;
     if (allSongs.isEmpty) return;
 
-    setState(() {
-      _isGeneratingKnowledge = true;
-      _knowledgeProgress = 0;
-    });
-
-    _aiServiceInstance = AiPlaylistService();
-    await _aiServiceInstance!.initialize();
-
-    final processed = await _aiServiceInstance!.generateKnowledge(
-      allSongs: allSongs,
-      onProgress: (done, total) {
-        if (mounted) {
-          setState(() {
-            _knowledgeProgress = done / total;
-            _knowledgeCached = (_knowledgeTotal - total) + done;
-          });
-        }
-      },
-    );
-
-    if (mounted) {
-      final cache = SongKnowledgeCache();
-      await cache.initialize();
-      final stats = cache.getCacheStats(allSongs.length);
-      setState(() {
-        _isGeneratingKnowledge = false;
-        _knowledgeCached = stats['cached'] as int;
-        _knowledgeTotal = stats['total'] as int;
-        final lastUpdate = stats['lastUpdate'] as String?;
-        _knowledgeLastUpdate =
-            lastUpdate != null ? DateTime.tryParse(lastUpdate) : null;
-      });
-
-      if (processed > 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.knowledgeGenerated(processed))),
-        );
-      }
+    await AiKnowledgeService.instance.start(allSongs);
+    if (!mounted) return;
+    final processed = AiKnowledgeService.instance.processed;
+    if (processed > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(AppLocalizations.of(context)!.knowledgeGenerated(processed)),
+        ),
+      );
     }
   }
 
   void _cancelKnowledgeGeneration() {
-    _aiServiceInstance?.cancel();
-    setState(() => _isGeneratingKnowledge = false);
+    AiKnowledgeService.instance.cancel();
   }
 
   Future<void> _exportKnowledge() async {
     setState(() => _isExporting = true);
     try {
-      final cache = SongKnowledgeCache();
-      await cache.initialize();
+      final cache = AiKnowledgeService.instance.cache;
       final jsonStr = cache.exportAsJson();
       final fileName =
           'luobo_knowledge_${DateTime.now().millisecondsSinceEpoch}.json';
@@ -591,20 +552,14 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
         jsonStr = utf8.decode(bytes);
       }
 
-      final cache = SongKnowledgeCache();
-      await cache.initialize();
+      final cache = AiKnowledgeService.instance.cache;
       final count = await cache.importFromJson(jsonStr);
 
       if (!mounted) return;
       final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
-      final stats = cache.getCacheStats(libraryProvider.cachedAllSongs.length);
-      setState(() {
-        _knowledgeCached = stats['cached'] as int;
-        _knowledgeTotal = stats['total'] as int;
-        final lastUpdate = stats['lastUpdate'] as String?;
-        _knowledgeLastUpdate =
-            lastUpdate != null ? DateTime.tryParse(lastUpdate) : null;
-      });
+      // Re-read from disk so the singleton's cachedCount reflects the import.
+      await AiKnowledgeService.instance
+          .initialize(totalSongs: libraryProvider.cachedAllSongs.length);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.knowledgeImported(count))),

@@ -85,9 +85,9 @@ class AiPlaylistService {
         await _cache.saveBatchTags(tags);
         // Flush every batch for interrupt recovery
         await _cache.flush();
+        processed += batchSongs.length;
       }
 
-      processed += batchSongs.length;
       onProgress?.call(processed, total);
     }
 
