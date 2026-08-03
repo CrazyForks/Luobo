@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:path_provider/path_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/image_cache.dart';
 import '../providers/library_provider.dart';
@@ -31,6 +33,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
   final int _totalSongs = 0;
   int _downloadedCount = 0;
   String _downloadedSize = '0 B';
+  String _imageCacheSize = '—';
   int _parallelDownloads = 3;
   bool _keepScreenOn = true;
 
@@ -65,6 +68,7 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     await _cacheSettings.initialize();
     await _offlineService.initialize();
     await _loadOfflineInfo();
+    await _loadCacheSizes();
 
     setState(() {
       _imageCacheEnabled = _cacheSettings.getImageCacheEnabled();
@@ -72,6 +76,33 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
       _parallelDownloads = _offlineService.getParallelDownloadsCount();
       _keepScreenOn = _offlineService.getKeepScreenOn();
     });
+  }
+
+  Future<void> _loadCacheSizes() async {
+    final diskBytes = await _coverCacheSize();
+    if (!mounted) return;
+    setState(() {
+      _imageCacheSize = _offlineService.formatSize(diskBytes);
+    });
+  }
+
+  /// Sums the byte length of every cached cover file under
+  /// `<appCacheDir>/coverCache` (the cacheKey used by coverCacheManager).
+  Future<int> _coverCacheSize() async {
+    try {
+      final base = await getApplicationCacheDirectory();
+      final dir = Directory('${base.path}/coverCache');
+      if (!await dir.exists()) return 0;
+      var total = 0;
+      await for (final entity in dir.list(recursive: true)) {
+        if (entity is File) {
+          total += await entity.length();
+        }
+      }
+      return total;
+    } catch (_) {
+      return 0;
+    }
   }
 
   Future<void> _loadOfflineInfo() async {
@@ -115,7 +146,15 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
         const SizedBox(height: 24),
         _buildSection(
           title: AppLocalizations.of(context)!.sectionCacheCleanup,
-          children: [_buildClearAllCacheButton()],
+          children: [
+            _buildCacheSizeTile(
+              icon: CupertinoIcons.photo,
+              title: AppLocalizations.of(context)!.imageCacheTitle,
+              value: _imageCacheSize,
+            ),
+            _buildDivider(),
+            _buildClearAllCacheButton(),
+          ],
         ),
         const SizedBox(height: 24),
         _buildSection(
@@ -573,6 +612,59 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     await service.scanForMusic();
   }
 
+  Widget _buildCacheSizeTile({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF5AC8FA), Color(0xFF007AFF)],
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: Colors.white, size: 16),
+      ),
+      title: Text(title, style: const TextStyle(fontSize: 16)),
+      trailing: Text(
+        value,
+        style: TextStyle(
+          fontSize: 16,
+          color: _isDark
+              ? AppTheme.darkSecondaryText
+              : AppTheme.lightSecondaryText,
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _confirmClear(String title, String message) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(AppLocalizations.of(context)!.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF3B30)),
+                child: Text(AppLocalizations.of(context)!.clearAllCache),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   Widget _buildClearAllCacheButton() {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -599,13 +691,21 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     );
   }
 
-  void _clearAllCache() async {
+  Future<void> _clearAllCache() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await _confirmClear(
+      l10n.clearAllCache,
+      '将清除封面图片和 BPM 缓存，封面会在下次使用时重新下载。',
+    );
+    if (!confirmed || !mounted) return;
+
     await coverCacheManager.emptyCache();
     await _bpmAnalyzer.clearCache();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.allCacheCleared)),
+        SnackBar(content: Text(l10n.allCacheCleared)),
       );
+      await _loadCacheSizes();
       setState(() {});
     }
   }
@@ -771,12 +871,18 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
             style: const TextStyle(fontSize: 16, color: Color(0xFFFF3B30)),
           ),
           onTap: () async {
+            final l10n = AppLocalizations.of(context)!;
+            final confirmed = await _confirmClear(
+              l10n.clearBpmCache,
+              '将清除本地 BPM 分析结果，下次播放时会重新分析。',
+            );
+            if (!confirmed || !mounted) return;
             await _bpmAnalyzer.clearCache();
             setState(() {});
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(AppLocalizations.of(context)!.bpmCacheCleared),
+                  content: Text(l10n.bpmCacheCleared),
                 ),
               );
             }

@@ -85,7 +85,9 @@ class MiniPlayer extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(22),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                  // Lower sigma keeps the glass look while costing far less
+                  // GPU per frame (this blur renders on every frame).
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: GestureDetector(
                     onTap: onTap,
                     child: Container(
@@ -155,6 +157,10 @@ class MiniPlayer extends StatelessWidget {
     );
   }
 }
+
+/// Cached adaptive font sizes for the mini player title, keyed by
+/// `title|width`, so the row doesn't re-measure on every rebuild.
+final Map<String, double> _titleSizeCache = {};
 
 /// Measures a single-line text width at the given font size.
 double _textWidth(String text, TextStyle base, double fontSize) {
@@ -248,10 +254,26 @@ class _MiniPlayerRow extends StatelessWidget {
                         ) ??
                         const TextStyle(fontSize: 16, fontWeight: FontWeight.w600);
                     final baseSize = baseStyle.fontSize ?? 16;
-                    var size = baseSize;
-                    while (size > 12 &&
-                        _textWidth(title, baseStyle, size) > constraints.maxWidth) {
-                      size -= 1;
+                    // Cache the computed font size per (title, width) so the
+                    // mini player doesn't re-measure on every rebuild.
+                    final cacheKey =
+                        '$title|${constraints.maxWidth.round()}';
+                    final cached = _titleSizeCache[cacheKey];
+                    final double size;
+                    if (cached != null) {
+                      size = cached;
+                    } else {
+                      var s = baseSize;
+                      while (s > 12 &&
+                          _textWidth(title, baseStyle, s) >
+                              constraints.maxWidth) {
+                        s -= 1;
+                      }
+                      if (_titleSizeCache.length > 500) {
+                        _titleSizeCache.clear();
+                      }
+                      _titleSizeCache[cacheKey] = s;
+                      size = s;
                     }
                     return Text(
                       title,

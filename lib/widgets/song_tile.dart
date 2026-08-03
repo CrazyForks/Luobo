@@ -51,6 +51,10 @@ class SongTile extends StatelessWidget {
     this.onLongPress,
   });
 
+  /// Cached adaptive font sizes for the `artist • album` subtitle,
+  /// keyed by `text|width`, so scrolling lists don't re-measure.
+  static final Map<String, double> _adaptiveSizeCache = {};
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -120,7 +124,10 @@ class SongTile extends StatelessWidget {
           return Stack(
             children: [
               AlbumArtwork(
-                coverArt: song.coverArt,
+                // Song covers are the album cover; normalize so all songs
+                // of an album share the same cache key.
+                coverArt: Provider.of<LibraryProvider>(context, listen: false)
+                    .effectiveCoverArt(song),
                 size: 50,
                 preserveAspectRatio: true,
               ),
@@ -167,10 +174,26 @@ class SongTile extends StatelessWidget {
         final baseSize = baseStyle.fontSize ?? 12;
         return LayoutBuilder(
           builder: (context, constraints) {
-            var size = baseSize;
-            while (size > 10 &&
-                _textWidth(fullText, baseStyle, size) > constraints.maxWidth) {
-              size -= 1;
+            // Cache the computed font size per (text, width) so scrolling
+            // lists don't re-measure the same subtitle on every frame.
+            final cacheKey =
+                '$fullText|${constraints.maxWidth.round()}';
+            final cached = _adaptiveSizeCache[cacheKey];
+            final double size;
+            if (cached != null) {
+              size = cached;
+            } else {
+              var s = baseSize;
+              while (s > 10 &&
+                  _textWidth(fullText, baseStyle, s) >
+                      constraints.maxWidth) {
+                s -= 1;
+              }
+              if (_adaptiveSizeCache.length > 1000) {
+                _adaptiveSizeCache.clear();
+              }
+              _adaptiveSizeCache[cacheKey] = s;
+              size = s;
             }
             return Text(
               fullText,

@@ -1721,7 +1721,7 @@
   "transcodingEnableSubtitle": "降低音质以减少流量消耗",
   "smartTranscoding": "智能转码",
   "smartTranscodingSubtitle": "根据网络连接自动调整音质（WiFi vs 移动数据）",
-  "smartTranscodingDetectedNetwork": "检测到的网络：",
+  "smartTranscodingDetectedNetwork": "当前：",
   "smartTranscodingActiveBitrate": "当前码率：{bitrate}",
   "transcodingWifiQuality": "WiFi 音质",
   "transcodingWifiQualitySubtitleSmart": "连接 WiFi 时自动使用",

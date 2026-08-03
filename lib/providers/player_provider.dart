@@ -359,6 +359,15 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _libraryProvider = libraryProvider;
   }
 
+  /// Resolves the cover art id for a song, normalized to the album cover so
+  /// every song of an album shares one cache key (see
+  /// [LibraryProvider.effectiveCoverArt]).
+  String _effectiveCoverId(Song song) {
+    return _libraryProvider?.effectiveCoverArt(song) ??
+        song.coverArt ??
+        song.id;
+  }
+
   void setRecommendationService(RecommendationService recommendationService) {
     _recommendationService = recommendationService;
     _autoDjService.setServices(_subsonicService, recommendationService);
@@ -1561,7 +1570,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
             : await _subsonicService.resolveStreamUrlAsync(song);
         final coverUrl = song.isLocal == true && song.coverArt != null
             ? song.coverArt!
-            : _subsonicService.getCoverArtUrl(song.coverArt ?? song.id);
+            : _subsonicService.getCoverArtUrl(_effectiveCoverId(song));
 
         await _castService.loadMedia(
           url: playUrl,
@@ -1599,8 +1608,11 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
             title: song.title,
             artist: song.artist ?? 'Unknown Artist',
             album: song.album,
-            albumArtUrl: song.coverArt != null
-                ? _subsonicService.getCoverArtUrl(song.coverArt, size: 0)
+            albumArtUrl: (song.coverArt != null || _libraryProvider != null)
+                ? _subsonicService.getCoverArtUrl(
+                    _effectiveCoverId(song),
+                    size: 0,
+                  )
                 : null,
             durationSecs: song.duration,
             contentType: mimeType,

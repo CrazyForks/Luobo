@@ -1630,7 +1630,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get smartTranscodingSubtitle => '根据网络连接自动调整音质（WiFi vs 移动数据）';
 
   @override
-  String get smartTranscodingDetectedNetwork => '检测到的网络：';
+  String get smartTranscodingDetectedNetwork => '当前：';
 
   @override
   String smartTranscodingActiveBitrate(String bitrate) {

@@ -315,14 +315,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   }
                   final isDark =
                       Theme.of(context).brightness == Brightness.dark;
-                  // Compute song counts per artist from the local cache
-                  final artistSongCounts = <String, int>{};
-                  for (final s in libraryProvider.cachedAllSongs) {
-                    final aid = s.artistId;
-                    if (aid != null && aid.isNotEmpty) {
-                      artistSongCounts[aid] = (artistSongCounts[aid] ?? 0) + 1;
-                    }
-                  }
+                  // Song counts per artist come from LibraryProvider (computed
+                  // once per library change, not per rebuild).
+                  final artistSongCounts = libraryProvider.artistSongCounts;
                   final groups = <String, List<Artist>>{};
                   for (final a in artists) {
                     final letter = _firstLetter(a.name);

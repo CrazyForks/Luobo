@@ -497,22 +497,28 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
           );
         }
 
-        if (_cachedCoverArtId != song.coverArt) {
-          _cachedCoverArtId = song.coverArt;
-          if (isLocalFilePath(song.coverArt)) {
-            _cachedImageUrl = song.coverArt;
-            _cachedThumbnailUrl = song.coverArt;
+        // Normalize to the album cover so all songs of an album share one
+        // cache key; request a display-sized image (300) instead of 1200 —
+        // identical on a phone screen, 4x less decode work.
+        final libraryProvider =
+            Provider.of<LibraryProvider>(context, listen: false);
+        final coverId = libraryProvider.effectiveCoverArt(song);
+        if (_cachedCoverArtId != coverId) {
+          _cachedCoverArtId = coverId;
+          if (isLocalFilePath(coverId)) {
+            _cachedImageUrl = coverId;
+            _cachedThumbnailUrl = coverId;
           } else {
             final subsonicService = Provider.of<SubsonicService>(
               context,
               listen: false,
             );
             _cachedImageUrl = subsonicService.getCoverArtUrl(
-              song.coverArt,
-              size: 1200,
+              coverId,
+              size: 300,
             );
             _cachedThumbnailUrl = subsonicService.getCoverArtUrl(
-              song.coverArt,
+              coverId,
               size: 200,
             );
           }

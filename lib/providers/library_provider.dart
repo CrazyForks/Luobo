@@ -166,11 +166,73 @@ class LibraryProvider extends ChangeNotifier {
     return null;
   }
 
-  List<Album> get recentAlbums => _recentAlbums;
+  /// Resolves the cover art id to use for a song. A song's cover is almost
+  /// always its album's cover, so when the server omits `song.coverArt` we
+  /// fall back to the album's cover (by albumId from the local library) —
+  /// this keeps all songs of an album on the same cache key instead of
+  /// generating one URL per song (`song.id`), which would download and
+  /// transcode the same image N times.
+  String? effectiveCoverArt(Song song) {
+    if (song.coverArt != null && song.coverArt!.isNotEmpty) {
+      return song.coverArt;
+    }
+    final albumId = song.albumId;
+    if (albumId != null && albumId.isNotEmpty) {
+      final album = _albumCoverById[albumId];
+      if (album != null) return album;
+    }
+    return song.id;
+  }
+
+  /// albumId → coverArt cache, rebuilt lazily from the local album library.
+  Map<String, String>? _albumCoverByIdCache;
+
+  Map<String, String> get _albumCoverById {
+    final cached = _albumCoverByIdCache;
+    if (cached != null) return cached;
+    final map = <String, String>{};
+    for (final album in cachedAllAlbums) {
+      final cover = album.coverArt;
+      if (cover != null && cover.isNotEmpty) {
+        map.putIfAbsent(album.id, () => cover);
+      }
+    }
+    _albumCoverByIdCache = map;
+    return map;
+  }
+
+  /// artistId → song count, computed once per library change instead of on
+  /// every rebuild of the Artists tab.
+  Map<String, int>? _artistSongCountsCache;
+
+  Map<String, int> get artistSongCounts {
+    final cached = _artistSongCountsCache;
+    if (cached != null) return cached;
+    final map = <String, int>{};
+    for (final song in cachedAllSongs) {
+      final artistId = song.artistId;
+      if (artistId != null && artistId.isNotEmpty) {
+        map[artistId] = (map[artistId] ?? 0) + 1;
+      }
+    }
+    _artistSongCountsCache = map;
+    return map;
+  }
+
+  @override
+  void notifyListeners() {
+    // Derived maps are invalidated on any library change so they never
+    // return stale data.
+    _albumCoverByIdCache = null;
+    _artistSongCountsCache = null;
+    super.notifyListeners();
+  }
+
   List<Album> get frequentAlbums => _frequentAlbums;
   List<Album> get newestAlbums => _newestAlbums;
   List<Album> get randomAlbums => _randomAlbums;
   List<Playlist> get playlists => _playlists;
+  List<Album> get recentAlbums => _recentAlbums;
   List<Song> get randomSongs => _randomSongs;
   List<String> get genres => _genres;
   List<Genre> get richGenres => _richGenres;

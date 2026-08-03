@@ -13,6 +13,17 @@ bool isLocalFilePath(String? s) {
   return false;
 }
 
+/// Rounds requested cover pixels to one of the fixed size tiers (120/300/600)
+/// so the same cover at similar display sizes shares one cache key.
+int _nearestCacheTier(double pixels) {
+  const tiers = [120, 300, 600];
+  var best = 120;
+  for (final tier in tiers) {
+    if ((tier - pixels).abs() < (best - pixels).abs()) best = tier;
+  }
+  return best;
+}
+
 class _ImageUrlCache {
   static String getUrl(SubsonicService service, String? coverArt, int size) {
     if (coverArt == null || coverArt.isEmpty) return '';
@@ -128,7 +139,7 @@ class AlbumArtwork extends StatelessWidget {
     final validSize = size.isFinite && !size.isNaN ? size : 150.0;
 
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    final cacheSize = (validSize * dpr).toInt().clamp(200, 800);
+    final cacheSize = _nearestCacheTier(validSize * dpr);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final resolvedShadow = _resolvedShadow(

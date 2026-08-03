@@ -716,21 +716,23 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
                       connectionBadge(),
                       const Spacer(),
                       Flexible(
-                        child: Text(
-                          AppLocalizations.of(context)!
-                              .smartTranscodingActiveBitrate(
-                            ts.getCurrentBitrate() != null
-                                ? '${ts.getCurrentBitrate()} kbps'
-                                : AppLocalizations.of(context)!
-                                    .transcodingFormatOriginal,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            AppLocalizations.of(context)!
+                                .smartTranscodingActiveBitrate(
+                              ts.getCurrentBitrate() != null
+                                  ? '${ts.getCurrentBitrate()} kbps'
+                                  : AppLocalizations.of(context)!
+                                      .transcodingFormatOriginal,
+                            ),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: secondaryText,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: secondaryText,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
                         ),
                       ),
                     ],
