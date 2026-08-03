@@ -641,27 +641,31 @@ class LibraryProvider extends ChangeNotifier {
   }
 
   /// Prefetches the first screen-worth of cover art into the shared image
-  /// cache (DefaultCacheManager, the same one CachedNetworkImage reads),
-  /// throttled so we don't fire a transcode storm at the server.
+  /// cache (coverCacheManager, the same one CachedNetworkImage reads), keyed
+  /// by the same size=300 URL, throttled so we don't fire a transcode storm
+  /// at the server.
   void _preloadCoverArt() {
     Future.microtask(() async {
       final urls = <String>[];
       final seen = <String>{};
-      void addCover(String? coverArt, int size) {
+      void addCover(String? coverArt) {
         if (coverArt == null || coverArt.isEmpty) return;
-        final url = _subsonicService.getCoverArtUrl(coverArt);
+        final url = _subsonicService.getCoverArtUrl(
+          coverArt,
+          size: kCoverArtRequestSize,
+        );
         if (url.isNotEmpty && seen.add(url)) urls.add(url);
       }
 
-      // Artists tab icons are requested at size 120. Prefetch the artist's
-      // effective cover (own artist image, or the album-cover fallback) so
-      // the list doesn't wait for on-demand first-hit transcodes.
+      // Artists tab icons. Prefetch the artist's effective cover (own artist
+      // image, or the album-cover fallback) so the list doesn't wait for
+      // on-demand first-hit transcodes.
       var prefetchedArtists = 0;
       for (final artist in _artists) {
         if (prefetchedArtists >= 20) break;
         final cover = getArtistCoverArt(artist);
         if (cover == null || cover.isEmpty) continue;
-        addCover(cover, 120);
+        addCover(cover);
         prefetchedArtists++;
         if (kDebugMode && prefetchedArtists == 1) {
           debugPrint(
@@ -673,12 +677,15 @@ class LibraryProvider extends ChangeNotifier {
       if (kDebugMode && urls.isNotEmpty) {
         debugPrint('[LuoboDebug] First cover URL: ${urls.first}');
       }
-      // Album covers via AlbumArtwork default to 300.
-      for (final album in _recentAlbums.take(10)) {
-        addCover(album.coverArt, 300);
+      // Full library: every album cover (each album = one unique cover that
+      // all of its songs share via effectiveCoverArt). downloadFile() skips
+      // entries already in cache, so this only fetches what's missing.
+      for (final album in _cachedAllAlbums) {
+        addCover(album.coverArt);
       }
-      for (final album in _randomAlbums.take(10)) {
-        addCover(album.coverArt, 300);
+      // First screen of the All Songs list — the most common cold-start view.
+      for (final song in _cachedAllSongs.take(20)) {
+        addCover(effectiveCoverArt(song));
       }
 
       final cacheManager = coverCacheManager;
@@ -700,6 +707,12 @@ class LibraryProvider extends ChangeNotifier {
             }
           }),
         );
+        // Let the server breathe between batches: Navidrome resizes covers
+        // on first request per (id, size), so a full-library preload would
+        // otherwise hit it with a transcode storm.
+        if (end < urls.length) {
+          await Future.delayed(const Duration(milliseconds: 150));
+        }
       }
       if (kDebugMode) {
         debugPrint(

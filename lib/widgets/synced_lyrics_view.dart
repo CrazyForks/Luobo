@@ -13,6 +13,7 @@ import 'package:window_manager/window_manager.dart';
 import '../models/lyrics.dart';
 import '../models/song.dart';
 import '../providers/player_provider.dart';
+import '../providers/library_provider.dart';
 import '../services/subsonic_service.dart';
 import '../services/offline_service.dart';
 import '../services/lrclib_service.dart';
@@ -532,14 +533,21 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
       context,
       listen: false,
     );
+    final libraryProvider = Provider.of<LibraryProvider>(
+      context,
+      listen: false,
+    );
+    // Normalize to the album cover so the lyrics background shares the same
+    // cache entry as the song list / mini player.
+    final coverId = libraryProvider.effectiveCoverArt(_song);
     final String imageUrl;
     if (_song.id == widget.song.id && widget.imageUrl != null) {
       imageUrl = widget.imageUrl!;
-    } else if (isLocalFilePath(_song.coverArt)) {
-      imageUrl = _song.coverArt ?? '';
+    } else if (isLocalFilePath(coverId)) {
+      imageUrl = coverId ?? '';
     } else {
       imageUrl = subsonicService.getCoverArtUrl(
-        _song.coverArt,
+        coverId,
         size: kCoverArtRequestSize,
       );
     }

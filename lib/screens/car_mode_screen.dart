@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../providers/player_provider.dart';
+import '../providers/library_provider.dart';
 import '../services/subsonic_service.dart';
 import '../services/offline_service.dart';
 import '../services/storage_service.dart';
@@ -322,9 +323,12 @@ class _CarModeScreenState extends State<CarModeScreen>
 
   String? _getCoverArtUrl(BuildContext context, Song? song) {
     if (song == null) return null;
-    if (isLocalFilePath(song.coverArt)) return song.coverArt;
+    // Normalize to the album cover so every song of an album shares one URL.
+    final coverId = Provider.of<LibraryProvider>(context, listen: false)
+        .effectiveCoverArt(song);
+    if (isLocalFilePath(coverId)) return coverId;
     final subsonic = Provider.of<SubsonicService>(context, listen: false);
-    return subsonic.getCoverArtUrl(song.coverArt, size: kCoverArtRequestSize);
+    return subsonic.getCoverArtUrl(coverId, size: kCoverArtRequestSize);
   }
 
   /// 三连击（600ms 内连续 3 次点按）收藏当前歌曲

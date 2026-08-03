@@ -193,9 +193,9 @@ class AlbumArtwork extends StatelessWidget {
         return CachedNetworkImage(
           cacheManager: coverCacheManager,
           imageUrl: imageUrl,
-          // One cache entry per cover, shared by every screen regardless of
-          // display size or BoxFit.
-          cacheKey: '${coverArt}_$kCoverArtRequestSize',
+          // No explicit cacheKey: the disk cache is keyed by the URL itself
+          // (fixed size=300 + stable salt), so preloaders and every screen
+          // automatically share the same entry.
           fit: BoxFit.contain,
           memCacheWidth: kCoverArtRequestSize,
           memCacheHeight: kCoverArtRequestSize,
@@ -239,7 +239,6 @@ class AlbumArtwork extends StatelessWidget {
         return CachedNetworkImage(
           cacheManager: coverCacheManager,
           imageUrl: imageUrl,
-          cacheKey: '${coverArt}_$kCoverArtRequestSize',
           fit: BoxFit.cover,
           memCacheWidth: kCoverArtRequestSize,
           memCacheHeight: kCoverArtRequestSize,
