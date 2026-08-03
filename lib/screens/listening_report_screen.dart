@@ -796,12 +796,11 @@ class _OverviewSection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(16)),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _StatItem(value: durationStr, label: '总时长'),
-          _StatItem(value: '${report.totalPlays}', label: '播放次数'),
-          _StatItem(value: '${report.uniqueArtists}', label: '位歌手'),
-          _StatItem(value: '${report.uniqueSongs}', label: '首歌'),
+          Expanded(child: _StatItem(value: durationStr, label: '总时长')),
+          Expanded(child: _StatItem(value: '${report.totalPlays}', label: '播放次数')),
+          Expanded(child: _StatItem(value: '${report.uniqueArtists}', label: '位歌手')),
+          Expanded(child: _StatItem(value: '${report.uniqueSongs}', label: '首歌')),
         ],
       ),
     );
@@ -815,9 +814,22 @@ class _StatItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      Text(
+        value,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      ),
       const SizedBox(height: 4),
-      Text(label, style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
+      Text(
+        label,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).textTheme.bodySmall?.color,
+        ),
+      ),
     ]);
   }
 }
@@ -838,13 +850,10 @@ class _StreakCard extends StatelessWidget {
         Text('最长连续 ${report.streakDays} 天 · 累计活跃 ${report.activeDays} 天', style: TextStyle(fontSize: 13, color: Theme.of(context).textTheme.bodySmall?.color)),
         const SizedBox(height: 12),
         Row(children: [
-          _StatItem(value: '${report.streakDays}', label: '最长连续（天）'),
-          const SizedBox(width: 32),
-          _StatItem(value: '${report.activeDays}', label: '累计活跃（天）'),
-          if (report.companionDays > 0) ...[
-            const SizedBox(width: 32),
-            _StatItem(value: '${report.companionDays}', label: '陪伴（天）'),
-          ],
+          Expanded(child: _StatItem(value: '${report.streakDays}', label: '最长连续（天）')),
+          Expanded(child: _StatItem(value: '${report.activeDays}', label: '累计活跃（天）')),
+          if (report.companionDays > 0)
+            Expanded(child: _StatItem(value: '${report.companionDays}', label: '陪伴（天）')),
         ]),
         if (firstUse != null) ...[
           const SizedBox(height: 12),
