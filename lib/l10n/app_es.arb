@@ -1625,15 +1625,6 @@
   "@smartTranscodingDetectedNetwork": {
     "description": "Label shown before the live network type badge"
   },
-  "smartTranscodingActiveBitrate": "Tasa de bits activa: {bitrate}",
-  "@smartTranscodingActiveBitrate": {
-    "description": "Shows the currently active transcoding bitrate",
-    "placeholders": {
-      "bitrate": {
-        "type": "String"
-      }
-    }
-  },
   "transcodingWifiQuality": "Calidad WiFi",
   "@transcodingWifiQuality": {
     "description": "Label for WiFi bitrate selector"
@@ -1642,10 +1633,6 @@
   "@transcodingWifiQualitySubtitleSmart": {
     "description": "WiFi quality subtitle when smart mode is on"
   },
-  "transcodingWifiQualitySubtitle": "Tasa de bits al usar WiFi",
-  "@transcodingWifiQualitySubtitle": {
-    "description": "WiFi quality subtitle when smart mode is off"
-  },
   "transcodingMobileQuality": "Calidad Móvil",
   "@transcodingMobileQuality": {
     "description": "Label for mobile data bitrate selector"
@@ -1653,10 +1640,6 @@
   "transcodingMobileQualitySubtitleSmart": "Utilizado automáticamente en datos móviles",
   "@transcodingMobileQualitySubtitleSmart": {
     "description": "Mobile quality subtitle when smart mode is on"
-  },
-  "transcodingMobileQualitySubtitle": "Tasa de bits al usar datos móviles",
-  "@transcodingMobileQualitySubtitle": {
-    "description": "Mobile quality subtitle when smart mode is off"
   },
   "transcodingFormat": "Formato",
   "@transcodingFormat": {
@@ -1773,4 +1756,6 @@
   "wordSyncClearCache": "Clear Word Sync Cache",
   "wordSyncClearCacheSubtitle": "Removes locally stored word timestamps",
   "wordSyncNotSupported": "Not supported on this platform"
+,
+  "edit": "Editar"
 }

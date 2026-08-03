@@ -1722,12 +1722,13 @@
   "smartTranscoding": "智能转码",
   "smartTranscodingSubtitle": "根据网络连接自动调整音质（WiFi vs 移动数据）",
   "smartTranscodingDetectedNetwork": "当前：",
-  "smartTranscodingActiveBitrate": "当前码率：{bitrate}",
+  "smartTranscodingHelpTitle": "智能转码说明",
+  "smartTranscodingHelpBody": "开启后，码率会根据当前网络自动切换：\n• WiFi → 使用「WiFi 音质」设置的码率\n• 蜂窝网络 → 使用「移动网络音质」设置的码率\n网络切换时自动调整，无需手动操作。",
   "transcodingWifiQuality": "WiFi 音质",
   "transcodingWifiQualitySubtitleSmart": "连接 WiFi 时自动使用",
-  "transcodingWifiQualitySubtitle": "WiFi 下的码率",
   "transcodingMobileQuality": "移动网络音质",
-  "transcodingMobileQualitySubtitle": "移动网络下的码率",
+  "transcodingManualBitrate": "转码码率",
+  "transcodingManualBitrateSubtitle": "智能转码关闭时固定使用的码率",
   "transcodingFormat": "格式",
   "transcodingFormatSubtitle": "流媒体使用的音频编码",
   "transcodingBitrateOriginal": "原始（不转码）",
@@ -2278,4 +2279,6 @@
   "@streamWillTranscode": { "description": "当前网络下播放将转码的状态标签" },
   "transcodedTo": "转码为 {format} {bitrate}kbps（{network}）",
   "@transcodedTo": { "description": "启用转码时的音质状态", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } }
+,
+  "edit": "编辑"
 }

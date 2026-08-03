@@ -1802,11 +1802,17 @@
   "smartTranscodingDetectedNetwork": "Detected network: ",
   "@smartTranscodingDetectedNetwork": { "description": "Label shown before the live network type badge" },
 
-  "smartTranscodingActiveBitrate": "Active bitrate: {bitrate}",
-  "@smartTranscodingActiveBitrate": {
-    "description": "Shows the currently active transcoding bitrate",
-    "placeholders": { "bitrate": { "type": "String" } }
-  },
+  "smartTranscodingHelpTitle": "Smart Transcoding",
+  "@smartTranscodingHelpTitle": { "description": "Dialog title explaining smart transcoding" },
+
+  "smartTranscodingHelpBody": "When on, the bitrate follows your network automatically:\n• Wi-Fi → Wi-Fi quality bitrate\n• Cellular → Mobile quality bitrate\nThe bitrate switches automatically when your network changes.",
+  "@smartTranscodingHelpBody": { "description": "Explains how smart transcoding picks bitrates" },
+
+  "transcodingManualBitrate": "Transcode Bitrate",
+  "@transcodingManualBitrate": { "description": "Label for the fixed bitrate selector shown when smart mode is off" },
+
+  "transcodingManualBitrateSubtitle": "Fixed bitrate used when smart transcoding is off",
+  "@transcodingManualBitrateSubtitle": { "description": "Subtitle for the fixed bitrate selector" },
 
   "transcodingWifiQuality": "WiFi Quality",
   "@transcodingWifiQuality": { "description": "Label for WiFi bitrate selector" },
@@ -1814,17 +1820,11 @@
   "transcodingWifiQualitySubtitleSmart": "Used automatically on WiFi",
   "@transcodingWifiQualitySubtitleSmart": { "description": "WiFi quality subtitle when smart mode is on" },
 
-  "transcodingWifiQualitySubtitle": "Bitrate when on WiFi",
-  "@transcodingWifiQualitySubtitle": { "description": "WiFi quality subtitle when smart mode is off" },
-
   "transcodingMobileQuality": "Mobile Quality",
   "@transcodingMobileQuality": { "description": "Label for mobile data bitrate selector" },
 
   "transcodingMobileQualitySubtitleSmart": "Used automatically on cellular data",
   "@transcodingMobileQualitySubtitleSmart": { "description": "Mobile quality subtitle when smart mode is on" },
-
-  "transcodingMobileQualitySubtitle": "Bitrate when on mobile data",
-  "@transcodingMobileQualitySubtitle": { "description": "Mobile quality subtitle when smart mode is off" },
 
   "transcodingFormat": "Format",
   "@transcodingFormat": { "description": "Label for the transcoding format selector" },
@@ -2550,4 +2550,6 @@
   "@streamWillTranscode": { "description": "Status label when playback will be transcoded on the current network" },
   "transcodedTo": "Transcoded to {format} {bitrate}kbps ({network})",
   "@transcodedTo": { "description": "Audio quality status when transcoding is enabled", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } }
+,
+  "edit": "Edit"
 }

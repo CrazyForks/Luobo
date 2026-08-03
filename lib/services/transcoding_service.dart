@@ -59,9 +59,11 @@ class TranscodingService extends ChangeNotifier {
   static const String _enabledKey = 'transcoding_enabled';
   static const String _connectionTypeKey = 'transcoding_connection_type';
   static const String _smartEnabledKey = 'transcoding_smart_enabled';
+  static const String _manualBitrateKey = 'transcoding_manual_bitrate';
 
   int _wifiBitrate = TranscodeBitrate.original;
   int _mobileBitrate = TranscodeBitrate.kbps192;
+  int _manualBitrate = TranscodeBitrate.kbps192;
   String _format = TranscodeFormat.mp3;
   bool _enabled = false;
   bool _smartEnabled = false;
@@ -71,13 +73,15 @@ class TranscodingService extends ChangeNotifier {
 
   int get wifiBitrate => _wifiBitrate;
   int get mobileBitrate => _mobileBitrate;
-  // Always pick the bitrate matching the current connection type, regardless
-  // of smart mode: the settings UI exposes "WiFi quality" and "mobile data
-  // quality" independently, and both should take effect. Smart mode only
-  // controls whether the network is watched for automatic switching.
-  int get currentBitRate => _currentConnectionType == ConnectionType.wifi
-      ? _wifiBitrate
-      : _mobileBitrate;
+  int get manualBitrate => _manualBitrate;
+  // Smart mode: bitrate follows the current connection type (WiFi quality on
+  // WiFi, mobile quality on cellular). Manual mode: a single fixed bitrate is
+  // always used, regardless of the network.
+  int get currentBitRate => _smartEnabled
+      ? (_currentConnectionType == ConnectionType.wifi
+          ? _wifiBitrate
+          : _mobileBitrate)
+      : _manualBitrate;
   String get format => _format;
   bool get enabled => _enabled;
   bool get smartEnabled => _smartEnabled;
@@ -95,6 +99,8 @@ class TranscodingService extends ChangeNotifier {
     _format = prefs.getString(_formatKey) ?? TranscodeFormat.mp3;
     _enabled = prefs.getBool(_enabledKey) ?? false;
     _smartEnabled = prefs.getBool(_smartEnabledKey) ?? false;
+    _manualBitrate =
+        prefs.getInt(_manualBitrateKey) ?? TranscodeBitrate.kbps192;
     final connectionIndex = prefs.getInt(_connectionTypeKey) ?? 0;
     _currentConnectionType = ConnectionType.values[connectionIndex];
 
@@ -142,6 +148,13 @@ class TranscodingService extends ChangeNotifier {
   }
 
   Future<void> setSmartEnabled(bool value) async {
+    if (!value) {
+      // Leaving smart mode: pin the fixed bitrate to the one currently in
+      // effect so playback behavior stays continuous.
+      _manualBitrate = _currentConnectionType == ConnectionType.wifi
+          ? _wifiBitrate
+          : _mobileBitrate;
+    }
     _smartEnabled = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_smartEnabledKey, value);
@@ -149,6 +162,7 @@ class TranscodingService extends ChangeNotifier {
       await _initConnectivityWatcher();
     } else {
       _stopConnectivityWatcher();
+      await prefs.setInt(_manualBitrateKey, _manualBitrate);
     }
     notifyListeners();
   }
@@ -174,6 +188,13 @@ class TranscodingService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setManualBitrate(int bitrate) async {
+    _manualBitrate = bitrate;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_manualBitrateKey, bitrate);
+    notifyListeners();
+  }
+
   Future<void> setConnectionType(ConnectionType type) async {
     _currentConnectionType = type;
     final prefs = await SharedPreferences.getInstance();
@@ -183,9 +204,7 @@ class TranscodingService extends ChangeNotifier {
 
   int? getCurrentBitrate() {
     if (!_enabled) return null;
-    final bitrate = _currentConnectionType == ConnectionType.wifi
-        ? _wifiBitrate
-        : _mobileBitrate;
+    final bitrate = currentBitRate;
     return bitrate == TranscodeBitrate.original ? null : bitrate;
   }
 

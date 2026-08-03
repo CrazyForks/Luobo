@@ -1677,9 +1677,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get smartTranscodingDetectedNetwork => 'Red detectada: ';
 
   @override
-  String smartTranscodingActiveBitrate(String bitrate) {
-    return 'Tasa de bits activa: $bitrate';
-  }
+  String get smartTranscodingHelpTitle => 'Smart Transcoding';
+
+  @override
+  String get smartTranscodingHelpBody =>
+      'When on, the bitrate follows your network automatically:\n• Wi-Fi → Wi-Fi quality bitrate\n• Cellular → Mobile quality bitrate\nThe bitrate switches automatically when your network changes.';
+
+  @override
+  String get transcodingManualBitrate => 'Transcode Bitrate';
+
+  @override
+  String get transcodingManualBitrateSubtitle =>
+      'Fixed bitrate used when smart transcoding is off';
 
   @override
   String get transcodingWifiQuality => 'Calidad WiFi';
@@ -1689,18 +1698,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Utilizado automáticamente con WiFi';
 
   @override
-  String get transcodingWifiQualitySubtitle => 'Tasa de bits al usar WiFi';
-
-  @override
   String get transcodingMobileQuality => 'Calidad Móvil';
 
   @override
   String get transcodingMobileQualitySubtitleSmart =>
       'Utilizado automáticamente en datos móviles';
-
-  @override
-  String get transcodingMobileQualitySubtitle =>
-      'Tasa de bits al usar datos móviles';
 
   @override
   String get transcodingFormat => 'Formato';
@@ -2717,4 +2719,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String transcodedTo(String format, int bitrate, String network) {
     return 'Transcoded to $format ${bitrate}kbps ($network)';
   }
+
+  @override
+  String get edit => 'Editar';
 }

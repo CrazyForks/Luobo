@@ -1633,9 +1633,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get smartTranscodingDetectedNetwork => '当前：';
 
   @override
-  String smartTranscodingActiveBitrate(String bitrate) {
-    return '当前码率：$bitrate';
-  }
+  String get smartTranscodingHelpTitle => '智能转码说明';
+
+  @override
+  String get smartTranscodingHelpBody =>
+      '开启后，码率会根据当前网络自动切换：\n• WiFi → 使用「WiFi 音质」设置的码率\n• 蜂窝网络 → 使用「移动网络音质」设置的码率\n网络切换时自动调整，无需手动操作。';
+
+  @override
+  String get transcodingManualBitrate => '转码码率';
+
+  @override
+  String get transcodingManualBitrateSubtitle => '智能转码关闭时固定使用的码率';
 
   @override
   String get transcodingWifiQuality => 'WiFi 音质';
@@ -1644,16 +1652,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get transcodingWifiQualitySubtitleSmart => '连接 WiFi 时自动使用';
 
   @override
-  String get transcodingWifiQualitySubtitle => 'WiFi 下的码率';
-
-  @override
   String get transcodingMobileQuality => '移动网络音质';
 
   @override
   String get transcodingMobileQualitySubtitleSmart => '在移动数据上自动使用';
-
-  @override
-  String get transcodingMobileQualitySubtitle => '移动网络下的码率';
 
   @override
   String get transcodingFormat => '格式';
@@ -2603,4 +2605,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String transcodedTo(String format, int bitrate, String network) {
     return '转码为 $format ${bitrate}kbps（$network）';
   }
+
+  @override
+  String get edit => '编辑';
 }

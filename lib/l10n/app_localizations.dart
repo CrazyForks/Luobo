@@ -3190,11 +3190,29 @@ abstract class AppLocalizations {
   /// **'Detected network: '**
   String get smartTranscodingDetectedNetwork;
 
-  /// Shows the currently active transcoding bitrate
+  /// Dialog title explaining smart transcoding
   ///
   /// In en, this message translates to:
-  /// **'Active bitrate: {bitrate}'**
-  String smartTranscodingActiveBitrate(String bitrate);
+  /// **'Smart Transcoding'**
+  String get smartTranscodingHelpTitle;
+
+  /// Explains how smart transcoding picks bitrates
+  ///
+  /// In en, this message translates to:
+  /// **'When on, the bitrate follows your network automatically:\n• Wi-Fi → Wi-Fi quality bitrate\n• Cellular → Mobile quality bitrate\nThe bitrate switches automatically when your network changes.'**
+  String get smartTranscodingHelpBody;
+
+  /// Label for the fixed bitrate selector shown when smart mode is off
+  ///
+  /// In en, this message translates to:
+  /// **'Transcode Bitrate'**
+  String get transcodingManualBitrate;
+
+  /// Subtitle for the fixed bitrate selector
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed bitrate used when smart transcoding is off'**
+  String get transcodingManualBitrateSubtitle;
 
   /// Label for WiFi bitrate selector
   ///
@@ -3208,12 +3226,6 @@ abstract class AppLocalizations {
   /// **'Used automatically on WiFi'**
   String get transcodingWifiQualitySubtitleSmart;
 
-  /// WiFi quality subtitle when smart mode is off
-  ///
-  /// In en, this message translates to:
-  /// **'Bitrate when on WiFi'**
-  String get transcodingWifiQualitySubtitle;
-
   /// Label for mobile data bitrate selector
   ///
   /// In en, this message translates to:
@@ -3225,12 +3237,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Used automatically on cellular data'**
   String get transcodingMobileQualitySubtitleSmart;
-
-  /// Mobile quality subtitle when smart mode is off
-  ///
-  /// In en, this message translates to:
-  /// **'Bitrate when on mobile data'**
-  String get transcodingMobileQualitySubtitle;
 
   /// Label for the transcoding format selector
   ///
@@ -4947,6 +4953,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcoded to {format} {bitrate}kbps ({network})'**
   String transcodedTo(String format, int bitrate, String network);
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
 }
 
 class _AppLocalizationsDelegate

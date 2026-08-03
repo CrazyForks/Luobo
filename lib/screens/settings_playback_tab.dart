@@ -589,6 +589,23 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
     );
   }
 
+  void _showSmartTranscodingHelp(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.smartTranscodingHelpTitle),
+        content: Text(l10n.smartTranscodingHelpBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.ok),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTranscodingSection() {
     return Consumer<TranscodingService>(
       builder: (context, ts, _) {
@@ -686,9 +703,26 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
                     size: 18,
                   ),
                 ),
-                title: Text(
-                  AppLocalizations.of(context)!.smartTranscoding,
-                  style: const TextStyle(fontSize: 16),
+                title: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.smartTranscoding,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => _showSmartTranscodingHelp(context),
+                      child: Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: Icon(
+                          Icons.info_outline_rounded,
+                          size: 16,
+                          color: secondaryText,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 subtitle: Text(
                   AppLocalizations.of(context)!.smartTranscodingSubtitle,
@@ -705,106 +739,127 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: Row(
                     children: [
-                      Flexible(
-                        child: Text(
-                          AppLocalizations.of(context)!
-                              .smartTranscodingDetectedNetwork,
-                          style: TextStyle(fontSize: 12, color: secondaryText),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      Text(
+                        AppLocalizations.of(context)!
+                            .smartTranscodingDetectedNetwork,
+                        style: TextStyle(fontSize: 12, color: secondaryText),
                       ),
                       connectionBadge(),
-                      const Spacer(),
-                      Flexible(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            AppLocalizations.of(context)!
-                                .smartTranscodingActiveBitrate(
-                              ts.getCurrentBitrate() != null
-                                  ? '${ts.getCurrentBitrate()} kbps'
-                                  : AppLocalizations.of(context)!
-                                      .transcodingFormatOriginal,
-                            ),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: secondaryText,
-                              fontWeight: FontWeight.w500,
-                            ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          ts.getCurrentBitrate() != null
+                              ? '${ts.getCurrentBitrate()} kbps'
+                              : AppLocalizations.of(context)!
+                                  .transcodingFormatOriginal,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: secondaryText,
+                            fontWeight: FontWeight.w500,
                           ),
+                          textAlign: TextAlign.end,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                 ),
-              _buildDivider(),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
+              if (ts.smartEnabled) ...[
+                _buildDivider(),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  leading: const Icon(Icons.wifi_rounded, size: 20),
+                  title: Text(
+                      AppLocalizations.of(context)!.transcodingWifiQuality),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!
+                        .transcodingWifiQualitySubtitleSmart,
+                    style: TextStyle(fontSize: 12, color: secondaryText),
+                  ),
+                  trailing: DropdownButton<int>(
+                    value: ts.wifiBitrate,
+                    underline: const SizedBox(),
+                    items: TranscodeBitrate.options.map((bitrate) {
+                      final label = bitrate == TranscodeBitrate.original
+                          ? AppLocalizations.of(context)!
+                              .transcodingBitrateOriginal
+                          : '$bitrate kbps';
+                      return DropdownMenuItem(
+                          value: bitrate, child: Text(label));
+                    }).toList(),
+                    onChanged: (v) {
+                      if (v != null) ts.setWifiBitrate(v);
+                    },
+                  ),
                 ),
-                leading: const Icon(Icons.wifi_rounded, size: 20),
-                title:
-                    Text(AppLocalizations.of(context)!.transcodingWifiQuality),
-                subtitle: Text(
-                  ts.smartEnabled
-                      ? AppLocalizations.of(context)!
-                          .transcodingWifiQualitySubtitleSmart
-                      : AppLocalizations.of(context)!
-                          .transcodingWifiQualitySubtitle,
-                  style: TextStyle(fontSize: 12, color: secondaryText),
+                _buildDivider(),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  leading: const Icon(
+                    Icons.signal_cellular_alt_rounded,
+                    size: 20,
+                  ),
+                  title: Text(
+                      AppLocalizations.of(context)!.transcodingMobileQuality),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!
+                        .transcodingMobileQualitySubtitleSmart,
+                    style: TextStyle(fontSize: 12, color: secondaryText),
+                  ),
+                  trailing: DropdownButton<int>(
+                    value: ts.mobileBitrate,
+                    underline: const SizedBox(),
+                    items: TranscodeBitrate.options.map((bitrate) {
+                      final label = bitrate == TranscodeBitrate.original
+                          ? AppLocalizations.of(context)!
+                              .transcodingBitrateOriginal
+                          : '$bitrate kbps';
+                      return DropdownMenuItem(
+                          value: bitrate, child: Text(label));
+                    }).toList(),
+                    onChanged: (v) {
+                      if (v != null) ts.setMobileBitrate(v);
+                    },
+                  ),
                 ),
-                trailing: DropdownButton<int>(
-                  value: ts.wifiBitrate,
-                  underline: const SizedBox(),
-                  items: TranscodeBitrate.options.map((bitrate) {
-                    final label = bitrate == TranscodeBitrate.original
-                        ? AppLocalizations.of(context)!
-                            .transcodingBitrateOriginal
-                        : '$bitrate kbps';
-                    return DropdownMenuItem(value: bitrate, child: Text(label));
-                  }).toList(),
-                  onChanged: (v) {
-                    if (v != null) ts.setWifiBitrate(v);
-                  },
+              ] else ...[
+                _buildDivider(),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  leading: const Icon(Icons.speed_rounded, size: 20),
+                  title: Text(
+                      AppLocalizations.of(context)!.transcodingManualBitrate),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!
+                        .transcodingManualBitrateSubtitle,
+                    style: TextStyle(fontSize: 12, color: secondaryText),
+                  ),
+                  trailing: DropdownButton<int>(
+                    value: ts.manualBitrate,
+                    underline: const SizedBox(),
+                    items: TranscodeBitrate.options.map((bitrate) {
+                      final label = bitrate == TranscodeBitrate.original
+                          ? AppLocalizations.of(context)!
+                              .transcodingBitrateOriginal
+                          : '$bitrate kbps';
+                      return DropdownMenuItem(
+                          value: bitrate, child: Text(label));
+                    }).toList(),
+                    onChanged: (v) {
+                      if (v != null) ts.setManualBitrate(v);
+                    },
+                  ),
                 ),
-              ),
-              _buildDivider(),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
-                leading: const Icon(
-                  Icons.signal_cellular_alt_rounded,
-                  size: 20,
-                ),
-                title: Text(
-                    AppLocalizations.of(context)!.transcodingMobileQuality),
-                subtitle: Text(
-                  ts.smartEnabled
-                      ? AppLocalizations.of(context)!
-                          .transcodingMobileQualitySubtitleSmart
-                      : AppLocalizations.of(context)!
-                          .transcodingMobileQualitySubtitle,
-                  style: TextStyle(fontSize: 12, color: secondaryText),
-                ),
-                trailing: DropdownButton<int>(
-                  value: ts.mobileBitrate,
-                  underline: const SizedBox(),
-                  items: TranscodeBitrate.options.map((bitrate) {
-                    final label = bitrate == TranscodeBitrate.original
-                        ? AppLocalizations.of(context)!
-                            .transcodingBitrateOriginal
-                        : '$bitrate kbps';
-                    return DropdownMenuItem(value: bitrate, child: Text(label));
-                  }).toList(),
-                  onChanged: (v) {
-                    if (v != null) ts.setMobileBitrate(v);
-                  },
-                ),
-              ),
+              ],
               _buildDivider(),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(

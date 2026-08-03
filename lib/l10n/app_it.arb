@@ -1623,15 +1623,6 @@
   "@smartTranscodingDetectedNetwork": {
     "description": "Label shown before the live network type badge"
   },
-  "smartTranscodingActiveBitrate": "Bitrate attivo {bitrate}",
-  "@smartTranscodingActiveBitrate": {
-    "description": "Shows the currently active transcoding bitrate",
-    "placeholders": {
-      "bitrate": {
-        "type": "String"
-      }
-    }
-  },
   "transcodingWifiQuality": "Qualità WiFi",
   "@transcodingWifiQuality": {
     "description": "Label for WiFi bitrate selector"
@@ -1640,10 +1631,6 @@
   "@transcodingWifiQualitySubtitleSmart": {
     "description": "WiFi quality subtitle when smart mode is on"
   },
-  "transcodingWifiQualitySubtitle": "Bitrate quando su WiFi",
-  "@transcodingWifiQualitySubtitle": {
-    "description": "WiFi quality subtitle when smart mode is off"
-  },
   "transcodingMobileQuality": "Qualità Mobile",
   "@transcodingMobileQuality": {
     "description": "Label for mobile data bitrate selector"
@@ -1651,10 +1638,6 @@
   "transcodingMobileQualitySubtitleSmart": "Utilizzato automaticamente su dati cellulari",
   "@transcodingMobileQualitySubtitleSmart": {
     "description": "Mobile quality subtitle when smart mode is on"
-  },
-  "transcodingMobileQualitySubtitle": "Bitrate quando su dati mobili",
-  "@transcodingMobileQualitySubtitle": {
-    "description": "Mobile quality subtitle when smart mode is off"
   },
   "transcodingFormat": "Formato",
   "@transcodingFormat": {
@@ -1788,4 +1771,6 @@
   "supportWayBugs": "Segnala bug o suggerisci funzionalità",
   "supportWayEnjoy": "Semplicemente goditi la musica! 🎵",
   "supportMadeWithLove": "Fatto con 💙 in Italia"
+,
+  "edit": "Modifica"
 }
