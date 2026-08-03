@@ -10,6 +10,7 @@ import '../services/theme_service.dart';
 import '../services/locale_service.dart';
 import '../providers/player_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_surface.dart';
 import '../l10n/app_localizations.dart';
 import 'theme_manager_screen.dart';
 
@@ -1213,9 +1214,8 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
   }
 
   void _showLanguagePicker(BuildContext context, LocaleService localeService) {
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,

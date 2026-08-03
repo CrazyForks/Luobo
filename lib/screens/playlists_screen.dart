@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_surface.dart';
 import '../widgets/widgets.dart';
 import '../l10n/app_localizations.dart';
 import 'playlist_screen.dart';
@@ -142,9 +143,8 @@ class PlaylistsScreen extends StatelessWidget {
     );
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: isDark ? AppTheme.darkSurface : Colors.white,

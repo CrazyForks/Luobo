@@ -6,6 +6,7 @@ import '../providers/player_provider.dart';
 import '../models/models.dart';
 import '../widgets/widgets.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_surface.dart';
 import '../l10n/app_localizations.dart';
 
 enum SongSortOption {
@@ -142,12 +143,8 @@ class _AllSongsScreenState extends State<AllSongsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
 
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: isDark ? AppTheme.darkCard : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -254,7 +251,6 @@ class _AllSongsScreenState extends State<AllSongsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.allSongs),
-        backgroundColor: isDark ? AppTheme.darkBackground : Colors.white,
         actions: [
           if (_sortedSongs.isNotEmpty)
             IconButton(

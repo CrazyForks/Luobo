@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../widgets/glass_surface.dart';
 import 'dart:io';
 import 'package:window_manager/window_manager.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
@@ -70,7 +71,6 @@ class _EmulatorWarningScreen extends StatelessWidget {
         builder: (context) {
           final l10n = AppLocalizations.of(context)!;
           return Scaffold(
-            backgroundColor: Colors.black,
             body: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -327,7 +327,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
     switch (authProvider.state) {
       case AuthState.unknown:
         return Scaffold(
-          backgroundColor: Colors.black,
           body: Center(child: const CircularProgressIndicator()),
         );
       case AuthState.authenticated:
@@ -346,7 +345,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
         );
       case AuthState.authenticating:
         return const Scaffold(
-          backgroundColor: Colors.black,
           body: Center(child: CircularProgressIndicator()),
         );
       case AuthState.unauthenticated:
@@ -470,9 +468,8 @@ class _ServerUnreachableScreen extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
 
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: BoxDecoration(
           color: Theme.of(ctx).brightness == Brightness.dark

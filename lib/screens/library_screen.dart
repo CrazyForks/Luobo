@@ -11,6 +11,8 @@ import '../providers/providers.dart';
 import '../services/subsonic_service.dart';
 import '../services/local_music_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_surface.dart';
+import '../widgets/pressable_scale.dart';
 import '../utils/navigation_helper.dart';
 import '../utils/image_cache.dart';
 import 'album_screen.dart';
@@ -120,188 +122,176 @@ class _LibraryScreenState extends State<LibraryScreen> {
           }
         },
         child: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            floating: true,
-            expandedHeight: 60,
-            backgroundColor: isDark ? AppTheme.darkBackground : Colors.white,
-            title: Text(
-              AppLocalizations.of(context)!.yourLibrary,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: Icon(
-                  CupertinoIcons.refresh,
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              floating: true,
+              expandedHeight: 60,
+              title: Text(
+                AppLocalizations.of(context)!.yourLibrary,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
                   color: isDark ? Colors.white : Colors.black,
                 ),
-                onPressed: () {
-                  final libraryProvider = Provider.of<LibraryProvider>(
-                    context,
-                    listen: false,
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    CupertinoIcons.refresh,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                  onPressed: () {
+                    final libraryProvider = Provider.of<LibraryProvider>(
+                      context,
+                      listen: false,
+                    );
+                    libraryProvider.refresh();
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    CupertinoIcons.search,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                  onPressed: () => _showLibrarySearch(context),
+                ),
+                IconButton(
+                  icon: Icon(
+                    CupertinoIcons.plus,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                  onPressed: () => _showAddPlaylistMenu(context),
+                ),
+                IconButton(
+                  icon: Icon(
+                    CupertinoIcons.gear,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                  onPressed: () => _showSettings(context),
+                ),
+              ],
+            ),
+            SliverToBoxAdapter(
+              child: Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context)!;
+                  final filters = _getFilters(context);
+                  final filterLabels = {
+                    'Faves': l10n.faves,
+                    'Albums': l10n.filterAlbums,
+                    'Artists': l10n.filterArtists,
+                    'Songs': l10n.songs,
+                    'Genres': l10n.genres,
+                    'Years': l10n.years,
+                  };
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: filters.map((filter) {
+                        final isSelected = _selectedFilter == filter;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: Text(filterLabels[filter]!),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                _selectedFilter = selected ? filter : 'Faves';
+                              });
+                            },
+                            backgroundColor: isDark
+                                ? const Color(0xFF282828)
+                                : Colors.grey[200],
+                            selectedColor: isDark ? Colors.white : Colors.black,
+                            labelStyle: TextStyle(
+                              color: isSelected
+                                  ? (isDark ? Colors.black : Colors.white)
+                                  : (isDark ? Colors.white : Colors.black),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            side: BorderSide.none,
+                            showCheckmark: false,
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   );
-                  libraryProvider.refresh();
                 },
               ),
-              IconButton(
-                icon: Icon(
-                  CupertinoIcons.search,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-                onPressed: () => _showLibrarySearch(context),
-              ),
-              IconButton(
-                icon: Icon(
-                  CupertinoIcons.plus,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-                onPressed: () => _showAddPlaylistMenu(context),
-              ),
-              IconButton(
-                icon: Icon(
-                  CupertinoIcons.gear,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-                onPressed: () => _showSettings(context),
-              ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: Builder(
-              builder: (context) {
-                final l10n = AppLocalizations.of(context)!;
-                final filters = _getFilters(context);
-                final filterLabels = {
-                  'Faves': l10n.faves,
-                  'Albums': l10n.filterAlbums,
-                  'Artists': l10n.filterArtists,
-                  'Songs': l10n.songs,
-                  'Genres': l10n.genres,
-                  'Years': l10n.years,
-                };
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: filters.map((filter) {
-                      final isSelected = _selectedFilter == filter;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(filterLabels[filter]!),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedFilter = selected ? filter : 'Faves';
-                            });
-                          },
-                          backgroundColor: isDark
-                              ? const Color(0xFF282828)
-                              : Colors.grey[200],
-                          selectedColor: isDark ? Colors.white : Colors.black,
-                          labelStyle: TextStyle(
-                            color: isSelected
-                                ? (isDark ? Colors.black : Colors.white)
-                                : (isDark ? Colors.white : Colors.black),
-                            fontWeight: FontWeight.w500,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          side: BorderSide.none,
-                          showCheckmark: false,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                );
-              },
             ),
-          ),
-          SliverToBoxAdapter(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Column(
-                key: ValueKey(_selectedFilter),
-              children: [
-                if (_selectedFilter == 'Faves') ...[
-                  // Playlists folder
-                  _SpotifyLibraryTile(
-                    icon: CupertinoIcons.list_bullet,
-                    iconColor: const Color(0xFF3B82F6),
-                    title: AppLocalizations.of(context)!.playlists,
-                    subtitle: AppLocalizations.of(context)!.yourPlaylists,
-                    isGradient: false,
-                    onTap: () => _navigate(context, const PlaylistsScreen()),
-                  ),
-                  // Liked Songs folder
-                  _SpotifyLibraryTile(
-                    icon: CupertinoIcons.heart_fill,
-                    iconColor: const Color(0xFF8B5CF6),
-                    title: AppLocalizations.of(context)!.likedSongs,
-                    subtitle: AppLocalizations.of(context)!.playlist,
-                    isGradient: true,
-                    onTap: () => _navigate(context, const FavoritesScreen()),
-                  ),
-                  // All Songs folder
-                  _SpotifyLibraryTile(
-                    icon: CupertinoIcons.music_note_list,
-                    iconColor: const Color(0xFF34C759),
-                    title: AppLocalizations.of(context)!.songs,
-                    subtitle: AppLocalizations.of(context)!.songs,
-                    isGradient: false,
-                    onTap: () => _navigate(context, const AllSongsScreen()),
-                  ),
-                  // Liked Albums folder
-                  _SpotifyLibraryTile(
-                    icon: CupertinoIcons.star_fill,
-                    iconColor: const Color(0xFFFF9500),
-                    title: AppLocalizations.of(context)!.likedAlbums,
-                    subtitle: AppLocalizations.of(context)!.albums,
-                    isGradient: false,
-                    onTap: () => _navigate(context, const LikedAlbumsScreen()),
-                  ),
-                  // Radio Stations folder
-                  _SpotifyLibraryTile(
-                    icon: CupertinoIcons.antenna_radiowaves_left_right,
-                    iconColor: const Color(0xFF34C759),
-                    title: AppLocalizations.of(context)!.radioStations,
-                    subtitle: AppLocalizations.of(context)!.internetRadio,
-                    isGradient: false,
-                    onTap: () => _navigate(context, const RadioScreen()),
-                  ),
-                ],
-              ],
-            ),          // Column (AnimatedSwitcher child)
-          ),            // AnimatedSwitcher
-          ),            // SliverToBoxAdapter
-          Consumer<LibraryProvider>(
-            builder: (context, libraryProvider, _) {
-              final items = _getFilteredItems(context, libraryProvider);
+            SliverToBoxAdapter(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Column(
+                  key: ValueKey(_selectedFilter),
+                  children: [
+                    if (_selectedFilter == 'Faves') ...[
+                      // Playlists folder
+                      _SpotifyLibraryTile(
+                        icon: CupertinoIcons.list_bullet,
+                        iconColor: const Color(0xFF3B82F6),
+                        title: AppLocalizations.of(context)!.playlists,
+                        subtitle: AppLocalizations.of(context)!.yourPlaylists,
+                        isGradient: false,
+                        onTap: () =>
+                            _navigate(context, const PlaylistsScreen()),
+                      ),
+                      // Liked Songs folder
+                      _SpotifyLibraryTile(
+                        icon: CupertinoIcons.heart_fill,
+                        iconColor: const Color(0xFF8B5CF6),
+                        title: AppLocalizations.of(context)!.likedSongs,
+                        subtitle: AppLocalizations.of(context)!.playlist,
+                        isGradient: true,
+                        onTap: () =>
+                            _navigate(context, const FavoritesScreen()),
+                      ),
+                      // All Songs folder
+                      _SpotifyLibraryTile(
+                        icon: CupertinoIcons.music_note_list,
+                        iconColor: const Color(0xFF34C759),
+                        title: AppLocalizations.of(context)!.songs,
+                        subtitle: AppLocalizations.of(context)!.songs,
+                        isGradient: false,
+                        onTap: () => _navigate(context, const AllSongsScreen()),
+                      ),
+                      // Liked Albums folder
+                      _SpotifyLibraryTile(
+                        icon: CupertinoIcons.star_fill,
+                        iconColor: const Color(0xFFFF9500),
+                        title: AppLocalizations.of(context)!.likedAlbums,
+                        subtitle: AppLocalizations.of(context)!.albums,
+                        isGradient: false,
+                        onTap: () =>
+                            _navigate(context, const LikedAlbumsScreen()),
+                      ),
+                      // Radio Stations folder
+                      _SpotifyLibraryTile(
+                        icon: CupertinoIcons.antenna_radiowaves_left_right,
+                        iconColor: const Color(0xFF34C759),
+                        title: AppLocalizations.of(context)!.radioStations,
+                        subtitle: AppLocalizations.of(context)!.internetRadio,
+                        isGradient: false,
+                        onTap: () => _navigate(context, const RadioScreen()),
+                      ),
+                    ],
+                  ],
+                ), // Column (AnimatedSwitcher child)
+              ), // AnimatedSwitcher
+            ), // SliverToBoxAdapter
+            Consumer<LibraryProvider>(
+              builder: (context, libraryProvider, _) {
+                final items = _getFilteredItems(context, libraryProvider);
 
-              if (items.isEmpty && _selectedFilter != 'Artists') {
-                return SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _LibraryEmptyState(
-                    isLocalMode: libraryProvider.isLocalOnlyMode,
-                  ),
-                );
-              }
-
-              // Artists tab: chip waterfall grouped by pinyin first letter,
-              // with a right-edge scrubber for quick navigation.
-              if (_selectedFilter == 'Artists') {
-                final artists = libraryProvider.artists.toList()
-                  ..sort((a, b) => a.name.compareTo(b.name));
-                if (artists.isEmpty) {
+                if (items.isEmpty && _selectedFilter != 'Artists') {
                   return SliverFillRemaining(
                     hasScrollBody: false,
                     child: _LibraryEmptyState(
@@ -309,173 +299,193 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     ),
                   );
                 }
-                final isDark =
-                    Theme.of(context).brightness == Brightness.dark;
-                // Compute song counts per artist from the local cache
-                final artistSongCounts = <String, int>{};
-                for (final s in libraryProvider.cachedAllSongs) {
-                  final aid = s.artistId;
-                  if (aid != null && aid.isNotEmpty) {
-                    artistSongCounts[aid] = (artistSongCounts[aid] ?? 0) + 1;
+
+                // Artists tab: chip waterfall grouped by pinyin first letter,
+                // with a right-edge scrubber for quick navigation.
+                if (_selectedFilter == 'Artists') {
+                  final artists = libraryProvider.artists.toList()
+                    ..sort((a, b) => a.name.compareTo(b.name));
+                  if (artists.isEmpty) {
+                    return SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _LibraryEmptyState(
+                        isLocalMode: libraryProvider.isLocalOnlyMode,
+                      ),
+                    );
                   }
-                }
-                final groups = <String, List<Artist>>{};
-                for (final a in artists) {
-                  final letter = _firstLetter(a.name);
-                  groups.putIfAbsent(letter, () => []).add(a);
-                }
-                final letters = groups.keys.toList()..sort();
-                final l10n = AppLocalizations.of(context)!;
-                _letterIndexMap = {};
-                double offset = 0;
-                const headerH = 30.0;
-                const chipRowH = 36.0;
-                for (final letter in letters) {
-                  _letterIndexMap[letter] = offset.round();
-                  offset += headerH;
-                  final rows = (groups[letter]!.length / 3).ceil();
-                  offset += rows * chipRowH + 8;
-                }
-                return SliverFillRemaining(
-                  hasScrollBody: true,
-                  child: Stack(
-                    children: [
-                      ListView(
-                        controller: _artistsScrollController,
-                        padding: const EdgeInsets.only(bottom: 80),
-                        children: [
-                          for (final letter in letters) ...[
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                              child: Text(
-                                letter,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? AppTheme.darkSecondaryText
-                                      : AppTheme.lightSecondaryText,
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
+                  // Compute song counts per artist from the local cache
+                  final artistSongCounts = <String, int>{};
+                  for (final s in libraryProvider.cachedAllSongs) {
+                    final aid = s.artistId;
+                    if (aid != null && aid.isNotEmpty) {
+                      artistSongCounts[aid] = (artistSongCounts[aid] ?? 0) + 1;
+                    }
+                  }
+                  final groups = <String, List<Artist>>{};
+                  for (final a in artists) {
+                    final letter = _firstLetter(a.name);
+                    groups.putIfAbsent(letter, () => []).add(a);
+                  }
+                  final letters = groups.keys.toList()..sort();
+                  final l10n = AppLocalizations.of(context)!;
+                  _letterIndexMap = {};
+                  double offset = 0;
+                  const headerH = 30.0;
+                  const chipRowH = 36.0;
+                  for (final letter in letters) {
+                    _letterIndexMap[letter] = offset.round();
+                    offset += headerH;
+                    final rows = (groups[letter]!.length / 3).ceil();
+                    offset += rows * chipRowH + 8;
+                  }
+                  return SliverFillRemaining(
+                    hasScrollBody: true,
+                    child: Stack(
+                      children: [
+                        ListView(
+                          controller: _artistsScrollController,
+                          padding: const EdgeInsets.only(bottom: 80),
+                          children: [
+                            for (final letter in letters) ...[
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                                child: Text(
+                                  letter,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? AppTheme.darkSecondaryText
+                                        : AppTheme.lightSecondaryText,
+                                  ),
                                 ),
                               ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 0, 28, 8),
-                              child: Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: groups[letter]!.map((a) {
-                                  return GestureDetector(
-                                    onTap: () => _openItem(
-                                      context,
-                                      _LibraryItem(
-                                        type: 'Artist',
-                                        id: a.id,
-                                        name: a.name,
-                                        subtitle: '',
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(12, 0, 28, 8),
+                                child: Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: groups[letter]!.map((a) {
+                                    return GestureDetector(
+                                      onTap: () => _openItem(
+                                        context,
+                                        _LibraryItem(
+                                          type: 'Artist',
+                                          id: a.id,
+                                          name: a.name,
+                                          subtitle: '',
+                                        ),
                                       ),
-                                    ),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? Colors.white10
-                                            : Colors.black.withValues(alpha: 0.06),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            a.name,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: isDark
-                                                  ? Colors.white
-                                                  : Colors.black87,
-                                            ),
-                                          ),
-                                          Builder(builder: (ctx) {
-                                            final songCount =
-                                                artistSongCounts[a.id];
-                                            if (songCount == null ||
-                                                songCount == 0) {
-                                              return const SizedBox.shrink();
-                                            }
-                                            return Text(
-                                              l10n.songsCount(songCount),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? Colors.white10
+                                              : Colors.black
+                                                  .withValues(alpha: 0.06),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              a.name,
                                               style: TextStyle(
-                                                fontSize: 11,
+                                                fontSize: 14,
                                                 color: isDark
-                                                    ? Colors.white60
-                                                    : Colors.black45,
+                                                    ? Colors.white
+                                                    : Colors.black87,
                                               ),
-                                            );
-                                          }),
-                                        ],
+                                            ),
+                                            Builder(builder: (ctx) {
+                                              final songCount =
+                                                  artistSongCounts[a.id];
+                                              if (songCount == null ||
+                                                  songCount == 0) {
+                                                return const SizedBox.shrink();
+                                              }
+                                              return Text(
+                                                l10n.songsCount(songCount),
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: isDark
+                                                      ? Colors.white60
+                                                      : Colors.black45,
+                                                ),
+                                              );
+                                            }),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      Positioned(
-                        right: 0, top: 0, bottom: 0,
-                        child: _ArtistScrubber(
-                          letters: letters,
-                          selectedLetter: _selectedLetter,
-                          onLetterDown: (letter) {
-                            final idx = _letterIndexMap[letter];
-                            if (idx != null &&
-                                _artistsScrollController.hasClients) {
-                              _artistsScrollController.jumpTo(
-                                idx.toDouble().clamp(
-                                  0.0,
-                                  _artistsScrollController
-                                      .position.maxScrollExtent,
+                                    );
+                                  }).toList(),
                                 ),
-                              );
-                            }
-                            setState(() => _selectedLetter = letter);
-                          },
-                          onLetterUp: () =>
-                              setState(() => _selectedLetter = null),
+                              ),
+                            ],
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              }
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          child: _ArtistScrubber(
+                            letters: letters,
+                            selectedLetter: _selectedLetter,
+                            onLetterDown: (letter) {
+                              final idx = _letterIndexMap[letter];
+                              if (idx != null &&
+                                  _artistsScrollController.hasClients) {
+                                _artistsScrollController.jumpTo(
+                                  idx.toDouble().clamp(
+                                        0.0,
+                                        _artistsScrollController
+                                            .position.maxScrollExtent,
+                                      ),
+                                );
+                              }
+                              setState(() => _selectedLetter = letter);
+                            },
+                            onLetterUp: () =>
+                                setState(() => _selectedLetter = null),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
-              if (items.isEmpty) {
-                return SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _LibraryEmptyState(
-                    isLocalMode: libraryProvider.isLocalOnlyMode,
-                  ),
-                );
-              }
+                if (items.isEmpty) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _LibraryEmptyState(
+                      isLocalMode: libraryProvider.isLocalOnlyMode,
+                    ),
+                  );
+                }
 
-              return SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final item = items[index];
-                  return _buildLibraryItem(context, item);
-                }, childCount: items.length),
-              );
-            },
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 150)),
-        ],
-      ),          // CustomScrollView
-    ),            // GestureDetector
-  );              // Scaffold
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final item = items[index];
+                    return _buildLibraryItem(context, item);
+                  }, childCount: items.length),
+                );
+              },
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 150)),
+          ],
+        ), // CustomScrollView
+      ), // GestureDetector
+    ); // Scaffold
   }
 
   List<_LibraryItem> _getFilteredItems(
@@ -731,8 +741,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         _buildPlaceholder(item.type, isDark),
                   )
                 : CachedNetworkImage(
-                              cacheManager: coverCacheManager,
-                              imageUrl: coverArtUrl,
+                    cacheManager: coverCacheManager,
+                    imageUrl: coverArtUrl,
                     fit: BoxFit.cover,
                     placeholder: (ctx, url) =>
                         Container(color: Colors.grey[800]),
@@ -743,46 +753,49 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
     );
 
-    return InkWell(
+    return PressableScale(
       onTap: () => _openItem(context, item),
-      onLongPress: item.type == 'Playlist'
-          ? () => _showDeletePlaylistDialog(context, item)
-          : null,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Row(
-          children: [
-            artwork,
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    item.name,
-                    style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 15,
+      child: InkWell(
+        onTap: () => _openItem(context, item),
+        onLongPress: item.type == 'Playlist'
+            ? () => _showDeletePlaylistDialog(context, item)
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: [
+              artwork,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      item.name,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$typeLabel • ${item.subtitle}',
-                    style: TextStyle(
-                      color: isDark ? Colors.white60 : Colors.black54,
-                      fontSize: 13,
+                    const SizedBox(height: 2),
+                    Text(
+                      '$typeLabel • ${item.subtitle}',
+                      style: TextStyle(
+                        color: isDark ? Colors.white60 : Colors.black54,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -947,7 +960,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         AppLocalizations.of(context)!.errorDeletingPlaylist(e),
                       ),
                       behavior: SnackBarBehavior.floating,
-                      backgroundColor: Colors.red,
                     ),
                   );
                 }
@@ -964,12 +976,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   void _showAddPlaylistMenu(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final outerContext = context;
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
-      ),
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1048,7 +1056,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
     // Capture provider from outer context before entering dialog
-    final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+    final libraryProvider =
+        Provider.of<LibraryProvider>(context, listen: false);
 
     await showDialog(
       context: context,
@@ -1225,10 +1234,13 @@ class _ArtistScrubber extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {},
-      onVerticalDragDown: (d) => _onPos(d.localPosition, context.size?.height ?? 1),
-      onVerticalDragUpdate: (d) => _onPos(d.localPosition, context.size?.height ?? 1),
+      onVerticalDragDown: (d) =>
+          _onPos(d.localPosition, context.size?.height ?? 1),
+      onVerticalDragUpdate: (d) =>
+          _onPos(d.localPosition, context.size?.height ?? 1),
       onVerticalDragEnd: (_) => onLetterUp(),
-      onLongPressMoveUpdate: (d) => _onPos(d.localPosition, context.size?.height ?? 1),
+      onLongPressMoveUpdate: (d) =>
+          _onPos(d.localPosition, context.size?.height ?? 1),
       child: Container(
         width: 28,
         padding: const EdgeInsets.only(right: 4),
@@ -1242,7 +1254,8 @@ class _ArtistScrubber extends StatelessWidget {
                   l,
                   style: TextStyle(
                     fontSize: isSelected ? 12 : 10,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     color: isSelected
                         ? AppTheme.appleMusicRed
                         : (isDark ? Colors.white54 : Colors.black45),
@@ -1258,7 +1271,8 @@ class _ArtistScrubber extends StatelessWidget {
 
   void _onPos(Offset local, double height) {
     final fraction = (local.dy / height).clamp(0.0, 1.0);
-    final idx = (fraction * letters.length).floor().clamp(0, letters.length - 1);
+    final idx =
+        (fraction * letters.length).floor().clamp(0, letters.length - 1);
     onLetterDown(letters[idx]);
   }
 }
@@ -1361,4 +1375,3 @@ class _SpotifyLibraryTile extends StatelessWidget {
     );
   }
 }
-

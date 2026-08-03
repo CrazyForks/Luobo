@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../widgets/glass_surface.dart';
 import '../models/models.dart';
 import '../services/subsonic_service.dart';
 import '../widgets/widgets.dart';
@@ -122,9 +123,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     Song song,
     int index,
   ) async {
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: const BoxDecoration(
           color: Color(0xFF1C1C1E),

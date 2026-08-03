@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'album_artwork.dart';
+import 'pressable_scale.dart';
 
 class SpotifyLikeCard extends StatefulWidget {
   final String? coverArt;
@@ -34,7 +35,8 @@ class _SpotifyLikeCardState extends State<SpotifyLikeCard> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return MouseRegion(
+    return PressableScale(
+        child: MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
@@ -115,6 +117,7 @@ class _SpotifyLikeCardState extends State<SpotifyLikeCard> {
           ),
         ),
       ),
+    ),
     );
   }
 }

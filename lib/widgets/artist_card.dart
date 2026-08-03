@@ -5,6 +5,7 @@ import '../providers/library_provider.dart';
 import '../theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import 'album_artwork.dart';
+import 'pressable_scale.dart';
 
 class ArtistCard extends StatefulWidget {
   final Artist artist;
@@ -37,7 +38,8 @@ class _ArtistCardState extends State<ArtistCard> {
     );
     final coverArt = libraryProvider.getArtistCoverArt(widget.artist);
 
-    return MouseRegion(
+    return PressableScale(
+        child: MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
@@ -157,6 +159,7 @@ class _ArtistCardState extends State<ArtistCard> {
           ),
         ),
       ),
+    ),
     );
   }
 }

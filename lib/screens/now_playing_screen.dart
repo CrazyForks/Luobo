@@ -20,6 +20,7 @@ import '../services/player_ui_settings_service.dart';
 import '../widgets/star_rating_widget.dart';
 import '../widgets/dolby_atmos_badge.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_surface.dart';
 import '../utils/navigation_helper.dart';
 import '../utils/image_cache.dart';
 import '../utils/screen_helper.dart';
@@ -555,7 +556,6 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: Scaffold(
-                        backgroundColor: Colors.transparent,
                         body: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -1506,9 +1506,8 @@ class _PlayerHeader extends StatelessWidget {
     final player = context.read<PlayerProvider>();
     final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
 
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       builder: (sheetCtx) => StatefulBuilder(
         builder: (ctx, setSt) => Container(
           decoration: BoxDecoration(
@@ -1652,9 +1651,8 @@ class _PlayerHeader extends StatelessWidget {
       (l10n.sleepTimerHours(2), const Duration(hours: 2)),
     ];
 
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (sheetCtx) {
         bool endCurrentSong = player.sleepTimerEndCurrentSong;
@@ -1914,10 +1912,9 @@ class _PlayerHeader extends StatelessWidget {
   }
 
   void _showQueue(BuildContext context) {
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => const _QueueSheet(),
     );
   }
@@ -2585,9 +2582,8 @@ class _SongInfoState extends State<_SongInfo> {
 
       final outerContext = context;
 
-      showModalBottomSheet(
+      showGlassBottomSheet(
         context: outerContext,
-        backgroundColor: Colors.transparent,
         builder: (sheetContext) {
           final l10n = AppLocalizations.of(outerContext)!;
           return Container(

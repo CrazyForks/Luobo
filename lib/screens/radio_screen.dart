@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../providers/player_provider.dart';
 import '../services/subsonic_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_surface.dart';
 import '../l10n/app_localizations.dart';
 
 class RadioScreen extends StatefulWidget {
@@ -78,9 +79,8 @@ class _RadioScreenState extends State<RadioScreen> {
   void _showStationOptions(RadioStation station) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
@@ -193,7 +193,6 @@ class _RadioScreenState extends State<RadioScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.radioStations),
-        backgroundColor: isDark ? AppTheme.darkBackground : Colors.white,
         actions: [
           IconButton(
             icon: const Icon(CupertinoIcons.refresh),

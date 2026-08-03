@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/album.dart';
 import '../theme/app_theme.dart';
 import 'album_artwork.dart';
+import 'pressable_scale.dart';
 import 'multi_artist_widget.dart';
 
 class AlbumCard extends StatefulWidget {
@@ -30,7 +31,8 @@ class _AlbumCardState extends State<AlbumCard> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return MouseRegion(
+    return PressableScale(
+        child: MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
@@ -112,6 +114,7 @@ class _AlbumCardState extends State<AlbumCard> {
           ),
         ),
       ),
+    ),
     );
   }
 }

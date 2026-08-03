@@ -17,7 +17,9 @@ import '../theme/app_theme.dart';
 import 'album_artwork.dart';
 import 'animated_equalizer.dart';
 import 'dolby_atmos_badge.dart';
+import 'glass_surface.dart';
 import 'multi_artist_widget.dart';
+import 'pressable_scale.dart';
 import '../screens/album_screen.dart';
 import '../screens/artist_screen.dart';
 
@@ -58,27 +60,31 @@ class SongTile extends StatelessWidget {
       builder: (context, currentSongId, _) {
         final isCurrentSong = currentSongId == song.id;
 
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 4,
-          ),
-          leading: _buildLeading(context, isCurrentSong),
-          title: Text(
-            song.title,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color:
-                  isCurrentSong ? Theme.of(context).colorScheme.primary : null,
-              fontWeight: isCurrentSong ? FontWeight.w600 : FontWeight.normal,
+        return PressableScale(
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
             ),
-            maxLines: titleMaxLines,
-            overflow: TextOverflow.ellipsis,
+            leading: _buildLeading(context, isCurrentSong),
+            title: Text(
+              song.title,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: isCurrentSong
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+                fontWeight:
+                    isCurrentSong ? FontWeight.w600 : FontWeight.normal,
+              ),
+              maxLines: titleMaxLines,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle:
+                showArtist || showAlbum ? _buildSubtitleWidget(theme) : null,
+            trailing: _buildTrailing(context),
+            onTap: onTap ?? () => _playSong(context),
+            onLongPress: onLongPress ?? () => _showOptions(context),
           ),
-          subtitle:
-              showArtist || showAlbum ? _buildSubtitleWidget(theme) : null,
-          trailing: _buildTrailing(context),
-          onTap: onTap ?? () => _playSong(context),
-          onLongPress: onLongPress ?? () => _showOptions(context),
         );
       },
     );
@@ -314,9 +320,8 @@ class SongTile extends StatelessWidget {
   }
 
   void _showOptions(BuildContext context) {
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       builder: (context) => _SongOptionsSheet(song: song),
     );
   }
@@ -842,9 +847,8 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
     if (participants != null && participants.length > 1) {
       final ctx = NavigationHelper.navigatorKey.currentContext;
       if (ctx == null) return;
-      showModalBottomSheet(
+      showGlassBottomSheet(
         context: ctx,
-        backgroundColor: Colors.transparent,
         builder: (sheetCtx) => ArtistsBottomSheet(
           artists: participants,
           onArtistTap: (artist) {
@@ -884,12 +888,13 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
       listen: false,
     );
 
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkSurface
+              : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(

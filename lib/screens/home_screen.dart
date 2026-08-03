@@ -10,6 +10,7 @@ import '../services/recommendation_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
 import '../utils/image_cache.dart';
+import '../widgets/pressable_scale.dart';
 import '../widgets/widgets.dart';
 import 'album_screen.dart';
 import 'playlist_screen.dart';
@@ -865,91 +866,94 @@ class _QuickAccessTileState extends State<_QuickAccessTile> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          color: isDark
-              ? (_isHovered ? AppTheme.darkElevated : AppTheme.darkCard)
-              : (_isHovered ? Colors.grey[300] : Colors.grey[200]),
-          borderRadius: BorderRadius.circular(4),
-          boxShadow: _isHovered
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onTap,
+    return PressableScale(
+      onTap: widget.onTap,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: isDark
+                ? (_isHovered ? AppTheme.darkElevated : AppTheme.darkCard)
+                : (_isHovered ? Colors.grey[300] : Colors.grey[200]),
             borderRadius: BorderRadius.circular(4),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(4),
-                  ),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: widget.imageUrl != null
-                        ? (isLocalFilePath(widget.imageUrl)
-                            ? Image.file(
-                                File(widget.imageUrl!),
-                                fit: BoxFit.cover,
-                                errorBuilder: (ctx, e, _) => Container(
-                                  color: Colors.grey[800],
-                                  child: const Icon(
-                                    Icons.music_note,
-                                    color: Colors.white30,
-                                  ),
-                                ),
-                              )
-                            : CachedNetworkImage(
-                              cacheManager: coverCacheManager,
-                              imageUrl: widget.imageUrl!,
-                                fit: BoxFit.cover,
-                                placeholder: (ctx, e) =>
-                                    Container(color: Colors.grey[800]),
-                                errorWidget: (ctx, e, _) => Container(
-                                  color: Colors.grey[800],
-                                  child: const Icon(
-                                    Icons.music_note,
-                                    color: Colors.white30,
-                                  ),
-                                ),
-                              ))
-                        : Container(
-                            color: Colors.grey[800],
-                            child: const Icon(
-                              Icons.music_note,
-                              color: Colors.white30,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    widget.title,
-                    style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+            boxShadow: _isHovered
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  ]
+                : [],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              borderRadius: BorderRadius.circular(4),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(4),
+                    ),
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: widget.imageUrl != null
+                          ? (isLocalFilePath(widget.imageUrl)
+                              ? Image.file(
+                                  File(widget.imageUrl!),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (ctx, e, _) => Container(
+                                    color: Colors.grey[800],
+                                    child: const Icon(
+                                      Icons.music_note,
+                                      color: Colors.white30,
+                                    ),
+                                  ),
+                                )
+                              : CachedNetworkImage(
+                                  cacheManager: coverCacheManager,
+                                  imageUrl: widget.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  placeholder: (ctx, e) =>
+                                      Container(color: Colors.grey[800]),
+                                  errorWidget: (ctx, e, _) => Container(
+                                    color: Colors.grey[800],
+                                    child: const Icon(
+                                      Icons.music_note,
+                                      color: Colors.white30,
+                                    ),
+                                  ),
+                                ))
+                          : Container(
+                              color: Colors.grey[800],
+                              child: const Icon(
+                                Icons.music_note,
+                                color: Colors.white30,
+                              ),
+                            ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-              ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
             ),
           ),
         ),
@@ -977,7 +981,7 @@ class _PlaylistCard extends StatelessWidget {
         : null;
     final l10n = AppLocalizations.of(context)!;
 
-    return GestureDetector(
+    return PressableScale(
       onTap: onTap,
       child: SizedBox(
         width: size,
@@ -1001,8 +1005,8 @@ class _PlaylistCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: coverArtUrl != null
                     ? CachedNetworkImage(
-                              cacheManager: coverCacheManager,
-                              imageUrl: coverArtUrl,
+                        cacheManager: coverCacheManager,
+                        imageUrl: coverArtUrl,
                         fit: BoxFit.cover,
                         placeholder: (ctx, url) => Container(
                           color: isDark
@@ -1244,8 +1248,8 @@ class _DesktopSongRowState extends State<_DesktopSongRow> {
                   height: 40,
                   child: song.coverArt != null
                       ? CachedNetworkImage(
-                              cacheManager: coverCacheManager,
-                              imageUrl: subsonicService.getCoverArtUrl(
+                          cacheManager: coverCacheManager,
+                          imageUrl: subsonicService.getCoverArtUrl(
                             song.coverArt!,
                             size: 80,
                           ),

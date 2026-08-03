@@ -10,6 +10,7 @@ import '../screens/artist_screen.dart';
 import '../services/subsonic_service.dart';
 import '../theme/app_theme.dart';
 import 'album_artwork.dart';
+import 'glass_surface.dart';
 
 /// Displays a list of artists as "Artist 1, Artist 2, …".
 ///
@@ -121,9 +122,8 @@ class MultiArtistWidget extends StatelessWidget {
   }
 
   void _showArtistsSheet(BuildContext context, List<ArtistRef> artistList) {
-    showModalBottomSheet(
+    showGlassBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       builder: (ctx) => ArtistsBottomSheet(
         artists: artistList,
         onArtistTap: (artist) {
