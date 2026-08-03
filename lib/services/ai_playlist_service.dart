@@ -20,12 +20,26 @@ typedef KnowledgeProgressCallback = void Function(int processed, int total);
 /// tags and create AI-powered playlists.
 class AiPlaylistService {
   final StorageService _storage = StorageService();
-  final SongKnowledgeCache _cache = SongKnowledgeCache();
+  SongKnowledgeCache _cache = SongKnowledgeCache();
 
   static const int _batchSize = 50;
 
+  /// Consecutive failed batches after which generation aborts, to avoid
+  /// burning API tokens when the model keeps returning unparseable output.
+  static const int _maxConsecutiveFailures = 3;
+
   Dio? _dio;
   bool _cancelled = false;
+
+  /// Bumped each time a generation starts. An in-flight generation from a
+  /// previous run exits as soon as it notices the serial changed, so
+  /// cancelling and immediately restarting can never run two generations
+  /// concurrently (which would double-bill API tokens).
+  int _generationSerial = 0;
+
+  /// Human-readable reason for the most recent aborted generation, or null
+  /// if the last run completed/succeeded. Cleared at the start of each run.
+  String? lastFailureReason;
 
   /// Initialize the service. Must be called before use.
   Future<void> initialize() async {
@@ -40,6 +54,14 @@ class AiPlaylistService {
   /// Returns the knowledge cache instance for stats access.
   SongKnowledgeCache get cache => _cache;
 
+  /// Attaches a shared knowledge cache owned by the caller. When attached,
+  /// generation reads/writes the shared instance instead of a private one,
+  /// so the caller can show real-time indexed counts and incremental/resume
+  /// semantics work against the same in-memory state.
+  void attachCache(SongKnowledgeCache cache) {
+    _cache = cache;
+  }
+
   // ── Knowledge Base Generation ──────────────────────────────────────
 
   /// Generates knowledge tags for uncached songs in [allSongs].
@@ -50,8 +72,19 @@ class AiPlaylistService {
     KnowledgeProgressCallback? onProgress,
   }) async {
     _cancelled = false;
+    lastFailureReason = null;
+    final serial = ++_generationSerial;
+    // Never run against an empty snapshot: if the cache has not been loaded
+    // from disk, every song would look uncached and the first flush would
+    // overwrite the on-disk data with only the new batches (data loss).
+    if (!_cache.isInitialized) {
+      await _cache.initialize();
+    }
     final dio = await _getDio();
-    if (dio == null) return 0;
+    if (dio == null) {
+      lastFailureReason = '未配置有效的 API Key';
+      return 0;
+    }
 
     // Clean up removed songs
     final removed = _cache.getRemovedSongIds(allSongs);
@@ -69,10 +102,13 @@ class AiPlaylistService {
     final songMap = {for (final s in allSongs) s.id: s};
     int processed = 0;
     final total = uncached.length;
+    int consecutiveFailures = 0;
 
     // Process in batches
     for (int i = 0; i < uncached.length; i += _batchSize) {
-      if (_cancelled) break;
+      // Exit on cancel, or when a newer generation has started (serial
+      // changed), so stale runs never keep billing API calls.
+      if (_cancelled || serial != _generationSerial) break;
 
       final batchIds = uncached.skip(i).take(_batchSize).toList();
       final batchSongs = batchIds
@@ -81,11 +117,30 @@ class AiPlaylistService {
           .toList();
 
       final tags = await _generateBatchTags(dio, batchSongs);
-      if (tags != null) {
+      // An empty map means the API call succeeded but no line matched the
+      // "序号|标签" format. Treating it as success would inflate progress,
+      // write nothing, and overwrite the cache file with stale data.
+      if (tags != null && tags.isNotEmpty) {
         await _cache.saveBatchTags(tags);
         // Flush every batch for interrupt recovery
         await _cache.flush();
         processed += batchSongs.length;
+        consecutiveFailures = 0;
+      } else {
+        consecutiveFailures++;
+        lastFailureReason = tags == null
+            ? 'API 请求失败（已连续 $consecutiveFailures 批）'
+            : 'AI 响应无法解析出标签（已连续 $consecutiveFailures 批）';
+        debugPrint('[AiPlaylist] Batch failed '
+            '(${tags == null ? 'api error' : '0 parsed'}), '
+            'consecutive=$consecutiveFailures');
+        // Circuit breaker: abort instead of burning tokens on batches that
+        // keep failing for the same reason.
+        if (consecutiveFailures >= _maxConsecutiveFailures) {
+          debugPrint('[AiPlaylist] Aborting generation after '
+              '$consecutiveFailures consecutive failed batches');
+          break;
+        }
       }
 
       onProgress?.call(processed, total);
@@ -124,20 +179,40 @@ class AiPlaylistService {
 $songList''';
 
     try {
+      final model = await _storage.getAiModel();
       final response = await dio.post(
         '/chat/completions',
         data: {
-          'model': await _storage.getAiModel(),
+          'model': model,
           'messages': [
             {'role': 'user', 'content': prompt},
           ],
           'temperature': 0.3,
           'max_tokens': 4000,
+          // deepseek-v4-* defaults to thinking mode, which can burn all
+          // max_tokens on reasoning and return an empty content. Disable it
+          // for the batch tagging task.
+          if (model.startsWith('deepseek'))
+            'thinking': {'type': 'disabled'},
         },
       );
 
       final content = response.data['choices'][0]['message']['content'] as String;
-      return _parseBatchResponse(content, songs);
+      final parsed = _parseBatchResponse(content, songs);
+      if (parsed.isEmpty) {
+        // Log the full response shape so empty-content / format drift from
+        // the model can be diagnosed from the device log.
+        final choice = response.data['choices'][0];
+        final reasoning = choice['message']?['reasoning_content'] as String?;
+        final raw = json.encode(response.data);
+        final head = raw.length > 600 ? raw.substring(0, 600) : raw;
+        debugPrint('[AiPlaylist] Batch parsed 0/${songs.length}: '
+            'finish_reason=${choice['finish_reason']}, '
+            'content_len=${content.length}, '
+            'reasoning_len=${reasoning?.length ?? 0}, '
+            'raw=$head');
+      }
+      return parsed;
     } on DioException catch (e) {
       debugPrint('[AiPlaylist] Batch tag generation error: ${e.message}');
       return null;
@@ -148,6 +223,10 @@ $songList''';
   }
 
   /// Parses AI response into a map of songId → tags.
+  ///
+  /// Expected format is one song per line: `序号|标签1,标签2,...`. Tolerant
+  /// of model drift: markdown code fences, explanatory lines, leading
+  /// numbering like `1.` / `1、` / `[1]`, and song titles before the pipe.
   Map<String, String> _parseBatchResponse(String response, List<Song> songs) {
     final result = <String, String>{};
     final lines = LineSplitter.split(response)
@@ -155,14 +234,22 @@ $songList''';
         .where((l) => l.isNotEmpty)
         .toList();
 
-    for (final line in lines) {
-      final pipeIdx = line.indexOf('|');
+    // Strip markdown code fences (``` or ```json) that may wrap the output.
+    final body = lines.where((l) => !l.startsWith('```')).join('\n');
+
+    final numPrefix = RegExp(r'^\[?(\d+)[\s\.、:：\)）\]]*');
+    for (final line in LineSplitter.split(body)) {
+      final l = line.trim();
+      final pipeIdx = l.indexOf('|');
       if (pipeIdx <= 0) continue;
 
-      final numStr = line.substring(0, pipeIdx).trim().replaceAll('.', '');
-      final tags = line.substring(pipeIdx + 1).trim();
-      final idx = int.tryParse(numStr);
+      final match = numPrefix.firstMatch(l.substring(0, pipeIdx).trim());
+      if (match == null) continue;
+      final idx = int.tryParse(match.group(1)!);
       if (idx == null || idx < 1 || idx > songs.length) continue;
+
+      final tags = l.substring(pipeIdx + 1).trim();
+      if (tags.isEmpty) continue;
 
       result[songs[idx - 1].id] = tags;
     }
@@ -215,15 +302,23 @@ $candidates
 不要输出任何其他内容。''';
 
     try {
+      final model = await _storage.getAiModel();
       final response = await dio.post(
         '/chat/completions',
         data: {
-          'model': await _storage.getAiModel(),
+          'model': model,
           'messages': [
             {'role': 'user', 'content': prompt},
           ],
           'temperature': 0.7,
           'max_tokens': 2000,
+          // deepseek-v4-* defaults to thinking mode; disable it so the
+          // playlist JSON lands in content instead of reasoning output.
+          if (model.startsWith('deepseek'))
+            'thinking': {'type': 'disabled'},
+          // Guarantee valid JSON output (prompt already instructs the model
+          // to return a JSON array of song IDs).
+          'response_format': {'type': 'json_object'},
         },
       );
 

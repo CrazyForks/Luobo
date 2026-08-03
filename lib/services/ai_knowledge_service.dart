@@ -49,6 +49,13 @@ class AiKnowledgeService extends ChangeNotifier {
   /// Loads persistent state from disk. Safe to call multiple times
   /// (idempotent); call once on first use, typically from the UI initState.
   Future<void> initialize({int totalSongs = 0}) async {
+    // Skip reloading while a generation is running: the shared cache is
+    // being mutated by the task and a disk snapshot would clobber it.
+    if (_isGenerating) {
+      if (totalSongs > 0) _totalSongs = totalSongs;
+      notifyListeners();
+      return;
+    }
     await _cache.initialize();
     if (totalSongs > 0) _totalSongs = totalSongs;
     _cachedCount = _cache.getAllTags().length;
@@ -61,6 +68,10 @@ class AiKnowledgeService extends ChangeNotifier {
   /// Idempotent: no-op if a generation is already running.
   Future<void> start(List<Song> allSongs) async {
     if (_isGenerating) return;
+    // Share the cache instance with the generation task so it computes
+    // incremental work from the same loaded state (no full re-run / data
+    // overwrite) and the indexed count stays live during generation.
+    _playlistService.attachCache(_cache);
     _totalSongs = allSongs.length;
 
     setGenerating(true, processed: 0, total: 0);
@@ -76,6 +87,10 @@ class AiKnowledgeService extends ChangeNotifier {
       );
       _processed = processed;
       _syncFromDisk();
+    } catch (e) {
+      // Never let an unexpected generation error escape to the UI layer.
+      debugPrint('[AiKnowledgeService] Generation failed: $e');
+      _playlistService.lastFailureReason = '生成异常：$e';
     } finally {
       _isGenerating = false;
       await _saveProgress();
@@ -86,9 +101,15 @@ class AiKnowledgeService extends ChangeNotifier {
   /// Cancels an ongoing generation.
   void cancel() {
     _playlistService.cancel();
+    // A user-initiated cancel is not a failure.
+    _playlistService.lastFailureReason = null;
     _isGenerating = false;
     notifyListeners();
   }
+
+  /// Human-readable reason for the most recent aborted generation, or null
+  /// if the last run completed/succeeded.
+  String? get lastFailureReason => _playlistService.lastFailureReason;
 
   /// Returns the knowledge cache for export/import operations.
   SongKnowledgeCache get cache => _cache;
@@ -102,8 +123,9 @@ class AiKnowledgeService extends ChangeNotifier {
 
   // ── Private helpers ────────────────────────────────────────────────
 
-  /// Re-reads the indexed count and last-update from the cache file written
-  /// by the playlist service (they share the same disk file).
+  /// Reads the indexed count and last-update from the shared cache instance.
+  /// The cache is attached to the playlist service, so it reflects the
+  /// latest batches written by the running generation task.
   void _syncFromDisk() {
     final tags = _cache.getAllTags();
     _cachedCount = tags.length;

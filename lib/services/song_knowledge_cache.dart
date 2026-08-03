@@ -19,6 +19,9 @@ class SongKnowledgeCache {
     await _loadMeta();
   }
 
+  /// Whether the cache has been loaded from disk at least once.
+  bool get isInitialized => _cache != null;
+
   /// Returns song IDs from [allSongs] that are not yet cached.
   List<String> getUncachedSongIds(List<Song> allSongs) {
     final cache = _cache ?? {};
@@ -160,6 +163,14 @@ class SongKnowledgeCache {
       }
     } catch (e) {
       debugPrint('[SongKnowledgeCache] Failed to load cache: $e');
+      // Back up a corrupted cache file before discarding it, so the
+      // original data can still be inspected/recovered if needed.
+      try {
+        final file = await _getCacheFile();
+        if (await file.exists()) {
+          await file.copy('${file.path}.bak');
+        }
+      } catch (_) {}
       _cache = {};
     }
   }
@@ -167,7 +178,11 @@ class SongKnowledgeCache {
   Future<void> _saveCache() async {
     try {
       final file = await _getCacheFile();
-      await file.writeAsString(json.encode(_cache ?? {}));
+      // Write to a temp file first, then rename atomically, so a process
+      // kill mid-write can never leave a truncated/corrupt cache file.
+      final tmp = File('${file.path}.tmp');
+      await tmp.writeAsString(json.encode(_cache ?? {}));
+      await tmp.rename(file.path);
     } catch (e) {
       debugPrint('[SongKnowledgeCache] Failed to save cache: $e');
     }

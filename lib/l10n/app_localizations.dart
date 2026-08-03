@@ -3838,6 +3838,12 @@ abstract class AppLocalizations {
   /// **'Knowledge base generated for {count} songs'**
   String knowledgeGenerated(int count);
 
+  /// Snackbar when knowledge generation aborts
+  ///
+  /// In en, this message translates to:
+  /// **'Knowledge base generation failed: {reason}'**
+  String knowledgeGenerationFailed(String reason);
+
   /// Hint for API URL field
   ///
   /// In en, this message translates to:

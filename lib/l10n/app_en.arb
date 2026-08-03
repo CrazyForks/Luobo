@@ -2126,6 +2126,8 @@
   "@incrementalUpdate": { "description": "Button to incrementally update knowledge base" },
   "knowledgeGenerated": "Knowledge base generated for {count} songs",
   "@knowledgeGenerated": { "description": "Snackbar after knowledge generation", "placeholders": { "count": { "type": "int" } } },
+  "knowledgeGenerationFailed": "Knowledge base generation failed: {reason}",
+  "@knowledgeGenerationFailed": { "description": "Snackbar when knowledge generation aborts", "placeholders": { "reason": { "type": "String" } } },
   "apiUrlHint": "https://api.deepseek.com",
   "@apiUrlHint": { "description": "Hint for API URL field" },
   "apiUrlDescription": "Any OpenAI-compatible API URL works\ne.g. DeepSeek, OpenAI, Kimi, Tongyi Qianwen",

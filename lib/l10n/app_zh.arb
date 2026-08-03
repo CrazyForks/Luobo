@@ -1842,6 +1842,8 @@
   "@incrementalUpdate": { "description": "Button to incrementally update knowledge base" },
   "knowledgeGenerated": "已完成 {count} 首歌的知识库生成",
   "@knowledgeGenerated": { "description": "Snackbar after knowledge generation", "placeholders": { "count": { "type": "int" } } },
+  "knowledgeGenerationFailed": "知识库生成失败：{reason}",
+  "@knowledgeGenerationFailed": { "description": "Snackbar when knowledge generation aborts", "placeholders": { "reason": { "type": "String" } } },
   "apiUrlHint": "https://api.deepseek.com",
   "@apiUrlHint": { "description": "Hint for API URL field" },
   "apiUrlDescription": "兼容 OpenAI 格式的 API 地址均可使用\n如 DeepSeek、OpenAI、Kimi、通义千问等",

@@ -467,11 +467,20 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
     await AiKnowledgeService.instance.start(allSongs);
     if (!mounted) return;
     final processed = AiKnowledgeService.instance.processed;
+    final failureReason = AiKnowledgeService.instance.lastFailureReason;
     if (processed > 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content:
               Text(AppLocalizations.of(context)!.knowledgeGenerated(processed)),
+        ),
+      );
+    } else if (failureReason != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.knowledgeGenerationFailed(failureReason),
+          ),
         ),
       );
     }

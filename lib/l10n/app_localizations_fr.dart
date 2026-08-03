@@ -2048,6 +2048,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String knowledgeGenerationFailed(String reason) {
+    return 'Knowledge base generation failed: $reason';
+  }
+
+  @override
   String get apiUrlHint => 'https://api.deepseek.com';
 
   @override

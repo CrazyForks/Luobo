@@ -1985,6 +1985,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String knowledgeGenerationFailed(String reason) {
+    return '知识库生成失败：$reason';
+  }
+
+  @override
   String get apiUrlHint => 'https://api.deepseek.com';
 
   @override
