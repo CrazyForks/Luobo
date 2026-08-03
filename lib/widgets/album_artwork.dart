@@ -27,7 +27,9 @@ int _nearestCacheTier(double pixels) {
 class _ImageUrlCache {
   static String getUrl(SubsonicService service, String? coverArt, int size) {
     if (coverArt == null || coverArt.isEmpty) return '';
-    return service.getCoverArtUrl(coverArt);
+    // Request the same tier as the decode/disk cache so the server-side
+    // resize cache is keyed consistently with what we actually display.
+    return service.getCoverArtUrl(coverArt, size: size);
   }
 }
 
@@ -205,11 +207,14 @@ class AlbumArtwork extends StatelessWidget {
         return CachedNetworkImage(
                               cacheManager: coverCacheManager,
                               imageUrl: imageUrl,
-          cacheKey: '${coverArt}_natural_$cacheSize',
-          key: ValueKey('${coverArt}_natural_$cacheSize'),
+          // Same key as _buildImage: one cache entry per (cover, tier)
+          // regardless of BoxFit, so the song list and mini player share it.
+          cacheKey: '${coverArt}_$cacheSize',
           fit: BoxFit.contain,
           memCacheWidth: cacheSize,
           memCacheHeight: cacheSize,
+          maxWidthDiskCache: cacheSize,
+          maxHeightDiskCache: cacheSize,
           fadeInDuration: const Duration(milliseconds: 100),
           fadeOutDuration: Duration.zero,
           useOldImageOnUrlChange: true,
@@ -250,7 +255,6 @@ class AlbumArtwork extends StatelessWidget {
                               cacheManager: coverCacheManager,
                               imageUrl: imageUrl,
           cacheKey: '${coverArt}_$cacheSize',
-          key: ValueKey('${coverArt}_$cacheSize'),
           fit: BoxFit.cover,
           memCacheWidth: cacheSize,
           memCacheHeight: cacheSize,

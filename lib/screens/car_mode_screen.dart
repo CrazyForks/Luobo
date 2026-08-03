@@ -544,7 +544,7 @@ class _CarModeScreenState extends State<CarModeScreen>
                         ),
                       ),
                     ),
-                    // Song title + artist
+                    // Song title + artist · album
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 32),
                       child: Row(
@@ -578,15 +578,24 @@ class _CarModeScreenState extends State<CarModeScreen>
                     const SizedBox(height: 4),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Text(
-                        song?.artist ?? '',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Builder(
+                        builder: (context) {
+                          final artist = song?.artist;
+                          final album = song?.album;
+                          return Text(
+                            [
+                              if (artist != null && artist.isNotEmpty) artist,
+                              if (album != null && album.isNotEmpty) album,
+                            ].join(' · '),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 12),

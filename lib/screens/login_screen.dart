@@ -23,7 +23,11 @@ enum _LoginErrorType {
 }
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  /// When provided, the form is pre-filled with this server config so the
+  /// user can edit an existing connection (pushed from settings).
+  final ServerConfig? initialConfig;
+
+  const LoginScreen({super.key, this.initialConfig});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -67,11 +71,48 @@ class _LoginScreenState extends State<LoginScreen> {
     _usernameController.addListener(_clearError);
     _passwordController.addListener(_clearError);
     _profileNameController.addListener(_clearError);
+
+    _prefillFromConfig(widget.initialConfig);
+  }
+
+  /// Pre-fills the form with an existing server config so the screen can be
+  /// used to edit a saved connection (opened from the settings page).
+  void _prefillFromConfig(ServerConfig? config) {
+    if (config == null) return;
+    _serverController.text = config.serverUrl == 'local' ? '' : config.serverUrl;
+    _localServerController.text = config.localUrl ?? '';
+    _usernameController.text = config.username;
+    _passwordController.text = config.password;
+    _profileNameController.text = config.name ?? '';
+    _serverFamily = config.serverFamily.isEmpty ? 'subsonic' : config.serverFamily;
+    _useLegacyAuth = config.useLegacyAuth;
+    _allowSelfSignedCertificates = config.allowSelfSignedCertificates;
+    _customCertificatePath = config.customCertificatePath;
+    if (config.customCertificatePath != null) {
+      _customCertificateName =
+          config.customCertificatePath!.split(Platform.pathSeparator).last;
+    }
+    _clientCertificatePath = config.clientCertificatePath;
+    if (config.clientCertificatePath != null) {
+      _clientCertificateName =
+          config.clientCertificatePath!.split(Platform.pathSeparator).last;
+    }
+    _clientCertPasswordController.text = config.clientCertificatePassword ?? '';
   }
 
   void _clearError() {
     if (_loginError != null && mounted) {
       setState(() => _loginError = null);
+    }
+  }
+
+  /// Pops this screen when it was pushed onto the navigation stack (e.g.
+  /// opened from the settings page to add/edit a profile), so the user
+  /// returns to the previous screen instead of being stranded on the login
+  /// page. On first launch this screen is the root route — nothing to pop.
+  void _popIfPushed() {
+    if (mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -388,7 +429,12 @@ class _LoginScreenState extends State<LoginScreen> {
       serverFamily: _serverFamily,
     );
 
-    if (!success && mounted) {
+    if (success && mounted) {
+      // Opened from the settings page (add/edit profile): return to the
+      // previous screen after connecting. On first launch this screen is
+      // the root route, so nothing happens.
+      _popIfPushed();
+    } else if (!success && mounted) {
       setState(
         () => _loginError =
             authProvider.error ??
@@ -444,6 +490,7 @@ class _LoginScreenState extends State<LoginScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+      _popIfPushed();
     }
   }
 
@@ -477,6 +524,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (localService.songs.isNotEmpty) {
             final authProvider = Provider.of<AuthProvider>(context, listen: false);
             await authProvider.setLocalOnlyMode(true);
+            _popIfPushed();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -521,6 +569,7 @@ class _LoginScreenState extends State<LoginScreen> {
             listen: false,
           );
           await authProvider.setLocalOnlyMode(true);
+          _popIfPushed();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -549,7 +598,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
+        child: Stack(
+          children: [
+        Center(
           child: SingleChildScrollView(
             padding: EdgeInsets.all(ScreenHelper.loginPadding(context)),
             child: Center(
@@ -1236,8 +1287,20 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
+        if (Navigator.of(context).canPop())
+          Positioned(
+            top: 4,
+            left: 4,
+            child: IconButton(
+              icon: const Icon(CupertinoIcons.xmark),
+              tooltip: AppLocalizations.of(context)!.close,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+        ],
       ),
-    );
+    ),
+  );
   }
 }
 

@@ -12,6 +12,7 @@ import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
 import '../widgets/server_qr_dialog.dart';
 import 'jukebox_screen.dart';
+import 'login_screen.dart';
 
 class SettingsServerTab extends StatefulWidget {
   const SettingsServerTab({super.key});
@@ -221,6 +222,16 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
     );
   }
 
+  /// Opens the login screen pre-filled with [profile] so the connected
+  /// server's settings can be edited. The settings page stays on the back
+  /// stack, so the user can return without being logged out.
+  void _openEditProfile(ServerConfig profile) {
+    NavigationHelper.push(
+      context,
+      LoginScreen(initialConfig: profile),
+    );
+  }
+
   Widget _buildJukeboxSection() {
     final l10n = AppLocalizations.of(context)!;
     return Consumer<JukeboxService>(
@@ -426,19 +437,29 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
                           ),
                         ),
                         trailing: isActive
-                            ? IconButton(
-                                icon: const Icon(CupertinoIcons.qrcode, size: 20),
-                                tooltip: l10n.shareQrCode,
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (_) => ServerQrDialog(config: profile),
-                                  );
-                                },
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(CupertinoIcons.qrcode, size: 20),
+                                    tooltip: l10n.shareQrCode,
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => ServerQrDialog(config: profile),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(CupertinoIcons.pencil, size: 20),
+                                    tooltip: l10n.edit,
+                                    onPressed: () => _openEditProfile(profile),
+                                  ),
+                                ],
                               )
                             : null,
                         onTap: isActive
-                            ? null
+                            ? () => _openEditProfile(profile)
                             : () async {
                                 final confirmed = await showDialog<bool>(
                                   context: context,
@@ -482,10 +503,11 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
                         ),
                       ),
                       onTap: () {
-                        // Navigate to login screen to add new profile
-                        final playerProvider = Provider.of<PlayerProvider>(context, listen: false);
-                        playerProvider.stop();
-                        authProvider.disconnect();
+                        // Push the login screen to add a new profile. Unlike
+                        // the previous disconnect() flow, this keeps the
+                        // current connection intact and lets the user return
+                        // to the settings page via the close button / back.
+                        NavigationHelper.push(context, const LoginScreen());
                       },
                     ),
                   ],

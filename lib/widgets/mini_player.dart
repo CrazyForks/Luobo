@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../models/song.dart';
 import '../models/radio_station.dart';
 import '../providers/player_provider.dart';
+import '../providers/library_provider.dart';
 import '../services/player_ui_settings_service.dart';
 import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
@@ -54,7 +55,10 @@ class MiniPlayer extends StatelessWidget {
                   currentSong.artistParticipants!.isNotEmpty
               ? currentSong.artistParticipants!.map((a) => a.name).join(', ')
               : currentSong.artist;
-          coverArt = currentSong.coverArt;
+          // Normalize to the album cover (same key as song list tiles) so the
+          // mini bar hits the same cache entry the list already filled.
+          coverArt = Provider.of<LibraryProvider>(context, listen: false)
+              .effectiveCoverArt(currentSong);
         } else {
           return const SizedBox.shrink();
         }

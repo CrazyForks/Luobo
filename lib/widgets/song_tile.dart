@@ -407,7 +407,12 @@ class _SongOptionsSheetState extends State<_SongOptionsSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  AlbumArtwork(coverArt: widget.song.coverArt, size: 60),
+                  AlbumArtwork(
+                    coverArt: Provider.of<LibraryProvider>(context,
+                            listen: false)
+                        .effectiveCoverArt(widget.song),
+                    size: 60,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
