@@ -118,42 +118,59 @@ class SongTile extends StatelessWidget {
     }
 
     if (showArtwork) {
-      return ValueListenableBuilder<double>(
-        valueListenable: PlayerUiSettingsService().albumArtCornerRadiusNotifier,
-        builder: (context, radius, _) {
-          return Stack(
-            children: [
-              AlbumArtwork(
-                // Song covers are the album cover; normalize so all songs
-                // of an album share the same cache key.
-                coverArt: Provider.of<LibraryProvider>(context, listen: false)
-                    .effectiveCoverArt(song),
-                size: 50,
-                preserveAspectRatio: true,
-              ),
-              if (isCurrentSong)
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(radius),
-                    ),
-                    child: Center(
-                      child: Selector<PlayerProvider, bool>(
-                        selector: (ctx, p) => p.isPlaying,
-                        builder: (ctx, isPlaying, __) => AnimatedEqualizer(
-                          color: Colors.white,
-                          isPlaying: isPlaying,
+      return ValueListenableBuilder<String>(
+        valueListenable: PlayerUiSettingsService().artworkShapeNotifier,
+        builder: (context, shape, _) {
+          return ValueListenableBuilder<double>(
+            valueListenable:
+                PlayerUiSettingsService().albumArtCornerRadiusNotifier,
+            builder: (context, radius, _) {
+              // Resolve the effective corner radius the same way
+              // AlbumArtwork does, so the overlay and the quality tag stay
+              // aligned with the artwork's actual shape.
+              final resolvedRadius = shape == 'circle'
+                  ? 9999.0
+                  : shape == 'square'
+                  ? 0.0
+                  : radius;
+              return Stack(
+                children: [
+                  AlbumArtwork(
+                    // Song covers are the album cover; normalize so all songs
+                    // of an album share the same cache key.
+                    coverArt: Provider.of<LibraryProvider>(
+                          context,
+                          listen: false,
+                        )
+                        .effectiveCoverArt(song),
+                    size: 50,
+                    preserveAspectRatio: true,
+                  ),
+                  if (isCurrentSong)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(resolvedRadius),
+                        ),
+                        child: Center(
+                          child: Selector<PlayerProvider, bool>(
+                            selector: (ctx, p) => p.isPlaying,
+                            builder: (ctx, isPlaying, __) => AnimatedEqualizer(
+                              color: Colors.white,
+                              isPlaying: isPlaying,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              // Quality tag (original file info / actual transcode state)
-              // overlaid on the artwork corner — takes no layout space.
-              _buildQualityTag(context, isCurrentSong) ??
-                  const SizedBox.shrink(),
-            ],
+                  // Quality tag (original file info / actual transcode state)
+                  // overlaid on the artwork corner — takes no layout space.
+                  _buildQualityTag(context, isCurrentSong, resolvedRadius) ??
+                      const SizedBox.shrink(),
+                ],
+              );
+            },
           );
         },
       );
@@ -237,67 +254,150 @@ class SongTile extends StatelessWidget {
     return painter.width;
   }
 
+  /// Serif ("文艺") typeface for the quality tag: Songti SC on Apple
+  /// platforms, the platform serif on Android, Georgia elsewhere.
+  static String _badgeSerifFont(TargetPlatform platform) {
+    switch (platform) {
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+        return 'Songti SC';
+      case TargetPlatform.android:
+        return 'serif';
+      default:
+        return 'Georgia';
+    }
+  }
+
+  /// Compact sample rate for the badge (e.g. "96k", "44.1k"), empty when
+  /// unknown.
+  String _compactSampleRate() {
+    final hz = song.samplingRate;
+    if (hz == null || hz <= 0) return '';
+    if (hz % 1000 == 0) return '${hz ~/ 1000}k';
+    return '${(hz / 1000).toStringAsFixed(1)}k';
+  }
+
   /// Tiny quality tag overlaid on the artwork's bottom-right corner, e.g.
   /// "FLAC·964" (original file info) or "Opus·192" in orange when the
   /// current song's actual stream is transcoded. Takes no layout space.
-  Widget? _buildQualityTag(BuildContext context, bool isCurrentSong) {
-    final player = Provider.of<PlayerProvider>(context, listen: false);
-    final isTranscoded = isCurrentSong && player.isActiveStreamTranscoded;
-    final transcodeBitrate = player.activeStreamBitrate;
-    final transcodeFormat = player.activeStreamFormat;
+  Widget? _buildQualityTag(
+    BuildContext context,
+    bool isCurrentSong,
+    double cornerRadius,
+  ) {
+    // The transcode snapshot is captured asynchronously after the
+    // current-song notification (when the stream URL is actually built), so
+    // watch it reactively: the tag flips to orange with the transcoded
+    // bitrate as soon as the stream is transcoded, instead of only when the
+    // tile happens to rebuild.
+    return Selector<PlayerProvider, (bool, int?, String?)>(
+      selector: (_, player) => (
+        player.isActiveStreamTranscoded,
+        player.activeStreamBitrate,
+        player.activeStreamFormat,
+      ),
+      builder: (context, transcode, _) {
+        final (isTranscoded, transcodeBitrate, transcodeFormat) = transcode;
+        final effectiveTranscoded = isCurrentSong && isTranscoded;
 
-    final format = isTranscoded
-        ? TranscodeFormat.getLabel(transcodeFormat ?? '')
-        : (song.suffix?.toUpperCase() ?? '');
-    final bitrate = isTranscoded ? transcodeBitrate : song.bitRate;
+        final format = effectiveTranscoded
+            ? TranscodeFormat.getLabel(transcodeFormat ?? '')
+            : (song.suffix?.toUpperCase() ?? '');
+        final bitrate = effectiveTranscoded ? transcodeBitrate : song.bitRate;
 
-    final parts = <String>[];
-    if (format.isNotEmpty && format != 'Original') parts.add(format);
-    if (bitrate != null && bitrate > 0) parts.add('$bitrate');
-    if (parts.isEmpty) return null;
-    final label = parts.join('·');
+        final parts = <String>[];
+        if (format.isNotEmpty && format != 'Original') parts.add(format);
+        if (bitrate != null && bitrate > 0) parts.add('$bitrate');
+        // Compact sample rate (e.g. "96k") — the transcoded stream's sample
+        // rate isn't tracked, so only show it for the original file.
+        if (!effectiveTranscoded) {
+          final sampleRate = _compactSampleRate();
+          if (sampleRate.isNotEmpty) parts.add(sampleRate);
+        }
+        if (parts.isEmpty) return const SizedBox.shrink();
+        final label = parts.join('·');
 
-    final l10n = AppLocalizations.of(context)!;
-    final network =
-        Provider.of<TranscodingService>(context, listen: false)
-            .currentConnectionType ==
-        ConnectionType.wifi
-            ? l10n.networkWifi
-            : l10n.networkMobile;
-    final tooltip = isTranscoded
-        ? l10n.transcodedTo(
-            TranscodeFormat.getLabel(transcodeFormat ?? ''),
-            transcodeBitrate ?? 0,
-            network,
-          )
-        : l10n.noTranscoding;
+        // Gold highlight for hi-res originals (≥96 kHz / ≥24-bit).
+        final isHiRes = !effectiveTranscoded &&
+            (song.samplingRate ?? 0) >= 96000 &&
+            (song.bitDepth ?? 24) >= 24;
+        final badgeColor = effectiveTranscoded
+            ? const Color(0xFFE65100)
+            : isHiRes
+            ? const Color(0xFFC9A227)
+            : Colors.black;
 
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: Tooltip(
-        message: tooltip,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-          decoration: BoxDecoration(
-            color: (isTranscoded ? const Color(0xFFE65100) : Colors.black)
-                .withValues(alpha: 0.65),
-            borderRadius:
-                const BorderRadius.vertical(bottom: Radius.circular(2)),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 7,
-              height: 1.2,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
+        final l10n = AppLocalizations.of(context)!;
+        final network =
+            Provider.of<TranscodingService>(context, listen: false)
+                .currentConnectionType ==
+            ConnectionType.wifi
+                ? l10n.networkWifi
+                : l10n.networkMobile;
+        final tooltip = effectiveTranscoded
+            ? l10n.transcodedTo(
+                TranscodeFormat.getLabel(transcodeFormat ?? ''),
+                transcodeBitrate ?? 0,
+                network,
+              )
+            : l10n.noTranscoding;
+
+        // Clip the tag against the artwork's own rounded shape (same radius)
+        // so its bottom follows the image's rounded corners instead of square
+        // edges spanning them. The clip covers the full artwork rect, so the
+        // radius is not clamped down by the tag's own small height. The tag
+        // itself stays a bottom-anchored bar with its natural height.
+        return Positioned.fill(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(cornerRadius),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Tooltip(
+                    message: tooltip,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.65),
+                        borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(2),
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      // Scale the label down when it doesn't fit (e.g. the
+                      // appended sample rate makes it longer) instead of
+                      // overflowing or clipping.
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 7,
+                            height: 1.2,
+                            fontWeight: FontWeight.w500,
+                            fontStyle: FontStyle.italic,
+                            letterSpacing: 0.2,
+                            color: Colors.white,
+                            fontFamily: _badgeSerifFont(
+                              Theme.of(context).platform,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
