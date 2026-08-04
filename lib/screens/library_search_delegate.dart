@@ -261,7 +261,8 @@ class LibrarySearchDelegate extends SearchDelegate<String> {
     );
   }
 
-  Widget _albumThumbnail(BuildContext context, String? coverArt, {double size = 48}) {
+  Widget _albumThumbnail(BuildContext context, String? coverArt,
+      {double size = 48}) {
     if (coverArt == null || coverArt.isEmpty) {
       return Icon(
         CupertinoIcons.music_albums,
@@ -279,8 +280,8 @@ class LibrarySearchDelegate extends SearchDelegate<String> {
               width: size,
               height: size,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Icon(CupertinoIcons.music_albums, size: size, color: Colors.grey),
+              errorBuilder: (_, __, ___) => Icon(CupertinoIcons.music_albums,
+                  size: size, color: Colors.grey),
             )
           : Icon(CupertinoIcons.music_albums, size: size, color: Colors.grey),
     );

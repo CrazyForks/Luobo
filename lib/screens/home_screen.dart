@@ -817,7 +817,8 @@ class _QuickAccessGrid extends StatelessWidget {
       imageUrl = item.coverArt != null
           ? (isLocalFilePath(item.coverArt)
               ? item.coverArt
-              : subsonicService.getCoverArtUrl(item.coverArt!, size: kCoverArtRequestSize))
+              : subsonicService.getCoverArtUrl(item.coverArt!,
+                  size: kCoverArtRequestSize))
           : null;
       onTap = () => Navigator.push(
             context,
@@ -831,7 +832,8 @@ class _QuickAccessGrid extends StatelessWidget {
       imageUrl = item.coverArt != null
           ? (isLocalFilePath(item.coverArt)
               ? item.coverArt
-              : subsonicService.getCoverArtUrl(item.coverArt!, size: kCoverArtRequestSize))
+              : subsonicService.getCoverArtUrl(item.coverArt!,
+                  size: kCoverArtRequestSize))
           : null;
       onTap = () => Navigator.push(
             context,

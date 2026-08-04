@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/providers.dart';
+import '../services/diagnostics/diagnostics.dart';
 import '../services/local_music_service.dart';
 import '../services/recommendation_service.dart';
 import '../services/theme_service.dart';
@@ -308,6 +309,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _openNowPlaying() {
+    final transitionSw = Stopwatch()..start();
     Navigator.of(context)
         .push(
       PageRouteBuilder(
@@ -336,6 +338,11 @@ class _MainScreenState extends State<MainScreen> {
     )
         .then((_) async {
       if (!mounted) return;
+      DiagnosticsRouteObserver.transition(
+        from: 'MainScreen',
+        to: 'NowPlayingScreen',
+        dwellMs: transitionSw.elapsedMilliseconds,
+      );
       if (Platform.isIOS) {
         // Wait longer for the transition to complete and audio session to stabilize
         await Future.delayed(const Duration(milliseconds: 300));

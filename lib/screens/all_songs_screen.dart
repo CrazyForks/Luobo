@@ -169,11 +169,15 @@ class _AllSongsScreenState extends State<AllSongsScreen> {
             ),
             const SizedBox(height: 8),
             _buildSortOption(l10n.sortTitleAz, SongSortOption.titleAsc, isDark),
-            _buildSortOption(l10n.sortTitleZa, SongSortOption.titleDesc, isDark),
-            _buildSortOption(l10n.sortArtistAz, SongSortOption.artistAsc, isDark),
-            _buildSortOption(l10n.sortArtistZa, SongSortOption.artistDesc, isDark),
+            _buildSortOption(
+                l10n.sortTitleZa, SongSortOption.titleDesc, isDark),
+            _buildSortOption(
+                l10n.sortArtistAz, SongSortOption.artistAsc, isDark),
+            _buildSortOption(
+                l10n.sortArtistZa, SongSortOption.artistDesc, isDark),
             _buildSortOption(l10n.sortAlbumAz, SongSortOption.albumAsc, isDark),
-            _buildSortOption(l10n.sortAlbumZa, SongSortOption.albumDesc, isDark),
+            _buildSortOption(
+                l10n.sortAlbumZa, SongSortOption.albumDesc, isDark),
             _buildSortOption(
               l10n.recentlyAdded,
               SongSortOption.recentlyAdded,

@@ -91,7 +91,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     try {
       final data = jsonDecode(rawData) as Map<String, dynamic>;
       if (data['type'] != 'luobo_server') return null;
-      if (data['serverUrl'] == null || data['username'] == null || data['password'] == null) {
+      if (data['serverUrl'] == null ||
+          data['username'] == null ||
+          data['password'] == null) {
         return null;
       }
       return ServerConfig(
@@ -101,7 +103,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         password: data['password'] as String,
         serverFamily: data['serverFamily'] as String? ?? 'subsonic',
         useLegacyAuth: data['useLegacyAuth'] as bool? ?? false,
-        allowSelfSignedCertificates: data['allowSelfSignedCertificates'] as bool? ?? false,
+        allowSelfSignedCertificates:
+            data['allowSelfSignedCertificates'] as bool? ?? false,
         name: data['name'] as String?,
       );
     } catch (_) {
@@ -151,7 +154,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(20),

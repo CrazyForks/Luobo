@@ -810,7 +810,41 @@
   "tabAiPlaylist": "AI Playlist",
   "tabSupport": "Support",
   "tabAbout": "About",
+  "tabDiagnostics": "Diagnostics",
 
+  "diagnosticsTitle": "Diagnostics",
+  "diagnosticsSearchHint": "Search event type / content",
+  "diagnosticsNoLogs": "No logs yet",
+  "diagnosticsExported": "Logs exported: {path}",
+  "@diagnosticsExported": {
+    "placeholders": {
+      "path": {}
+    }
+  },
+  "diagnosticsExportFailed": "Export failed, check storage space",
+  "diagnosticsCopied": "Logs copied to clipboard (latest 2000)",
+  "diagnosticsClearTitle": "Clear diagnostics logs",
+  "diagnosticsClearMessage": "This will permanently delete all local diagnostics logs and metrics. Export first if needed.",
+  "diagnosticsClearAction": "Clear",
+  "diagnosticsMetricFps": "FPS",
+  "diagnosticsMetricJankRate": "jank rate",
+  "diagnosticsMetricRequests": "requests",
+  "diagnosticsMetricNetP90": "net p90",
+  "diagnosticsMetricErrorRate": "error rate",
+  "diagnosticsAll": "All",
+  "diagnosticsLevelDebug": "debug",
+  "diagnosticsLevelInfo": "info",
+  "diagnosticsLevelWarn": "warn",
+  "diagnosticsLevelError": "error",
+  "diagnosticsTooltipCopy": "Copy to clipboard",
+  "diagnosticsTooltipExport": "Export to file",
+  "diagnosticsTooltipClear": "Clear",
+  "renderError": "Render error\n{err}",
+  "@renderError": {
+    "placeholders": {
+      "err": {}
+    }
+  },
   "@_SETTINGS_PLAYBACK": {},
   "sectionAutoDj": "AUTO DJ",
   "autoDjMode": "Auto DJ Mode",

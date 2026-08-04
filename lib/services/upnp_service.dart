@@ -1,18 +1,18 @@
-
 library;
 
 import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'diagnostics/diagnostics.dart';
 
 class UpnpDevice {
   final String friendlyName;
-  final String location; 
+  final String location;
   final String manufacturer;
   final String modelName;
-  final String avTransportUrl; 
-  final String? renderingControlUrl; 
+  final String avTransportUrl;
+  final String? renderingControlUrl;
 
   const UpnpDevice({
     required this.friendlyName,
@@ -28,7 +28,7 @@ class UpnpDevice {
 }
 
 class UpnpPlaybackState {
-  final String transportState; 
+  final String transportState;
   final Duration position;
   final Duration duration;
 
@@ -52,7 +52,7 @@ class UpnpService extends ChangeNotifier {
   Duration _rendererPosition = Duration.zero;
   Duration _rendererDuration = Duration.zero;
   String _rendererState = 'STOPPED';
-  int _volume = -1; 
+  int _volume = -1;
 
   Duration get rendererPosition => _rendererPosition;
   Duration get rendererDuration => _rendererDuration;
@@ -98,19 +98,17 @@ class UpnpService extends ChangeNotifier {
       final seen = <String>{};
       final socket = await RawDatagramSocket.bind(
         InternetAddress.anyIPv4,
-        0, 
+        0,
         reuseAddress: true,
       );
 
       socket.joinMulticast(InternetAddress(_ssdpAddress));
       socket.broadcastEnabled = true;
 
-      const mSearch =
-          'M-SEARCH * HTTP/1.1\r\n'
+      const mSearch = 'M-SEARCH * HTTP/1.1\r\n'
           'HOST: 239.255.255.250:1900\r\n'
           'MAN: "ssdp:discover"\r\n'
           'MX: 3\r\n'
-          
           'ST: urn:schemas-upnp-org:device:MediaRenderer:1\r\n'
           '\r\n';
 
@@ -197,7 +195,6 @@ class UpnpService extends ChangeNotifier {
   }
 
   static String? _extractAvTransportUrl(String xml, String location) {
-    
     final servicePattern = RegExp(
       r'<service>(.*?)</service>',
       dotAll: true,
@@ -239,9 +236,13 @@ class UpnpService extends ChangeNotifier {
 
   Future<bool> connect(UpnpDevice device) async {
     try {
-
       await _soap(device.avTransportUrl, 'GetTransportInfo', '');
       _connectedDevice = device;
+      DiagnosticsService.instance.record(
+        EventType.remoteConnect,
+        LogLevel.info,
+        {'remote': 'upnp', 'device': device.friendlyName},
+      );
       debugPrint('UPnP: Connected to ${device.friendlyName}');
 
       if (device.renderingControlUrl != null) {
@@ -252,6 +253,11 @@ class UpnpService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      DiagnosticsService.instance.record(
+        EventType.remoteError,
+        LogLevel.warn,
+        {'remote': 'upnp', 'device': device.friendlyName, 'error': '$e'},
+      );
       debugPrint('UPnP: Failed to connect to ${device.friendlyName}: $e');
       return false;
     }
@@ -259,6 +265,11 @@ class UpnpService extends ChangeNotifier {
 
   void disconnect() {
     final device = _connectedDevice;
+    DiagnosticsService.instance.record(
+      EventType.remoteDisconnect,
+      LogLevel.info,
+      {'remote': 'upnp', 'device': device?.friendlyName},
+    );
     debugPrint('UPnP: Disconnecting from ${device?.friendlyName}');
     _stopPolling();
     _connectedDevice = null;
@@ -315,7 +326,8 @@ class UpnpService extends ChangeNotifier {
         // Network hiccups and AP roaming typically resolve within 10–15 s,
         // so 30 s gives enough headroom without leaving the user stuck.
         if (_consecutivePollErrors >= 30) {
-          debugPrint('UPnP: 30 consecutive poll failures — auto-disconnecting renderer');
+          debugPrint(
+              'UPnP: 30 consecutive poll failures — auto-disconnecting renderer');
           disconnect();
           onRendererLost?.call();
         }
@@ -357,7 +369,8 @@ class UpnpService extends ChangeNotifier {
       notifyListeners();
       debugPrint('UPnP: poll error: $e');
       if (_consecutivePollErrors >= 30) {
-        debugPrint('UPnP: 30 consecutive poll failures — auto-disconnecting renderer');
+        debugPrint(
+            'UPnP: 30 consecutive poll failures — auto-disconnecting renderer');
         disconnect();
         onRendererLost?.call();
       }
@@ -371,7 +384,6 @@ class UpnpService extends ChangeNotifier {
     if (device == null) return null;
 
     try {
-      
       final transportXml = await _soapQuery(
         device.avTransportUrl,
         'GetTransportInfo',
@@ -471,13 +483,12 @@ class UpnpService extends ChangeNotifier {
               : const Duration(milliseconds: 2400);
           continue;
         }
-      } catch (_) {
-        
-      }
+      } catch (_) {}
 
       try {
         await _soap(device.avTransportUrl, 'Play', '<Speed>1</Speed>');
-        debugPrint('UPnP: Playing "$title" on ${device.friendlyName} (attempt $attempt)');
+        debugPrint(
+            'UPnP: Playing "$title" on ${device.friendlyName} (attempt $attempt)');
         return true;
       } catch (e) {
         debugPrint('UPnP: Play attempt $attempt/$maxAttempts failed: $e');
@@ -537,8 +548,7 @@ class UpnpService extends ChangeNotifier {
 
   Future<void> _soap(String controlUrl, String action, String body) async {
     const serviceType = 'urn:schemas-upnp-org:service:AVTransport:1';
-    final envelope =
-        '<?xml version="1.0" encoding="utf-8"?>\n'
+    final envelope = '<?xml version="1.0" encoding="utf-8"?>\n'
         '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"'
         ' s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">\n'
         '  <s:Body>\n'
@@ -559,7 +569,7 @@ class UpnpService extends ChangeNotifier {
           'Content-Type': 'text/xml; charset="utf-8"',
           'SOAPAction': '"$serviceType#$action"',
         },
-        validateStatus: (_) => true, 
+        validateStatus: (_) => true,
         responseType: ResponseType.plain,
       ),
     );
@@ -570,7 +580,6 @@ class UpnpService extends ChangeNotifier {
       'UPnP SOAP ← $action HTTP $status | ${responseBody.length} bytes',
     );
     if (responseBody.isNotEmpty) {
-      
       debugPrint(
         'UPnP SOAP body: ${responseBody.substring(0, responseBody.length.clamp(0, 600))}',
       );
@@ -584,9 +593,7 @@ class UpnpService extends ChangeNotifier {
     if (lowerBody.contains('<s:fault>') ||
         lowerBody.contains('<soap:fault>') ||
         lowerBody.contains('<fault>')) {
-      
-      final code =
-          RegExp(
+      final code = RegExp(
             r'<errorCode>([^<]*)</errorCode>',
             caseSensitive: false,
           ).firstMatch(responseBody)?.group(1) ??
@@ -594,8 +601,7 @@ class UpnpService extends ChangeNotifier {
             r'<faultcode>([^<]*)</faultcode>',
             caseSensitive: false,
           ).firstMatch(responseBody)?.group(1);
-      final desc =
-          RegExp(
+      final desc = RegExp(
             r'<errorDescription>([^<]*)</errorDescription>',
             caseSensitive: false,
           ).firstMatch(responseBody)?.group(1) ??
@@ -613,8 +619,7 @@ class UpnpService extends ChangeNotifier {
     String body,
   ) async {
     const serviceType = 'urn:schemas-upnp-org:service:AVTransport:1';
-    final envelope =
-        '<?xml version="1.0" encoding="utf-8"?>\n'
+    final envelope = '<?xml version="1.0" encoding="utf-8"?>\n'
         '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"'
         ' s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">\n'
         '  <s:Body>\n'
@@ -658,8 +663,7 @@ class UpnpService extends ChangeNotifier {
       throw Exception('No RenderingControl URL');
     }
     const serviceType = 'urn:schemas-upnp-org:service:RenderingControl:1';
-    final envelope =
-        '<?xml version="1.0" encoding="utf-8"?>\n'
+    final envelope = '<?xml version="1.0" encoding="utf-8"?>\n'
         '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"'
         ' s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">\n'
         '  <s:Body>\n'
@@ -783,8 +787,7 @@ class UpnpService extends ChangeNotifier {
         ? '<upnp:albumArtURI>${esc(albumArtUrl)}</upnp:albumArtURI>'
         : '';
 
-    final didl =
-        '<DIDL-Lite '
+    final didl = '<DIDL-Lite '
         'xmlns:dc="http://purl.org/dc/elements/1.1/" '
         'xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" '
         'xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">'

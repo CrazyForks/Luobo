@@ -280,8 +280,6 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     await _cacheSettings.setMusicCacheEnabled(value);
   }
 
-
-
   Widget _buildLocalMusicSection() {
     return Consumer<LocalMusicService>(
       builder: (context, localMusic, _) {
@@ -293,7 +291,8 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
           children: [
             // Merge toggle
             SwitchListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               secondary: Container(
                 width: 32,
                 height: 32,
@@ -303,14 +302,18 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(CupertinoIcons.music_albums, color: Colors.white, size: 18),
+                child: const Icon(CupertinoIcons.music_albums,
+                    color: Colors.white, size: 18),
               ),
-              title: Text(l10n.mergeLocalLibrary, style: const TextStyle(fontSize: 16)),
+              title: Text(l10n.mergeLocalLibrary,
+                  style: const TextStyle(fontSize: 16)),
               subtitle: Text(
                 l10n.mergeLocalLibrarySubtitle,
                 style: TextStyle(
                   fontSize: 13,
-                  color: _isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText,
+                  color: _isDark
+                      ? AppTheme.darkSecondaryText
+                      : AppTheme.lightSecondaryText,
                 ),
               ),
               value: context.watch<LibraryProvider>().mergeLocalLibrary,
@@ -318,7 +321,8 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
                 final libraryProvider = context.read<LibraryProvider>();
                 if (value) {
                   // Enable merge mode
-                  libraryProvider.setLocalMusicService(localMusic, mergeWithServer: true);
+                  libraryProvider.setLocalMusicService(localMusic,
+                      mergeWithServer: true);
                 } else {
                   // Disable merge mode
                   libraryProvider.setMergeLocalLibrary(false);
@@ -328,7 +332,8 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
             _buildDivider(),
             // Local music stats
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               leading: Container(
                 width: 32,
                 height: 32,
@@ -338,24 +343,30 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(CupertinoIcons.music_note, color: Colors.white, size: 18),
+                child: const Icon(CupertinoIcons.music_note,
+                    color: Colors.white, size: 18),
               ),
-              title: Text(l10n.localMusicStats, style: const TextStyle(fontSize: 16)),
+              title: Text(l10n.localMusicStats,
+                  style: const TextStyle(fontSize: 16)),
               trailing: Text(
                 '${localMusic.songCount} ${l10n.songs.toLowerCase()}',
                 style: TextStyle(
                   fontSize: 14,
-                  color: _isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText,
+                  color: _isDark
+                      ? AppTheme.darkSecondaryText
+                      : AppTheme.lightSecondaryText,
                 ),
               ),
               subtitle: localMusic.isScanning
-                ? Text(localMusic.scanStatus, style: const TextStyle(fontSize: 12))
-                : null,
+                  ? Text(localMusic.scanStatus,
+                      style: const TextStyle(fontSize: 12))
+                  : null,
             ),
             _buildDivider(),
             // Add folder button
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               leading: Container(
                 width: 32,
                 height: 32,
@@ -365,52 +376,61 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(CupertinoIcons.plus, color: Colors.white, size: 18),
+                child: const Icon(CupertinoIcons.plus,
+                    color: Colors.white, size: 18),
               ),
-              title: Text(l10n.addMusicFolder, style: const TextStyle(fontSize: 16)),
+              title: Text(l10n.addMusicFolder,
+                  style: const TextStyle(fontSize: 16)),
               onTap: () => _addMusicFolder(context, localMusic),
             ),
             // Show custom paths
             if (customPaths.isNotEmpty) ...[
               _buildDivider(),
               ...customPaths.map((path) => ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                leading: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF9500), Color(0xFFFFB340)],
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    leading: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF9500), Color(0xFFFFB340)],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(CupertinoIcons.folder_fill,
+                          color: Colors.white, size: 18),
                     ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(CupertinoIcons.folder_fill, color: Colors.white, size: 18),
-                ),
-                title: Text(
-                  path.split('/').last,
-                  style: const TextStyle(fontSize: 16),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  path,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: _isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: IconButton(
-                  icon: const Icon(CupertinoIcons.delete, color: Colors.red, size: 20),
-                  onPressed: () => _removeMusicFolder(context, localMusic, path),
-                ),
-              )),
+                    title: Text(
+                      path.split('/').last,
+                      style: const TextStyle(fontSize: 16),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      path,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _isDark
+                            ? AppTheme.darkSecondaryText
+                            : AppTheme.lightSecondaryText,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(CupertinoIcons.delete,
+                          color: Colors.red, size: 20),
+                      onPressed: () =>
+                          _removeMusicFolder(context, localMusic, path),
+                    ),
+                  )),
             ],
             _buildDivider(),
             // Rescan button
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               leading: Container(
                 width: 32,
                 height: 32,
@@ -420,9 +440,11 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(CupertinoIcons.refresh, color: Colors.white, size: 18),
+                child: const Icon(CupertinoIcons.refresh,
+                    color: Colors.white, size: 18),
               ),
-              title: Text(l10n.rescanLocalMusic, style: const TextStyle(fontSize: 16)),
+              title: Text(l10n.rescanLocalMusic,
+                  style: const TextStyle(fontSize: 16)),
               enabled: !localMusic.isScanning,
               onTap: () => _rescanLocalMusic(context, localMusic),
             ),
@@ -432,7 +454,8 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     );
   }
 
-  Future<void> _addMusicFolder(BuildContext context, LocalMusicService service) async {
+  Future<void> _addMusicFolder(
+      BuildContext context, LocalMusicService service) async {
     final path = await service.pickMusicDirectory();
     if (path == null) return;
     if (!mounted) return;
@@ -446,7 +469,8 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     }
   }
 
-  Future<void> _removeMusicFolder(BuildContext context, LocalMusicService service, String path) async {
+  Future<void> _removeMusicFolder(
+      BuildContext context, LocalMusicService service, String path) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -459,7 +483,8 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(AppLocalizations.of(context)!.remove, style: const TextStyle(color: Colors.red)),
+            child: Text(AppLocalizations.of(context)!.remove,
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -486,14 +511,18 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
           ),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Icon(CupertinoIcons.bolt_fill, color: Colors.white, size: 18),
+        child:
+            const Icon(CupertinoIcons.bolt_fill, color: Colors.white, size: 18),
       ),
-      title: Text(l10n.keepScreenOnDuringDownload, style: const TextStyle(fontSize: 16)),
+      title: Text(l10n.keepScreenOnDuringDownload,
+          style: const TextStyle(fontSize: 16)),
       subtitle: Text(
         l10n.keepScreenOnDuringDownloadSubtitle,
         style: TextStyle(
           fontSize: 13,
-          color: _isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText,
+          color: _isDark
+              ? AppTheme.darkSecondaryText
+              : AppTheme.lightSecondaryText,
         ),
       ),
       trailing: CupertinoSwitch(
@@ -520,14 +549,17 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
           ),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Icon(CupertinoIcons.arrow_down_to_line, color: Colors.white, size: 18),
+        child: const Icon(CupertinoIcons.arrow_down_to_line,
+            color: Colors.white, size: 18),
       ),
       title: Text(l10n.parallelDownloads, style: const TextStyle(fontSize: 16)),
       subtitle: Text(
         l10n.parallelDownloadsSubtitle,
         style: TextStyle(
           fontSize: 13,
-          color: _isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText,
+          color: _isDark
+              ? AppTheme.darkSecondaryText
+              : AppTheme.lightSecondaryText,
         ),
       ),
       trailing: Row(
@@ -545,7 +577,9 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
           Icon(
             CupertinoIcons.chevron_right,
             size: 16,
-            color: _isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText,
+            color: _isDark
+                ? AppTheme.darkSecondaryText
+                : AppTheme.lightSecondaryText,
           ),
         ],
       ),
@@ -564,15 +598,19 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
           children: [1, 2, 3, 4, 5].map((count) {
             final isSelected = count == _parallelDownloads;
             return ListTile(
-              title: Text('$count ${count == 1 ? l10n.downloadSingular : l10n.downloadPlural}'),
+              title: Text(
+                  '$count ${count == 1 ? l10n.downloadSingular : l10n.downloadPlural}'),
               subtitle: count == 1
-                ? Text(l10n.slowerButStable)
-                : count == 5
-                  ? Text(l10n.fasterButMoreData)
-                  : null,
+                  ? Text(l10n.slowerButStable)
+                  : count == 5
+                      ? Text(l10n.fasterButMoreData)
+                      : null,
               leading: Icon(
-                isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                isSelected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                color:
+                    isSelected ? Theme.of(context).colorScheme.primary : null,
               ),
               onTap: () => Navigator.pop(context, count),
             );
@@ -595,7 +633,8 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     }
   }
 
-  Future<void> _rescanLocalMusic(BuildContext context, LocalMusicService service) async {
+  Future<void> _rescanLocalMusic(
+      BuildContext context, LocalMusicService service) async {
     if (service.isScanning) return;
 
     // Request permission first
@@ -603,7 +642,9 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
     if (!hasPermission) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.storagePermissionRequired)),
+          SnackBar(
+              content: Text(
+                  AppLocalizations.of(context)!.storagePermissionRequired)),
         );
       }
       return;
@@ -656,7 +697,8 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF3B30)),
+                style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFFF3B30)),
                 child: Text(AppLocalizations.of(context)!.clearAllCache),
               ),
             ],
@@ -735,7 +777,8 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
       trailing: Text(
         AppLocalizations.of(
           context,
-        )!.downloadedStats(_downloadedCount, _downloadedSize),
+        )!
+            .downloadedStats(_downloadedCount, _downloadedSize),
         style: TextStyle(
           fontSize: 14,
           color: _isDark

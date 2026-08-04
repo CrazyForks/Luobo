@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'diagnostics/diagnostics.dart';
 
 class TranscodeBitrate {
   static const int original = 0;
@@ -126,7 +127,21 @@ class TranscodingService extends ChangeNotifier {
         : ConnectionType.mobile;
 
     if (newType != _currentConnectionType) {
+      final from = _currentConnectionType.name;
+      final bitrateBefore = getCurrentBitrate();
       _currentConnectionType = newType;
+      DiagnosticsService.instance.rotateNetSession(newType.name);
+      DiagnosticsService.instance.record(
+        EventType.netSwitch,
+        LogLevel.info,
+        {
+          'from': from,
+          'to': newType.name,
+          'smartEnabled': _smartEnabled,
+          'bitrateBefore': bitrateBefore,
+          'bitrateAfter': getCurrentBitrate(),
+        },
+      );
       debugPrint(
         '[Transcoding] Network changed → ${newType.name} '
         '(bitrate: ${getCurrentBitrate() ?? "original"})',

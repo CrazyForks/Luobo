@@ -70,7 +70,8 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF8F8FA),
+      backgroundColor:
+          isDark ? AppTheme.darkBackground : const Color(0xFFF8F8FA),
       body: _generatedSongs != null
           ? _buildResultView(isDark)
           : _buildInputView(isDark),
@@ -84,7 +85,10 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
         SliverToBoxAdapter(
           child: Container(
             padding: EdgeInsets.fromLTRB(
-              24, MediaQuery.of(context).padding.top + 16, 24, 24,
+              24,
+              MediaQuery.of(context).padding.top + 16,
+              24,
+              24,
             ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -110,7 +114,8 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppTheme.appleMusicRed.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
@@ -118,7 +123,8 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.auto_awesome, size: 14, color: AppTheme.appleMusicRed),
+                          Icon(Icons.auto_awesome,
+                              size: 14, color: AppTheme.appleMusicRed),
                           const SizedBox(width: 4),
                           Text(
                             'AI',
@@ -169,11 +175,13 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
+                      border: Border.all(
+                          color: Colors.orange.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.key_rounded, color: Colors.orange, size: 20),
+                        const Icon(Icons.key_rounded,
+                            color: Colors.orange, size: 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -277,19 +285,26 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
                       decoration: BoxDecoration(
                         color: selected
                             ? AppTheme.appleMusicRed
-                            : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white),
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.white),
                         borderRadius: BorderRadius.circular(12),
                         border: selected
                             ? null
                             : Border.all(
-                                color: isDark ? Colors.white10 : Colors.grey.shade200,
+                                color: isDark
+                                    ? Colors.white10
+                                    : Colors.grey.shade200,
                               ),
                         boxShadow: selected
-                            ? [BoxShadow(
-                                color: AppTheme.appleMusicRed.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              )]
+                            ? [
+                                BoxShadow(
+                                  color: AppTheme.appleMusicRed
+                                      .withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
                             : null,
                       ),
                       child: Row(
@@ -307,7 +322,8 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
                             label,
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                              fontWeight:
+                                  selected ? FontWeight.w600 : FontWeight.w500,
                               color: selected
                                   ? Colors.white
                                   : (isDark ? Colors.white70 : Colors.black87),
@@ -331,7 +347,9 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark ? Colors.white10 : Colors.grey.shade200,
@@ -384,15 +402,21 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
                       onTap: () => setState(() => _songCount = count),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           color: selected
                               ? AppTheme.appleMusicRed
-                              : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white),
+                              : (isDark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : Colors.white),
                           borderRadius: BorderRadius.circular(20),
                           border: selected
                               ? null
-                              : Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
+                              : Border.all(
+                                  color: isDark
+                                      ? Colors.white12
+                                      : Colors.grey.shade300),
                         ),
                         child: Text(
                           '$count',
@@ -417,7 +441,9 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-            child: _isGenerating ? _buildGeneratingState(isDark) : _buildGenerateButton(isDark),
+            child: _isGenerating
+                ? _buildGeneratingState(isDark)
+                : _buildGenerateButton(isDark),
           ),
         ),
 
@@ -455,7 +481,8 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
                 ],
               ),
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 28),
+            child:
+                const Icon(Icons.auto_awesome, color: Colors.white, size: 28),
           ),
         ),
         const SizedBox(height: 16),
@@ -546,8 +573,9 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
               size: 28,
               color: selected
                   ? AppTheme.appleMusicRed
-                  : (isDark                   ? Colors.white.withValues(alpha: 0.4)
-                  : Colors.black38),
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.4)
+                      : Colors.black38),
             ),
             const SizedBox(height: 8),
             Text(
@@ -573,7 +601,10 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
         // Header with gradient
         Container(
           padding: EdgeInsets.fromLTRB(
-            20, MediaQuery.of(context).padding.top + 12, 20, 16,
+            20,
+            MediaQuery.of(context).padding.top + 12,
+            20,
+            16,
           ),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -597,7 +628,9 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                        color: isDark
+                            ? Colors.white10
+                            : Colors.black.withValues(alpha: 0.05),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -671,7 +704,8 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 24),
                   color: Colors.red.shade400,
-                  child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+                  child: const Icon(Icons.delete_outline_rounded,
+                      color: Colors.white),
                 ),
                 onDismissed: (_) {
                   setState(() => _generatedSongs!.removeAt(index));
@@ -690,7 +724,10 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
         // Save bar
         Container(
           padding: EdgeInsets.fromLTRB(
-            16, 12, 16, MediaQuery.of(context).padding.bottom + 12,
+            16,
+            12,
+            16,
+            MediaQuery.of(context).padding.bottom + 12,
           ),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
@@ -707,7 +744,9 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade100,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: TextField(
@@ -720,7 +759,8 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
                       ),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12,
+                        horizontal: 14,
+                        vertical: 12,
                       ),
                     ),
                     style: TextStyle(
@@ -734,7 +774,8 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
               GestureDetector(
                 onTap: _savePlaylist,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFFFC3C44), Color(0xFFE52D27)],
@@ -780,7 +821,8 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
       _error = null;
     });
 
-    final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+    final libraryProvider =
+        Provider.of<LibraryProvider>(context, listen: false);
     final recommendationService =
         Provider.of<RecommendationService>(context, listen: false);
     final allSongs = libraryProvider.cachedAllSongs;
@@ -838,7 +880,8 @@ class _AiPlaylistScreenState extends State<AiPlaylistScreen>
       return;
     }
 
-    final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+    final libraryProvider =
+        Provider.of<LibraryProvider>(context, listen: false);
     await libraryProvider.createPlaylist(
       name,
       songIds: songs.map((s) => s.id).toList(),

@@ -74,13 +74,14 @@ class _ThemeManagerScreenState extends State<ThemeManagerScreen> {
 
               return ThemePreviewCard(
                 theme: theme,
-                isActive: isActive || (service.activeTheme == null && isDefault),
+                isActive:
+                    isActive || (service.activeTheme == null && isDefault),
                 onTap: () => _activateTheme(context, theme, service),
-                onEdit: isDefault
-                    ? null
-                    : () => _editTheme(context, theme),
+                onEdit: isDefault ? null : () => _editTheme(context, theme),
                 onDuplicate: () => _duplicateTheme(context, theme, service),
-                onExport: isDefault ? null : () => _exportTheme(context, theme, service),
+                onExport: isDefault
+                    ? null
+                    : () => _exportTheme(context, theme, service),
                 onDelete: isDefault
                     ? null
                     : () => _deleteTheme(context, theme, service),

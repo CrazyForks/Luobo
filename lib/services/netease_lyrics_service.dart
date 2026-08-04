@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'diagnostics/diagnostics.dart';
 
 /// Service that searches NetEase Cloud Music for lyrics as a fallback source.
 /// Particularly useful for Chinese songs where LRCLIB coverage is limited.
@@ -28,17 +29,41 @@ class NeteaseLyricsService {
     required String title,
     int? durationSeconds,
   }) async {
+    final sw = Stopwatch()..start();
     try {
       // Step 1: Search for the song
       final songId = await _searchSong(artist: artist, title: title);
-      if (songId == null) return null;
+      if (songId == null) {
+        // 请求成功但无匹配 → 记录为「未找到」，非网络失败
+        MetricsCollector.lyricsLoadFrom(sw,
+            source: 'netease', ok: true, found: false);
+        return null;
+      }
 
       // Step 2: Fetch lyrics by song ID
-      return await _fetchLyrics(songId);
+      final result = await _fetchLyrics(songId);
+      MetricsCollector.lyricsLoadFrom(sw,
+          source: 'netease', ok: true, found: result != null);
+      return result;
     } catch (e) {
+      MetricsCollector.lyricsLoadFrom(sw,
+          source: 'netease',
+          ok: false,
+          found: false,
+          error: _truncatedError(e));
       debugPrint('[NetEase] Unexpected error: $e');
       return null;
     }
+  }
+
+  /// 归一化业务错误码（int / 数字字符串）。
+  static int? _toInt(dynamic v) =>
+      v is int ? v : (v is String ? int.tryParse(v) : null);
+
+  /// 截断异常文本，避免 FormatException 全量响应体（可能含敏感串）落盘。
+  static String _truncatedError(Object e) {
+    final s = e.toString();
+    return s.length > 300 ? '${s.substring(0, 300)}…' : s;
   }
 
   /// Searches for a song and returns the best matching song ID.
@@ -49,7 +74,8 @@ class NeteaseLyricsService {
     try {
       final response = await _dio.post(
         '/search/get',
-        data: 's=${Uri.encodeComponent('$artist $title')}&type=1&limit=5&offset=0',
+        data:
+            's=${Uri.encodeComponent('$artist $title')}&type=1&limit=5&offset=0',
       );
 
       if (response.statusCode != 200 || response.data == null) return null;
@@ -57,6 +83,12 @@ class NeteaseLyricsService {
       final data = response.data is String
           ? json.decode(response.data as String) as Map<String, dynamic>
           : response.data as Map<String, dynamic>;
+
+      // 业务错误码（限流/风控等常返回 HTTP 200 + 非 200 code）：视为失败
+      final code = _toInt(data['code']);
+      if (code != null && code != 200) {
+        throw Exception('NetEase search error code: $code');
+      }
 
       final result = data['result'] as Map<String, dynamic>?;
       if (result == null) return null;
@@ -72,17 +104,18 @@ class NeteaseLyricsService {
           for (final ar in artists) {
             final name = (ar['name'] as String?)?.toLowerCase().trim() ?? '';
             if (name == normalizedArtist || name.contains(normalizedArtist)) {
-              return song['id'] as int?;
+              return _toInt(song['id']);
             }
           }
         }
       }
 
       // If no exact artist match, return the first result
-      return songs.first['id'] as int?;
+      return _toInt(songs.first['id']);
     } on DioException catch (e) {
+      // 网络失败向上抛，由 searchLyrics 顶层记录 ok:false
       debugPrint('[NetEase] Search error: ${e.message}');
-      return null;
+      rethrow;
     }
   }
 
@@ -104,6 +137,12 @@ class NeteaseLyricsService {
           ? json.decode(response.data as String) as Map<String, dynamic>
           : response.data as Map<String, dynamic>;
 
+      // 业务错误码：视为失败，由顶层 catch 记录 ok:false
+      final code = _toInt(data['code']);
+      if (code != null && code != 200) {
+        throw Exception('NetEase lyric error code: $code');
+      }
+
       // Try synced lyrics first
       final lrc = data['lrc'] as Map<String, dynamic>?;
       final lrcText = lrc?['lyric'] as String?;
@@ -123,8 +162,9 @@ class NeteaseLyricsService {
 
       return null;
     } on DioException catch (e) {
+      // 网络失败向上抛，由 searchLyrics 顶层记录 ok:false
       debugPrint('[NetEase] Lyrics fetch error: ${e.message}');
-      return null;
+      rethrow;
     }
   }
 

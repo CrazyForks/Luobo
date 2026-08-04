@@ -81,8 +81,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _selectedTab == 0
-          ? _buildSongsList()
-          : _buildAlbumsList(),
+              ? _buildSongsList()
+              : _buildAlbumsList(),
     );
   }
 
@@ -247,8 +247,8 @@ class _TabButton extends StatelessWidget {
       child: Material(
         color: isSelected
             ? (isDark
-                  ? Colors.white.withValues(alpha: 0.15)
-                  : Colors.black.withValues(alpha: 0.08))
+                ? Colors.white.withValues(alpha: 0.15)
+                : Colors.black.withValues(alpha: 0.08))
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(

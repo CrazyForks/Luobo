@@ -39,7 +39,8 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
     final aiBaseUrl = await storageService.getAiBaseUrl();
     final aiModel = await storageService.getAiModel();
 
-    final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+    final libraryProvider =
+        Provider.of<LibraryProvider>(context, listen: false);
     await AiKnowledgeService.instance
         .initialize(totalSongs: libraryProvider.cachedAllSongs.length);
 
@@ -110,9 +111,11 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
       title: AppLocalizations.of(context)!.aiConnectionSettings,
       children: [
         ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           leading: _buildLeadingIcon(CupertinoIcons.lock, accent),
-          title: Text(AppLocalizations.of(context)!.apiKey, style: const TextStyle(fontSize: 16)),
+          title: Text(AppLocalizations.of(context)!.apiKey,
+              style: const TextStyle(fontSize: 16)),
           subtitle: Text(
             _aiApiKey.isEmpty
                 ? AppLocalizations.of(context)!.notConfigured
@@ -129,9 +132,11 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
         ),
         const Divider(height: 1, indent: 64),
         ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           leading: _buildLeadingIcon(CupertinoIcons.globe, accent),
-          title: Text(AppLocalizations.of(context)!.apiUrl, style: const TextStyle(fontSize: 16)),
+          title: Text(AppLocalizations.of(context)!.apiUrl,
+              style: const TextStyle(fontSize: 16)),
           subtitle: Text(
             _aiBaseUrl,
             style: TextStyle(
@@ -148,9 +153,11 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
         ),
         const Divider(height: 1, indent: 64),
         ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           leading: _buildLeadingIcon(Icons.memory_rounded, accent),
-          title: Text(AppLocalizations.of(context)!.aiModel, style: const TextStyle(fontSize: 16)),
+          title: Text(AppLocalizations.of(context)!.aiModel,
+              style: const TextStyle(fontSize: 16)),
           subtitle: Text(
             _aiModel,
             style: TextStyle(
@@ -172,7 +179,8 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [accent, accent.withValues(alpha: 0.6)]),
+        gradient:
+            LinearGradient(colors: [accent, accent.withValues(alpha: 0.6)]),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(icon, color: Colors.white, size: 18),
@@ -290,17 +298,21 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
                 'gpt-4o',
                 'moonshot-v1-8k',
                 'qwen-turbo',
-              ].map((m) => GestureDetector(
-                onTap: () => controller.text = m,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _isDark ? Colors.white10 : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(m, style: const TextStyle(fontSize: 12)),
-                ),
-              )).toList(),
+              ]
+                  .map((m) => GestureDetector(
+                        onTap: () => controller.text = m,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color:
+                                _isDark ? Colors.white10 : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(m, style: const TextStyle(fontSize: 12)),
+                        ),
+                      ))
+                  .toList(),
             ),
           ],
         ),
@@ -335,17 +347,80 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
       builder: (context, _) {
         final svc = AiKnowledgeService.instance;
         return _buildSection(
-      title: AppLocalizations.of(context)!.songKnowledgeBase,
-      children: [
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: _buildLeadingIcon(CupertinoIcons.book, accent),
-          title: Text(AppLocalizations.of(context)!.songKnowledgeBase, style: const TextStyle(fontSize: 16)),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.knowledgeIndexed(svc.cachedCount, svc.totalSongs),
+          title: AppLocalizations.of(context)!.songKnowledgeBase,
+          children: [
+            ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: _buildLeadingIcon(CupertinoIcons.book, accent),
+              title: Text(AppLocalizations.of(context)!.songKnowledgeBase,
+                  style: const TextStyle(fontSize: 16)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!
+                        .knowledgeIndexed(svc.cachedCount, svc.totalSongs),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.5)
+                          : Colors.black.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  if (svc.lastUpdate != null)
+                    Text(
+                      AppLocalizations.of(context)!.lastUpdated(
+                          '${svc.lastUpdate!.month}/${svc.lastUpdate!.day} '
+                          '${svc.lastUpdate!.hour}:${svc.lastUpdate!.minute.toString().padLeft(2, '0')}'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.3)
+                            : Colors.black.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  if (svc.isGenerating)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: LinearProgressIndicator(
+                        value: svc.progress,
+                        backgroundColor:
+                            isDark ? Colors.white12 : Colors.grey.shade200,
+                        valueColor: AlwaysStoppedAnimation<Color>(accent),
+                      ),
+                    ),
+                ],
+              ),
+              trailing: svc.isGenerating
+                  ? IconButton(
+                      icon: const Icon(CupertinoIcons.xmark_circle, size: 22),
+                      onPressed: _cancelKnowledgeGeneration,
+                    )
+                  : TextButton(
+                      onPressed: _aiApiKey.isEmpty ? null : _generateKnowledge,
+                      child: Text(
+                        svc.cachedCount == 0
+                            ? AppLocalizations.of(context)!.generate
+                            : AppLocalizations.of(context)!.incrementalUpdate,
+                        style: TextStyle(
+                            color: _aiApiKey.isEmpty ? Colors.grey : accent),
+                      ),
+                    ),
+            ),
+            const Divider(height: 1, indent: 64),
+            // Export
+            ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading:
+                  _buildLeadingIcon(CupertinoIcons.square_arrow_up, accent),
+              title: Text(
+                AppLocalizations.of(context)!.exportKnowledgeBase,
+                style: const TextStyle(fontSize: 16),
+              ),
+              subtitle: Text(
+                AppLocalizations.of(context)!.exportKnowledgeBaseSubtitle,
                 style: TextStyle(
                   fontSize: 13,
                   color: isDark
@@ -353,106 +428,55 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
                       : Colors.black.withValues(alpha: 0.5),
                 ),
               ),
-              if (svc.lastUpdate != null)
-                Text(
-                  AppLocalizations.of(context)!.lastUpdated(
-                      '${svc.lastUpdate!.month}/${svc.lastUpdate!.day} '
-                      '${svc.lastUpdate!.hour}:${svc.lastUpdate!.minute.toString().padLeft(2, '0')}'),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.3)
-                        : Colors.black.withValues(alpha: 0.3),
-                  ),
-                ),
-              if (svc.isGenerating)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: LinearProgressIndicator(
-                    value: svc.progress,
-                    backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
-                    valueColor: AlwaysStoppedAnimation<Color>(accent),
-                  ),
-                ),
-            ],
-          ),
-          trailing: svc.isGenerating
-              ? IconButton(
-                  icon: const Icon(CupertinoIcons.xmark_circle, size: 22),
-                  onPressed: _cancelKnowledgeGeneration,
-                )
-              : TextButton(
-                  onPressed: _aiApiKey.isEmpty ? null : _generateKnowledge,
-                  child: Text(
-                    svc.cachedCount == 0 ? AppLocalizations.of(context)!.generate : AppLocalizations.of(context)!.incrementalUpdate,
-                    style: TextStyle(color: _aiApiKey.isEmpty ? Colors.grey : accent),
-                  ),
-                ),
-        ),
-        const Divider(height: 1, indent: 64),
-        // Export
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: _buildLeadingIcon(CupertinoIcons.square_arrow_up, accent),
-          title: Text(
-            AppLocalizations.of(context)!.exportKnowledgeBase,
-            style: const TextStyle(fontSize: 16),
-          ),
-          subtitle: Text(
-            AppLocalizations.of(context)!.exportKnowledgeBaseSubtitle,
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.5)
-                  : Colors.black.withValues(alpha: 0.5),
+              trailing: _isExporting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : TextButton(
+                      onPressed: svc.cachedCount == 0 ? null : _exportKnowledge,
+                      child: Text(
+                        AppLocalizations.of(context)!.export,
+                        style: TextStyle(
+                            color: svc.cachedCount == 0 ? Colors.grey : accent),
+                      ),
+                    ),
             ),
-          ),
-          trailing: _isExporting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : TextButton(
-                  onPressed: svc.cachedCount == 0 ? null : _exportKnowledge,
-                  child: Text(
-                    AppLocalizations.of(context)!.export,
-                    style: TextStyle(color: svc.cachedCount == 0 ? Colors.grey : accent),
-                  ),
+            const Divider(height: 1, indent: 64),
+            // Import
+            ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading:
+                  _buildLeadingIcon(CupertinoIcons.square_arrow_down, accent),
+              title: Text(
+                AppLocalizations.of(context)!.importKnowledgeBase,
+                style: const TextStyle(fontSize: 16),
+              ),
+              subtitle: Text(
+                AppLocalizations.of(context)!.importKnowledgeBaseSubtitle,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.5)
+                      : Colors.black.withValues(alpha: 0.5),
                 ),
-        ),
-        const Divider(height: 1, indent: 64),
-        // Import
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: _buildLeadingIcon(CupertinoIcons.square_arrow_down, accent),
-          title: Text(
-            AppLocalizations.of(context)!.importKnowledgeBase,
-            style: const TextStyle(fontSize: 16),
-          ),
-          subtitle: Text(
-            AppLocalizations.of(context)!.importKnowledgeBaseSubtitle,
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.5)
-                  : Colors.black.withValues(alpha: 0.5),
+              ),
+              trailing: _isImporting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : TextButton(
+                      onPressed: _importKnowledge,
+                      child: Text(
+                        AppLocalizations.of(context)!.import,
+                        style: TextStyle(color: accent),
+                      ),
+                    ),
             ),
-          ),
-          trailing: _isImporting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : TextButton(
-                  onPressed: _importKnowledge,
-                  child: Text(
-                    AppLocalizations.of(context)!.import,
-                    style: TextStyle(color: accent),
-                  ),
-                ),
-        ),
           ],
         );
       },
@@ -460,7 +484,8 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
   }
 
   Future<void> _generateKnowledge() async {
-    final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+    final libraryProvider =
+        Provider.of<LibraryProvider>(context, listen: false);
     final allSongs = libraryProvider.cachedAllSongs;
     if (allSongs.isEmpty) return;
 
@@ -479,7 +504,8 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.knowledgeGenerationFailed(failureReason),
+            AppLocalizations.of(context)!
+                .knowledgeGenerationFailed(failureReason),
           ),
         ),
       );
@@ -509,7 +535,9 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
         );
         if (result != null && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.exportedTo(result))),
+            SnackBar(
+                content:
+                    Text(AppLocalizations.of(context)!.exportedTo(result))),
           );
         }
       } else {
@@ -522,7 +550,9 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
           await file.writeAsString(jsonStr);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(AppLocalizations.of(context)!.exportedTo(result))),
+              SnackBar(
+                  content:
+                      Text(AppLocalizations.of(context)!.exportedTo(result))),
             );
           }
         }
@@ -530,7 +560,9 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.exportFailed(e.toString()))),
+          SnackBar(
+              content: Text(
+                  AppLocalizations.of(context)!.exportFailed(e.toString()))),
         );
       }
     } finally {
@@ -565,18 +597,23 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
       final count = await cache.importFromJson(jsonStr);
 
       if (!mounted) return;
-      final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+      final libraryProvider =
+          Provider.of<LibraryProvider>(context, listen: false);
       // Re-read from disk so the singleton's cachedCount reflects the import.
       await AiKnowledgeService.instance
           .initialize(totalSongs: libraryProvider.cachedAllSongs.length);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.knowledgeImported(count))),
+        SnackBar(
+            content:
+                Text(AppLocalizations.of(context)!.knowledgeImported(count))),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.importFailed(e.toString()))),
+          SnackBar(
+              content: Text(
+                  AppLocalizations.of(context)!.importFailed(e.toString()))),
         );
       }
     } finally {
@@ -592,8 +629,10 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
       title: AppLocalizations.of(context)!.howItWorks,
       children: [
         ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: Icon(CupertinoIcons.info_circle, color: isDark ? Colors.white70 : Colors.black54),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Icon(CupertinoIcons.info_circle,
+              color: isDark ? Colors.white70 : Colors.black54),
           title: Text(
             AppLocalizations.of(context)!.knowledgeBaseExplanation,
             style: const TextStyle(fontSize: 16),
@@ -606,8 +645,10 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
         ),
         const Divider(height: 1, indent: 56),
         ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: Icon(CupertinoIcons.info_circle, color: isDark ? Colors.white70 : Colors.black54),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Icon(CupertinoIcons.info_circle,
+              color: isDark ? Colors.white70 : Colors.black54),
           title: Text(
             AppLocalizations.of(context)!.playlistGenerationExplanation,
             style: const TextStyle(fontSize: 16),
@@ -746,7 +787,9 @@ class _SettingsAiPlaylistTabState extends State<SettingsAiPlaylistTab> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.9)
+                            : Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 4),

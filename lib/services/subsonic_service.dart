@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:uuid/uuid.dart';
 import '../models/models.dart';
+import 'diagnostics/diagnostics.dart';
 import 'jellyfin_service.dart';
 import 'youtube_service.dart';
 
@@ -40,47 +41,10 @@ class SubsonicService {
     _addLogInterceptor(_dio);
   }
 
-  static String _sanitizeUrl(String url) {
-    try {
-      final uri = Uri.parse(url);
-      final q = Map<String, String>.from(uri.queryParameters);
-      for (final key in const ['p', 't', 's']) {
-        if (q.containsKey(key)) q[key] = '***';
-      }
-      return uri.replace(queryParameters: q).toString();
-    } catch (_) {
-      return url;
-    }
-  }
-
   void _addLogInterceptor(Dio dio) {
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          options.extra['_logSw'] = Stopwatch()..start();
-          final safe = _sanitizeUrl(options.uri.toString());
-          debugPrint('[Musly] → ${options.method} $safe');
-          handler.next(options);
-        },
-        onResponse: (response, handler) {
-          final sw = response.requestOptions.extra['_logSw'] as Stopwatch?;
-          sw?.stop();
-          final ms = sw?.elapsedMilliseconds ?? 0;
-          final safe = _sanitizeUrl(response.requestOptions.uri.toString());
-          debugPrint('[Musly] ← ${response.statusCode} $safe (${ms}ms)');
-          handler.next(response);
-        },
-        onError: (e, handler) {
-          final sw = e.requestOptions.extra['_logSw'] as Stopwatch?;
-          sw?.stop();
-          final ms = sw?.elapsedMilliseconds ?? 0;
-          final safe = _sanitizeUrl(e.requestOptions.uri.toString());
-          debugPrint('[Musly] ✗ ${e.type.name} $safe (${ms}ms) — ${e.message}');
-          if (e.error != null) debugPrint('[Musly]   cause: ${e.error}');
-          handler.next(e);
-        },
-      ),
-    );
+    dio.interceptors.add(networkMetricsInterceptor(
+      logLine: (line) => Log.i('Net', line),
+    ));
   }
 
   Future<void> configure(ServerConfig config) async {
@@ -114,7 +78,12 @@ class SubsonicService {
     final localUrl = _config!.normalizedLocalUrl;
     if (localUrl == null) {
       _activeBaseUrl = _config!.normalizedUrl;
-      debugPrint('[Musly] No local URL configured, using remote: $_activeBaseUrl');
+      Log.i('Net', 'No local URL configured, using remote: $_activeBaseUrl');
+      DiagnosticsService.instance.record(
+        EventType.netUrlResolved,
+        LogLevel.info,
+        {'host': _activeBaseUrl, 'switched': false},
+      );
       return;
     }
 
@@ -122,25 +91,44 @@ class SubsonicService {
     try {
       final params = _getAuthParams();
       final queryString = params.entries
-          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
           .join('&');
       final pingUrl = '$localUrl/rest/ping?$queryString';
       final probeDio = Dio();
       probeDio.options.connectTimeout = const Duration(seconds: 3);
       probeDio.options.receiveTimeout = const Duration(seconds: 3);
       probeDio.options.sendTimeout = const Duration(seconds: 3);
+      final probeSw = Stopwatch()..start();
       final response = await probeDio.get(pingUrl);
+      probeSw.stop();
       if (response.statusCode == 200) {
+        final switched = _activeBaseUrl != localUrl;
         _activeBaseUrl = localUrl;
-        debugPrint('[Musly] LAN URL reachable, using: $_activeBaseUrl');
+        DiagnosticsService.instance.record(
+          EventType.netUrlResolved,
+          LogLevel.info,
+          {
+            'host': _activeBaseUrl,
+            'probeMs': probeSw.elapsedMilliseconds,
+            'switched': switched,
+          },
+        );
+        Log.i('Net', 'LAN URL reachable, using: $_activeBaseUrl');
         return;
       }
     } catch (e) {
-      debugPrint('[Musly] LAN URL probe failed: $e');
+      Log.w('Net', 'LAN URL probe failed', error: e);
     }
 
+    final switched = _activeBaseUrl != _config!.normalizedUrl;
     _activeBaseUrl = _config!.normalizedUrl;
-    debugPrint('[Musly] Falling back to remote URL: $_activeBaseUrl');
+    DiagnosticsService.instance.record(
+      EventType.netUrlResolved,
+      LogLevel.info,
+      {'host': _activeBaseUrl, 'switched': switched},
+    );
+    Log.i('Net', 'Falling back to remote URL: $_activeBaseUrl');
   }
 
   String get activeBaseUrl => _activeBaseUrl ?? _config?.normalizedUrl ?? '';
@@ -677,7 +665,7 @@ class SubsonicService {
       }
     }
 
-    debugPrint('updatePlaylist URL: ${_sanitizeUrl(url)}');
+    debugPrint('updatePlaylist URL: ${sanitizeQueryUrl(url)}');
 
     try {
       final response = await _dio.get(url);

@@ -8,6 +8,7 @@ import 'settings_display_tab.dart';
 import 'settings_about_tab.dart';
 import 'settings_support_tab.dart';
 import 'settings_ai_playlist_tab.dart';
+import '../services/diagnostics/diagnostics.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
   }
 
   @override
@@ -39,15 +40,13 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: _isDark
-          ? AppTheme.darkBackground
-          : AppTheme.lightBackground,
+      backgroundColor:
+          _isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
       appBar: AppBar(
         title: Text(l10n.settingsTitle),
         centerTitle: false,
-        backgroundColor: _isDark
-            ? AppTheme.darkBackground
-            : AppTheme.lightBackground,
+        backgroundColor:
+            _isDark ? AppTheme.darkBackground : AppTheme.lightBackground,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         bottom: TabBar(
@@ -96,6 +95,10 @@ class _SettingsScreenState extends State<SettingsScreen>
               icon: const Icon(CupertinoIcons.info, size: 20),
               text: l10n.tabAbout,
             ),
+            Tab(
+              icon: const Icon(Icons.monitor_heart_outlined, size: 20),
+              text: l10n.tabDiagnostics,
+            ),
           ],
         ),
       ),
@@ -109,6 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           SettingsAiPlaylistTab(),
           SettingsSupportTab(),
           SettingsAboutTab(),
+          DiagnosticsPage(),
         ],
       ),
     );

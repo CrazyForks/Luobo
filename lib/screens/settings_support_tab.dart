@@ -26,7 +26,8 @@ class SettingsSupportTab extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
-    final secondaryTextColor = isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText;
+    final secondaryTextColor =
+        isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText;
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -200,7 +201,9 @@ class SettingsSupportTab extends StatelessWidget {
             l10n.supportMadeWithLove,
             style: TextStyle(
               fontSize: 14,
-              color: isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText,
+              color: isDark
+                  ? AppTheme.darkSecondaryText
+                  : AppTheme.lightSecondaryText,
             ),
           ),
         ),
@@ -266,7 +269,9 @@ class SettingsSupportTab extends StatelessWidget {
                       subtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText,
+                        color: isDark
+                            ? AppTheme.darkSecondaryText
+                            : AppTheme.lightSecondaryText,
                       ),
                     ),
                   ],
@@ -291,7 +296,8 @@ class SettingsSupportTab extends StatelessWidget {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
-    final secondaryTextColor = isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText;
+    final secondaryTextColor =
+        isDark ? AppTheme.darkSecondaryText : AppTheme.lightSecondaryText;
 
     return Row(
       children: [

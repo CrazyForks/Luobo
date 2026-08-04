@@ -30,6 +30,7 @@ import '../services/jukebox_service.dart';
 import '../services/audio_handler.dart';
 import '../services/fade_settings_service.dart';
 import '../services/lock_screen_lyrics_service.dart';
+import '../services/diagnostics/diagnostics.dart';
 import '../services/transcoding_service.dart';
 import '../providers/library_provider.dart';
 
@@ -67,6 +68,8 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// by the time it executes; this lets us attribute the event to the song
   /// that actually finished instead of the one currently playing.
   Song? _completedSong;
+  DateTime? _bufferStartAt;
+  int _silentCheckToken = 0;
 
   /// Transcode settings actually applied to the CURRENT stream, captured
   /// when the stream URL was built. null means the stream is the original
@@ -232,6 +235,11 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _restoreQueueState() async {
+    DiagnosticsService.instance.record(
+      EventType.restoreStart,
+      LogLevel.info,
+      {'queueKey': _keyQueue},
+    );
     try {
       _prefs ??= await SharedPreferences.getInstance();
       if (_prefs == null) return;
@@ -273,10 +281,24 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         _duration = Duration(seconds: songDurationSecs);
       }
       notifyListeners();
+      DiagnosticsService.instance.record(
+        EventType.restoreEnd,
+        LogLevel.info,
+        {
+          'count': restoredSongs.length,
+          'index': targetIndex,
+          'positionMs': savedPositionMs,
+        },
+      );
       debugPrint(
           'Restored persistent queue: ${restoredSongs.length} songs, index $targetIndex, position $_position');
     } catch (e) {
       debugPrint('Error restoring queue state: $e');
+      DiagnosticsService.instance.record(
+        EventType.restoreError,
+        LogLevel.error,
+        {'error': '$e'},
+      );
     }
   }
 
@@ -717,11 +739,11 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
               'title': song.title,
               'artist': song.artist ?? '',
               'album': song.album ?? '',
-              'artworkUrl': _offlineService.getLocalCoverArtPath(song.id) !=
-                      null
-                  ? Uri.file(_offlineService.getLocalCoverArtPath(song.id)!)
-                      .toString()
-                  : _subsonicService.getCoverArtUrl(song.coverArt),
+              'artworkUrl':
+                  _offlineService.getLocalCoverArtPath(song.id) != null
+                      ? Uri.file(_offlineService.getLocalCoverArtPath(song.id)!)
+                          .toString()
+                      : _subsonicService.getCoverArtUrl(song.coverArt),
               'duration': (song.duration ?? 0).toString(),
             },
           )
@@ -996,6 +1018,16 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     final applied = maxBitRate != null && maxBitRate > 0;
     _activeStreamBitrate = applied ? maxBitRate : null;
     _activeStreamFormat = applied ? format : null;
+    DiagnosticsService.instance.record(
+      EventType.streamUrl,
+      LogLevel.info,
+      {
+        'songId': _currentSong?.id,
+        'maxBitRate': _activeStreamBitrate,
+        'format': _activeStreamFormat,
+        'transcoded': applied,
+      },
+    );
   }
 
   /// True when audio is playing on a remote renderer (UPnP or Cast) rather
@@ -1237,8 +1269,10 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         _isPlaying = state.playing;
 
         if (wasPlaying != _isPlaying && !_reactivatingSession) {
-          debugPrint(
-              '[Player] ${_isPlaying ? '▶ Playing' : '⏸ Paused'} — "${_currentSong?.title ?? 'unknown'}" (${state.processingState.name})');
+          final stateLabel = _isPlaying ? '▶ Playing' : '⏸ Paused';
+          final songLabel = _currentSong?.title ?? 'unknown';
+          Log.i('Player',
+              '$stateLabel — "$songLabel" (${state.processingState.name})');
 
           // Start/stop Windows position polling timer
           if (_isPlaying && Platform.isWindows && !_isRenderingRemotely) {
@@ -1266,18 +1300,52 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         }
 
         if (state.processingState == ProcessingState.completed) {
-          debugPrint(
-              '[Player] ✓ Song completed: "${_currentSong?.title ?? 'unknown'}"');
+          Log.i('Player',
+              '✓ Song completed: "${_currentSong?.title ?? 'unknown'}"');
           // Capture the song synchronously: [_onSongComplete] runs async and
           // the user may skip to another track before it executes.
           _completedSong = _currentSong;
           _onSongComplete().catchError(
-              (e) => debugPrint('[Player] _onSongComplete error: $e'));
+              (e) => Log.e('Player', '_onSongComplete error', error: e));
         }
 
-        if (state.processingState == ProcessingState.buffering && !wasPlaying) {
-          debugPrint(
-              '[Player] ⟳ Buffering: "${_currentSong?.title ?? 'unknown'}"');
+        if (state.processingState == ProcessingState.buffering &&
+            _bufferStartAt == null) {
+          Log.i('Player', '⟳ Buffering: "${_currentSong?.title ?? 'unknown'}"');
+          _bufferStartAt = DateTime.now();
+          // 播放中卡顿判定：已在播放且位置已推进（排除加载新曲场景）
+          final isStall = wasPlaying && _position.inSeconds >= 1;
+          DiagnosticsService.instance.record(
+            EventType.audioBuffer,
+            LogLevel.info,
+            {
+              'event': 'start',
+              'stall': isStall,
+              'songId': _currentSong?.id,
+            },
+          );
+          if (isStall) {
+            DiagnosticsService.instance.record(
+              EventType.audioStall,
+              LogLevel.warn,
+              {'songId': _currentSong?.id},
+            );
+          }
+        }
+        if (state.processingState != ProcessingState.buffering &&
+            _bufferStartAt != null) {
+          final bufferedMs =
+              DateTime.now().difference(_bufferStartAt!).inMilliseconds;
+          _bufferStartAt = null;
+          DiagnosticsService.instance.record(
+            EventType.audioBuffer,
+            LogLevel.info,
+            {
+              'event': 'end',
+              'bufferedMs': bufferedMs,
+              'songId': _currentSong?.id,
+            },
+          );
         }
 
         if (wasPlaying != _isPlaying && !_reactivatingSession) {
@@ -1286,7 +1354,16 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         }
       },
       onError: (error) {
-        debugPrint('[Player] State stream error (usually harmless): $error');
+        Log.e('Player', 'State stream error', error: error);
+        DiagnosticsService.instance.record(
+          EventType.audioError,
+          LogLevel.error,
+          {
+            'error': '$error',
+            'songId': _currentSong?.id,
+            'netSessionId': DiagnosticsService.instance.netSessionId,
+          },
+        );
       },
     );
 
@@ -1365,6 +1442,11 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
       // Listen for audio interruptions (another app takes audio focus)
       session.interruptionEventStream.listen((event) {
+        DiagnosticsService.instance.record(
+          EventType.audioInterruption,
+          LogLevel.info,
+          {'begin': event.begin, 'type': event.type.name},
+        );
         if (event.begin) {
           switch (event.type) {
             case AudioInterruptionType.duck:
@@ -1389,14 +1471,42 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         }
       });
 
-      // Listen for headphone disconnection
+      // Listen for headphone/bluetooth disconnection
       session.becomingNoisyEventStream.listen((_) {
+        DiagnosticsService.instance.record(
+          EventType.audioNoisy,
+          LogLevel.warn,
+          {'device': 'becameNoisy'},
+        );
         if (isRemotePlayback) return;
         pause();
       });
     } catch (e) {
-      debugPrint('[Player] AudioSession configuration failed: $e');
+      Log.e('Player', 'AudioSession 配置失败', error: e);
     }
+  }
+
+  // ── 音频路由/会话诊断辅助 ─────────────────────────────────
+
+  List<String> _lastAudioDevices = const [];
+
+  /// 快照当前音频输出设备（audio_session 无 route 流，用 getDevices 对比）。
+  Future<void> _snapshotAudioRoute() async {
+    try {
+      if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+      final session = await AudioSession.instance;
+      final devices = await session.getDevices();
+      final names = devices.map((d) => '${d.name}:${d.type.name}').toList()
+        ..sort();
+      if (!listEquals(names, _lastAudioDevices)) {
+        DiagnosticsService.instance.record(
+          EventType.audioRouteChanged,
+          LogLevel.info,
+          {'from': _lastAudioDevices.join(','), 'to': names.join(',')},
+        );
+        _lastAudioDevices = names;
+      }
+    } catch (_) {}
   }
 
   Future<void> _ensureAudioFocus() async {
@@ -1423,8 +1533,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _trackedSongId = song.id;
     if (totalSeconds > 0 && playedSeconds < totalSeconds * 0.8) {
       service.trackSkip(song, secondsPlayed: playedSeconds);
-    } else if (playedSeconds > 0 &&
-        (totalSeconds > 0 || playedSeconds >= 30)) {
+    } else if (playedSeconds > 0 && (totalSeconds > 0 || playedSeconds >= 30)) {
       // When the track duration is unknown, require at least 30s of actual
       // listening before counting it as a play — otherwise a few seconds of
       // playback with an unresolved duration would count as a full play.
@@ -1965,6 +2074,16 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> play() async {
+    DiagnosticsService.instance.beginPlaybackSession();
+    DiagnosticsService.instance.record(
+      EventType.audioPlayerAction,
+      LogLevel.info,
+      {
+        'action': 'play',
+        'route': DiagnosticsService.instance.currentRoute,
+      },
+    );
+    unawaited(_snapshotAudioRoute());
     if (_jukeboxService.enabled) {
       await _jukeboxService.play(_subsonicService);
       _isPlaying = true;
@@ -1993,10 +2112,49 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       await _ensureAudioFocus();
       await _audioPlayer.play();
       await _fadeIn();
+      // 无声检测：play 后 1.5s 内 playing 但位置未前进 → 疑似无声
+      _checkSilentPlayback();
+    }
+  }
+
+  /// 派生检测器：play 后无声音输出（状态 playing 但 position 停滞）。
+  Future<void> _checkSilentPlayback() async {
+    final token = ++_silentCheckToken; // 只让最新一次 play 的检测生效
+    final songId = _currentSong?.id;
+    final startPos = _audioPlayer.position;
+    final startPlaying = _audioPlayer.playing;
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (token != _silentCheckToken) return; // 已被更新的 play/pause/seek 取代
+    try {
+      final nowPos = _audioPlayer.position;
+      if (startPlaying != _audioPlayer.playing) return; // 用户已暂停/切歌
+      if (!_audioPlayer.playing) return;
+      if (_audioPlayer.processingState != ProcessingState.ready) return;
+      if (_currentSong?.id != songId) return; // 已切歌，不误报
+      if (nowPos - startPos < const Duration(milliseconds: 500)) {
+        DiagnosticsService.instance.record(
+          EventType.audioSilentPlayback,
+          LogLevel.error,
+          {
+            'posBeforeMs': startPos.inMilliseconds,
+            'posAfterMs': nowPos.inMilliseconds,
+            'route': DiagnosticsService.instance.currentRoute,
+            'songId': songId,
+          },
+        );
+      }
+    } catch (_) {
+      // 播放器已释放等异常：忽略本次检测
     }
   }
 
   Future<void> pause() async {
+    _silentCheckToken++; // 使挂起的无声检测失效
+    DiagnosticsService.instance.record(
+      EventType.audioPlayerAction,
+      LogLevel.info,
+      {'action': 'pause'},
+    );
     if (_jukeboxService.enabled) {
       await _jukeboxService.pause(_subsonicService);
       _isPlaying = false;
@@ -2025,6 +2183,8 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> stop() async {
+    _silentCheckToken++; // 使挂起的无声检测失效
+    _bufferStartAt = null; // 避免 buffering 状态残留误配对
     if (_castService.isConnected) {
       await _castService.stop();
     } else if (_upnpService.isConnected) {
@@ -2138,6 +2298,11 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> togglePlayPause() async {
+    DiagnosticsService.instance.record(
+      EventType.audioPlayerAction,
+      LogLevel.info,
+      {'action': 'toggle', 'wasPlaying': _isPlaying},
+    );
     if (_isPlaying) {
       await pause();
     } else {
@@ -2146,6 +2311,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> seek(Duration position) async {
+    _silentCheckToken++; // 使挂起的无声检测失效（seek 后位置跳变）
     _position = position;
     notifyListeners();
     if (_jukeboxService.enabled) {
@@ -2477,8 +2643,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> addAllToQueue(Iterable<Song> songs) async {
     // Skip duplicates so the queue never contains the same song id twice.
     final existingIds = _queue.map((s) => s.id).toSet();
-    final newSongs =
-        songs.where((s) => !existingIds.contains(s.id)).toList();
+    final newSongs = songs.where((s) => !existingIds.contains(s.id)).toList();
     if (newSongs.isEmpty) return;
     _queue.addAll(newSongs);
     if (_concatenatingSource != null) {
@@ -2693,9 +2858,8 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
             final maxBitRate = _transcodingService.enabled
                 ? _transcodingService.currentBitRate
                 : null;
-            final format = _transcodingService.enabled
-                ? _transcodingService.format
-                : null;
+            final format =
+                _transcodingService.enabled ? _transcodingService.format : null;
             _setActiveStream(maxBitRate, format);
             playUrl = _subsonicService.getStreamUrl(_currentSong!.id,
                 maxBitRate: maxBitRate, format: format);
@@ -2740,6 +2904,18 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (newIndex < 0 || newIndex >= _queue.length) return;
     if (newIndex == _currentIndex) return;
 
+    _bufferStartAt = null; // 切歌：复位缓冲检测，避免旧歌 buffering 残留
+    _position = Duration.zero; // 同步归零，避免 stall 判定误用旧曲位置
+    DiagnosticsService.instance.record(
+      EventType.trackNext,
+      LogLevel.info,
+      {
+        'from': _currentSong?.id,
+        'to': _queue[newIndex].id,
+        'fromTitle': _currentSong?.title,
+        'toTitle': _queue[newIndex].title,
+      },
+    );
     debugPrint(
         '[Player] ⏭ Track changed by index: $newIndex "${_queue[newIndex].title}"');
 
@@ -2772,7 +2948,6 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     _currentIndex = newIndex;
     _currentSong = _queue[_currentIndex];
-    _position = Duration.zero;
     _resolvedArtworkUrl = null;
     if (_shuffleEnabled) _syncShuffleOrderPos();
     notifyListeners();
@@ -2908,6 +3083,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _sleepTimer?.cancel();
     _sleepTimerFadeTimer?.cancel();
     _sleepTimerFadePeriodicTimer?.cancel();
+    _bufferStartAt = null; // dispose：复位缓冲检测
     // Save queue state immediately before cancelling the debounce timer
     _saveQueueStateImmediate();
     _persistDebounceTimer?.cancel();

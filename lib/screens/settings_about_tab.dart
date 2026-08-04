@@ -166,10 +166,12 @@ class _SettingsAboutTabState extends State<SettingsAboutTab> {
                   size: 18,
                 ),
               ),
-              title: Text(AppLocalizations.of(context)!.deviceId, style: const TextStyle(fontSize: 16)),
+              title: Text(AppLocalizations.of(context)!.deviceId,
+                  style: const TextStyle(fontSize: 16)),
               subtitle: Text(
                 _analyticsEnabled
-                    ? AppLocalizations.of(context)!.anonymousIdLabel(_deviceId ?? AppLocalizations.of(context)!.loading)
+                    ? AppLocalizations.of(context)!.anonymousIdLabel(
+                        _deviceId ?? AppLocalizations.of(context)!.loading)
                     : AppLocalizations.of(context)!.enableAnalyticsToSeeId,
                 style: const TextStyle(fontSize: 12),
               ),
@@ -182,7 +184,8 @@ class _SettingsAboutTabState extends State<SettingsAboutTab> {
                           Clipboard.setData(ClipboardData(text: _deviceId!));
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(AppLocalizations.of(context)!.deviceIdCopied),
+                              content: Text(
+                                  AppLocalizations.of(context)!.deviceIdCopied),
                               duration: const Duration(seconds: 2),
                               behavior: SnackBarBehavior.floating,
                             ),
@@ -233,7 +236,9 @@ class _SettingsAboutTabState extends State<SettingsAboutTab> {
               context,
               icon: CupertinoIcons.star_fill,
               iconColor: const Color(0xFFFFCC00),
-              title: _hasRated ? AppLocalizations.of(context)!.thanksForRating : AppLocalizations.of(context)!.rateMusly,
+              title: _hasRated
+                  ? AppLocalizations.of(context)!.thanksForRating
+                  : AppLocalizations.of(context)!.rateMusly,
               subtitle: _hasRated
                   ? AppLocalizations.of(context)!.alreadyRated
                   : AppLocalizations.of(context)!.shareFeedback,
@@ -480,7 +485,8 @@ class _SettingsAboutTabState extends State<SettingsAboutTab> {
       if (mounted) {
         setState(() => _hasRated = true);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.thankYouFeedback)),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!.thankYouFeedback)),
         );
       }
     }

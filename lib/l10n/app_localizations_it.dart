@@ -631,6 +631,83 @@ class AppLocalizationsIt extends AppLocalizations {
   String get tabAbout => 'Informazioni';
 
   @override
+  String get tabDiagnostics => 'Diagnostics';
+
+  @override
+  String get diagnosticsTitle => 'Diagnostics';
+
+  @override
+  String get diagnosticsSearchHint => 'Search event type / content';
+
+  @override
+  String get diagnosticsNoLogs => 'No logs yet';
+
+  @override
+  String diagnosticsExported(Object path) {
+    return 'Logs exported: $path';
+  }
+
+  @override
+  String get diagnosticsExportFailed => 'Export failed, check storage space';
+
+  @override
+  String get diagnosticsCopied => 'Logs copied to clipboard (latest 2000)';
+
+  @override
+  String get diagnosticsClearTitle => 'Clear diagnostics logs';
+
+  @override
+  String get diagnosticsClearMessage =>
+      'This will permanently delete all local diagnostics logs and metrics. Export first if needed.';
+
+  @override
+  String get diagnosticsClearAction => 'Clear';
+
+  @override
+  String get diagnosticsMetricFps => 'FPS';
+
+  @override
+  String get diagnosticsMetricJankRate => 'jank rate';
+
+  @override
+  String get diagnosticsMetricRequests => 'requests';
+
+  @override
+  String get diagnosticsMetricNetP90 => 'net p90';
+
+  @override
+  String get diagnosticsMetricErrorRate => 'error rate';
+
+  @override
+  String get diagnosticsAll => 'All';
+
+  @override
+  String get diagnosticsLevelDebug => 'debug';
+
+  @override
+  String get diagnosticsLevelInfo => 'info';
+
+  @override
+  String get diagnosticsLevelWarn => 'warn';
+
+  @override
+  String get diagnosticsLevelError => 'error';
+
+  @override
+  String get diagnosticsTooltipCopy => 'Copy to clipboard';
+
+  @override
+  String get diagnosticsTooltipExport => 'Export to file';
+
+  @override
+  String get diagnosticsTooltipClear => 'Clear';
+
+  @override
+  String renderError(Object err) {
+    return 'Render error\n$err';
+  }
+
+  @override
   String get sectionAutoDj => 'AUTO DJ';
 
   @override

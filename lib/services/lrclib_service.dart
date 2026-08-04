@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'diagnostics/diagnostics.dart';
 
 /// Service that searches LRCLIB (https://lrclib.net) for lyrics when the
 /// Subsonic / Navidrome server does not provide them.
@@ -26,6 +27,7 @@ class LrcLibService {
     required String title,
     int? durationSeconds,
   }) async {
+    final sw = Stopwatch()..start();
     try {
       final response = await _dio.get(
         '/get',
@@ -36,24 +38,57 @@ class LrcLibService {
         },
       );
 
-      if (response.statusCode != 200 || response.data == null) return null;
+      if (response.statusCode != 200 || response.data == null) {
+        MetricsCollector.lyricsLoadFrom(sw,
+            source: 'lrclib',
+            ok: false,
+            found: false,
+            artist: artist,
+            title: title);
+        return null;
+      }
 
       final data = response.data as Map<String, dynamic>;
 
       // Try synced lyrics first (most useful)
       final synced = data['syncedLyrics'] as String?;
       if (synced != null && synced.isNotEmpty) {
+        MetricsCollector.lyricsLoadFrom(sw,
+            source: 'lrclib',
+            ok: true,
+            found: true,
+            artist: artist,
+            title: title);
         return _buildStructuredLyrics(synced);
       }
 
       // Fallback to plain lyrics
       final plain = data['plainLyrics'] as String?;
       if (plain != null && plain.isNotEmpty) {
+        MetricsCollector.lyricsLoadFrom(sw,
+            source: 'lrclib',
+            ok: true,
+            found: true,
+            artist: artist,
+            title: title);
         return {'value': plain};
       }
 
+      MetricsCollector.lyricsLoadFrom(sw,
+          source: 'lrclib',
+          ok: true,
+          found: false,
+          artist: artist,
+          title: title);
       return null;
     } on DioException catch (e) {
+      MetricsCollector.lyricsLoadFrom(sw,
+          source: 'lrclib',
+          ok: false,
+          found: false,
+          artist: artist,
+          title: title,
+          error: e);
       if (e.response?.statusCode == 404) {
         debugPrint('[LRCLIB] No lyrics found for "$title" by "$artist"');
       } else {
@@ -61,6 +96,13 @@ class LrcLibService {
       }
       return null;
     } catch (e) {
+      MetricsCollector.lyricsLoadFrom(sw,
+          source: 'lrclib',
+          ok: false,
+          found: false,
+          artist: artist,
+          title: title,
+          error: e);
       debugPrint('[LRCLIB] Unexpected error: $e');
       return null;
     }
@@ -74,7 +116,8 @@ class LrcLibService {
       if (line.isEmpty) continue;
 
       // Parse [mm:ss.xx] or [mm:ss.xxx] tags
-      final match = RegExp(r'\[(\d+):(\d{2})\.(\d{2,3})\](.*)').firstMatch(line);
+      final match =
+          RegExp(r'\[(\d+):(\d{2})\.(\d{2,3})\](.*)').firstMatch(line);
       if (match == null) continue;
 
       final minutes = int.parse(match.group(1)!);
@@ -84,12 +127,10 @@ class LrcLibService {
       if (text.isEmpty) continue;
 
       // Normalise fractional seconds to milliseconds
-      final fracMs = fracStr.length == 2
-          ? int.parse(fracStr) * 10
-          : int.parse(fracStr);
+      final fracMs =
+          fracStr.length == 2 ? int.parse(fracStr) * 10 : int.parse(fracStr);
 
-      final startMs =
-          (minutes * 60 + seconds) * 1000 + fracMs.clamp(0, 999);
+      final startMs = (minutes * 60 + seconds) * 1000 + fracMs.clamp(0, 999);
 
       lines.add({
         'start': startMs,

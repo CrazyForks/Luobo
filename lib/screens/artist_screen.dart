@@ -91,7 +91,9 @@ class _ArtistScreenState extends State<ArtistScreen> {
           id: widget.artistId,
           name: nameFromAlbum.isNotEmpty
               ? nameFromAlbum
-              : (cachedSongs.isNotEmpty ? (cachedSongs.first.artist ?? '') : ''),
+              : (cachedSongs.isNotEmpty
+                  ? (cachedSongs.first.artist ?? '')
+                  : ''),
         );
       }
       setState(() {

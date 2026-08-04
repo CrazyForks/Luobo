@@ -4,6 +4,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/server_config.dart';
 import '../utils/image_cache.dart';
+import '../services/diagnostics/diagnostics.dart';
 import '../services/services.dart';
 
 enum AuthState {
@@ -38,12 +39,23 @@ class AuthProvider extends ChangeNotifier {
   bool get hasOfflineContent => _hasOfflineContent;
 
   void _listenToConnectivityChanges() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) async {
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((results) async {
       if (_config == null || !_config!.hasLocalUrl) return;
-      if (_state != AuthState.authenticated && _state != AuthState.serverUnreachable) return;
+      if (_state != AuthState.authenticated &&
+          _state != AuthState.serverUnreachable) return;
       // Network changed — re-probe local/remote URL
+      DiagnosticsService.instance.record(
+        EventType.netSwitch,
+        LogLevel.info,
+        {
+          'from': 'connectivityChanged',
+          'to': results.map((r) => r.name).join(',')
+        },
+      );
       await _subsonicService.resolveActiveUrl();
-      debugPrint('[Auth] Network changed, active URL: ${_subsonicService.activeBaseUrl}');
+      Log.i('Auth',
+          'Network changed, active URL: ${_subsonicService.activeBaseUrl}');
     });
   }
 

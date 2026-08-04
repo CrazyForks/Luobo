@@ -165,7 +165,7 @@ class _RadioScreenState extends State<RadioScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
@@ -315,8 +315,7 @@ class _RadioStationTile extends StatelessWidget {
 
     return Consumer<PlayerProvider>(
       builder: (context, playerProvider, child) {
-        final isPlaying =
-            playerProvider.isPlayingRadio &&
+        final isPlaying = playerProvider.isPlayingRadio &&
             playerProvider.currentRadioStation?.id == station.id;
 
         return ListTile(

@@ -1,9 +1,10 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../widgets/glass_surface.dart';
-import 'dart:io';
 import 'package:window_manager/window_manager.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:safe_device/safe_device.dart';
@@ -15,7 +16,9 @@ import 'services/audio_handler.dart';
 import 'services/transcoding_service.dart';
 import 'services/local_music_service.dart';
 import 'services/analytics_service.dart';
+import 'services/diagnostics/diagnostics.dart';
 import 'services/favorite_playlists_service.dart';
+import 'widgets/glass_surface.dart';
 import 'widgets/privacy_policy_dialog.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
@@ -126,7 +129,20 @@ class _EmulatorWarningScreen extends StatelessWidget {
 }
 
 void main() async {
+  final startupSw = Stopwatch()..start();
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ── 诊断系统：尽早初始化（runApp 前），保证启动早期日志不丢 ──
+  final diag = DiagnosticsService.instance;
+  unawaited(diag.init());
+  GlobalErrorHandler.install();
+  GlobalErrorHandler.contextProvider = () => navigatorKey.currentContext;
+  MetricsCollector.instance.start();
+  MetricsCollector.milestone(
+      'engineInitialized', startupSw.elapsedMilliseconds);
+
+  // 进程退出前 flush 诊断缓冲（崩溃/被杀场景由 GlobalErrorHandler 兜底）
+  AppLifecycleListener(onDetach: () => unawaited(diag.disposeAsync()));
 
   final isEmulator = await _isRunningOnEmulator();
   if (isEmulator) {
@@ -169,6 +185,7 @@ void main() async {
   final jukeboxService = JukeboxService();
   final themeService = ThemeService();
   final nowPlayingThemeService = NowPlayingThemeService();
+  MetricsCollector.milestone('servicesCreated', startupSw.elapsedMilliseconds);
 
   BpmAnalyzerService().initialize().catchError((e) {
     debugPrint('Failed to initialize BPM analyzer: $e');
@@ -217,6 +234,7 @@ void main() async {
   // Initialise the audio service BEFORE runApp so the background audio engine
   // is ready and fully decoupled from the Flutter widget lifecycle on iOS.
   final audioHandler = await initAudioService();
+  MetricsCollector.milestone('audioEngineReady', startupSw.elapsedMilliseconds);
 
   // Create TranscodingService instance to share across providers
   final transcodingService = TranscodingService();
@@ -259,7 +277,14 @@ void main() async {
     child: const MuslyApp(),
   );
 
-  runApp(appWithProviders);
+  // 首帧渲染完成后记录冷启动总时长
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    MetricsCollector.milestone('firstFrame', startupSw.elapsedMilliseconds);
+    Log.i('App', '冷启动完成: ${startupSw.elapsedMilliseconds}ms');
+  });
+
+  // guarded zone：捕获未处理异步异常 + 拦截 print 兜底散落日志
+  GlobalErrorHandler.runGuarded(() => runApp(appWithProviders));
 }
 
 class MuslyApp extends StatelessWidget {
@@ -305,7 +330,10 @@ class MuslyApp extends StatelessWidget {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const AuthWrapper(),
-          navigatorObservers: [AnalyticsNavigatorObserver()],
+          navigatorObservers: [
+            AnalyticsNavigatorObserver(),
+            DiagnosticsRouteObserver(),
+          ],
         );
       },
     );

@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../providers/player_provider.dart';
 import '../providers/library_provider.dart';
+import '../services/diagnostics/diagnostics.dart';
 import '../services/subsonic_service.dart';
 import '../services/offline_service.dart';
 import '../services/storage_service.dart';
@@ -48,8 +49,7 @@ class _CarModeScreenState extends State<CarModeScreen>
   static const double _dismissThreshold = 150.0;
   static const double _maxDragDistance = 400.0;
 
-  double get _morphProgress =>
-      (_dragOffset / _maxDragDistance).clamp(0.0, 1.0);
+  double get _morphProgress => (_dragOffset / _maxDragDistance).clamp(0.0, 1.0);
   double get _scale => 1.0 - (_morphProgress * 0.15);
   double get _borderRadius => _morphProgress * 32.0;
 
@@ -57,6 +57,15 @@ class _CarModeScreenState extends State<CarModeScreen>
   void initState() {
     super.initState();
     WakelockPlus.enable();
+    final frameSw = Stopwatch()..start();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MetricsCollector.buildTime('CarModeScreen', frameSw.elapsedMilliseconds);
+    });
+    DiagnosticsService.instance.record(
+      EventType.animActive,
+      LogLevel.info,
+      {'anim': 'carFeedback', 'pulseMs': 1200},
+    );
     _feedbackController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -397,9 +406,7 @@ class _CarModeScreenState extends State<CarModeScreen>
             final opacity = t <= 0.55 ? 1.0 : (1.0 - (t - 0.55) / 0.45);
             final color = _feedbackFailed
                 ? Colors.grey
-                : (_feedbackFavorited
-                    ? Colors.redAccent
-                    : Colors.blueGrey);
+                : (_feedbackFavorited ? Colors.redAccent : Colors.blueGrey);
             return Opacity(
               opacity: opacity.clamp(0.0, 1.0),
               child: Transform.scale(
@@ -453,212 +460,233 @@ class _CarModeScreenState extends State<CarModeScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: GestureDetector(
-          onVerticalDragStart: (_) {
-            _isDragging = true;
-          },
-          onVerticalDragUpdate: (details) {
-            if (!_isDragging) return;
-            setState(() {
-              _dragOffset = (_dragOffset + details.delta.dy).clamp(
-                0.0,
-                double.infinity,
-              );
-            });
-          },
-          onVerticalDragEnd: (details) {
-            if (!_isDragging) return;
-            _isDragging = false;
-            final velocity = details.primaryVelocity ?? 0;
-            if (_dragOffset > _dismissThreshold || velocity > 800) {
-              setState(() {
-                _dragOffset = MediaQuery.of(context).size.height;
-              });
-              Future.delayed(const Duration(milliseconds: 250), () {
-                if (mounted) Navigator.pop(context);
-              });
-            } else {
-              setState(() {
-                _dragOffset = 0.0;
-              });
-            }
-          },
-          onTap: _handleTripleTap,
-          child: Stack(
-            children: [
-              AnimatedOpacity(
-            duration: _isDragging
-                ? Duration.zero
-                : const Duration(milliseconds: 250),
-            opacity: (1.0 - _morphProgress).clamp(0.0, 1.0),
-            child: AnimatedContainer(
-            duration: _isDragging
-                ? Duration.zero
-                : const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            transform: Matrix4.identity()
-              ..translate(0.0, _dragOffset),
-            transformAlignment: Alignment.topCenter,
-            child: Transform.scale(
-              scale: _scale,
-              alignment: Alignment.center,
-              child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(_borderRadius),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: SafeArea(
-              bottom: false,
-              child: Consumer<PlayerProvider>(
-              builder: (context, player, _) {
-                final song = player.currentSong;
-                final coverUrl = _getCoverArtUrl(context, song);
-                final isFavorited = _favOverride ??
-                    (_starredIds?.contains(song?.id) ??
-                        (song?.starred ?? false));
-
-                // Reload lyrics if song changed
-                if (song != null && song.id != _currentSongId) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _loadLyricsForCurrentSong();
-                  });
-                }
-
-                return Column(
-                  children: [
-                    // Top: close button
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Song title + artist · album
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              song?.title ?? '',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (isFavorited) ...[
-                            const SizedBox(width: 6),
-                            const Icon(
-                              Icons.favorite_border_rounded,
-                              color: Colors.redAccent,
-                              size: 18,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Builder(
-                        builder: (context) {
-                          final artist = song?.artist;
-                          final album = song?.album;
-                          return Text(
-                            [
-                              if (artist != null && artist.isNotEmpty) artist,
-                              if (album != null && album.isNotEmpty) album,
-                            ].join(' · '),
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 14,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Album cover (small)
-                    if (coverUrl != null)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: CachedNetworkImage(
-                              cacheManager: coverCacheManager,
-                              imageUrl: coverUrl,
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
-                            width: 120,
-                            height: 120,
-                            color: Colors.grey[900],
-                          ),
-                          errorWidget: (_, __, ___) => Container(
-                            width: 120,
-                            height: 120,
-                            color: Colors.grey[900],
-                            child: const Icon(
-                              CupertinoIcons.music_note,
-                              color: Colors.white54,
-                              size: 40,
-                            ),
-                          ),
-                        ),
-                      ),
-                    // Lyrics area (expanded, shows 3 real lines)
-                    Expanded(
-                      child: _CarModeLyrics(
-                        player: player,
-                        lyrics: _lyrics,
-                        isLoading: _lyricsLoading,
-                      ),
-                    ),
-                    // Playback controls with progress ring
-                    Padding(
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).padding.bottom + 20,
-                      ),
-                      child: _CarModeControls(player: player),
-                    ),
-                  ],
-                );
-              },
-            ),
-            ),
-          ),
-          ),
-          ),
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
         ),
-              if (_feedbackVisible) _buildFeedbackOverlay(),
-            ],
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: GestureDetector(
+            onVerticalDragStart: (_) {
+              _isDragging = true;
+            },
+            onVerticalDragUpdate: (details) {
+              if (!_isDragging) return;
+              setState(() {
+                _dragOffset = (_dragOffset + details.delta.dy).clamp(
+                  0.0,
+                  double.infinity,
+                );
+              });
+            },
+            onVerticalDragEnd: (details) {
+              if (!_isDragging) return;
+              _isDragging = false;
+              final velocity = details.primaryVelocity ?? 0;
+              final dismiss = _dragOffset > _dismissThreshold || velocity > 800;
+              DiagnosticsService.instance.record(
+                EventType.carDrag,
+                LogLevel.info,
+                {
+                  'dragOffset': _dragOffset.round(),
+                  'velocity': velocity.round(),
+                  'dismiss': dismiss,
+                },
+              );
+              if (dismiss) {
+                setState(() {
+                  _dragOffset = MediaQuery.of(context).size.height;
+                });
+                Future.delayed(const Duration(milliseconds: 250), () {
+                  if (mounted) Navigator.pop(context);
+                });
+              } else {
+                setState(() {
+                  _dragOffset = 0.0;
+                });
+              }
+            },
+            onTap: _handleTripleTap,
+            child: Stack(
+              children: [
+                AnimatedOpacity(
+                  duration: _isDragging
+                      ? Duration.zero
+                      : const Duration(milliseconds: 250),
+                  opacity: (1.0 - _morphProgress).clamp(0.0, 1.0),
+                  child: AnimatedContainer(
+                    duration: _isDragging
+                        ? Duration.zero
+                        : const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    transform: Matrix4.identity()..translate(0.0, _dragOffset),
+                    transformAlignment: Alignment.topCenter,
+                    child: Transform.scale(
+                      scale: _scale,
+                      alignment: Alignment.center,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(_borderRadius),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: SafeArea(
+                          bottom: false,
+                          child: Consumer<PlayerProvider>(
+                            builder: (context, player, _) {
+                              final song = player.currentSong;
+                              final coverUrl = _getCoverArtUrl(context, song);
+                              final isFavorited = _favOverride ??
+                                  (_starredIds?.contains(song?.id) ??
+                                      (song?.starred ?? false));
+
+                              // Reload lyrics if song changed
+                              if (song != null && song.id != _currentSongId) {
+                                WidgetsBinding.instance
+                                    .addPostFrameCallback((_) {
+                                  _loadLyricsForCurrentSong();
+                                });
+                              }
+
+                              return Column(
+                                children: [
+                                  // Top: close button
+                                  Align(
+                                    alignment: Alignment.topRight,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: GestureDetector(
+                                        onTap: () => Navigator.pop(context),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 28,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // Song title + artist · album
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 32),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            song?.title ?? '',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (isFavorited) ...[
+                                          const SizedBox(width: 6),
+                                          const Icon(
+                                            Icons.favorite_border_rounded,
+                                            color: Colors.redAccent,
+                                            size: 18,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 32),
+                                    child: Builder(
+                                      builder: (context) {
+                                        final artist = song?.artist;
+                                        final album = song?.album;
+                                        return Text(
+                                          [
+                                            if (artist != null &&
+                                                artist.isNotEmpty)
+                                              artist,
+                                            if (album != null &&
+                                                album.isNotEmpty)
+                                              album,
+                                          ].join(' · '),
+                                          style: TextStyle(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.6),
+                                            fontSize: 14,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Album cover (small)
+                                  if (coverUrl != null)
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: CachedNetworkImage(
+                                        cacheManager: coverCacheManager,
+                                        imageUrl: coverUrl,
+                                        width: 120,
+                                        height: 120,
+                                        fit: BoxFit.cover,
+                                        placeholder: (_, __) => Container(
+                                          width: 120,
+                                          height: 120,
+                                          color: Colors.grey[900],
+                                        ),
+                                        errorWidget: (_, __, ___) => Container(
+                                          width: 120,
+                                          height: 120,
+                                          color: Colors.grey[900],
+                                          child: const Icon(
+                                            CupertinoIcons.music_note,
+                                            color: Colors.white54,
+                                            size: 40,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  // Lyrics area (expanded, shows 3 real lines)
+                                  Expanded(
+                                    child: _CarModeLyrics(
+                                      player: player,
+                                      lyrics: _lyrics,
+                                      isLoading: _lyricsLoading,
+                                    ),
+                                  ),
+                                  // Playback controls with progress ring
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: MediaQuery.of(context)
+                                              .padding
+                                              .bottom +
+                                          20,
+                                    ),
+                                    child: _CarModeControls(player: player),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (_feedbackVisible) _buildFeedbackOverlay(),
+              ],
+            ),
           ),
-      ),
-    ));
+        ));
   }
 }
 
@@ -702,8 +730,7 @@ class _CarModeLyrics extends StatelessWidget {
         final lines = lyrics!.lines;
 
         final prevLine = currentIndex > 0 ? lines[currentIndex - 1].text : '';
-        final currentLine =
-            currentIndex >= 0 ? lines[currentIndex].text : '';
+        final currentLine = currentIndex >= 0 ? lines[currentIndex].text : '';
         final nextLine = currentIndex >= 0 && currentIndex < lines.length - 1
             ? lines[currentIndex + 1].text
             : '';

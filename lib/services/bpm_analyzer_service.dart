@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/song.dart';
 import 'cache_settings_service.dart';
+import 'diagnostics/diagnostics.dart';
 
 class BpmAnalyzerService {
   static final BpmAnalyzerService _instance = BpmAnalyzerService._internal();
@@ -16,7 +17,6 @@ class BpmAnalyzerService {
     if (_isInitialized) return;
 
     try {
-
       _prefs = await SharedPreferences.getInstance();
       await _cacheSettings.initialize();
       _isInitialized = true;
@@ -30,6 +30,8 @@ class BpmAnalyzerService {
       await initialize();
     }
 
+    final sw = Stopwatch()..start();
+
     // BPM values are tiny (a few bytes per song in SharedPreferences) so the
     // cache is always enabled.
     final cachedBPM = _getCachedBPM(song.id);
@@ -40,6 +42,17 @@ class BpmAnalyzerService {
     final estimatedBPM = _estimateBPMFromGenre(song);
 
     await _cacheBPM(song.id, estimatedBPM);
+
+    sw.stop();
+    DiagnosticsService.instance.record(
+      EventType.taskBpm,
+      LogLevel.info,
+      {
+        'songId': song.id,
+        'elapsedMs': sw.elapsedMilliseconds,
+        'bpm': estimatedBPM,
+      },
+    );
 
     return estimatedBPM;
   }

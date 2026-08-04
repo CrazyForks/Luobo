@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
+import 'diagnostics/diagnostics.dart';
 import 'subsonic_service.dart' show PingResult, SearchResult;
 
 class JellyfinService {
@@ -41,6 +42,7 @@ class JellyfinService {
     _dio.options.connectTimeout = const Duration(seconds: 15);
     _dio.options.receiveTimeout = const Duration(seconds: 30);
     _dio.options.headers = {'Authorization': _authHeader};
+    _dio.interceptors.add(networkMetricsInterceptor());
     if (!kIsWeb && _allowSelfSigned) {
       (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
         final client = HttpClient();

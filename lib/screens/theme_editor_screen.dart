@@ -30,7 +30,8 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
     super.initState();
     _tabController = TabController(length: 7, vsync: this);
     final service = context.read<NowPlayingThemeService>();
-    final originalTheme = service.themes.firstWhere((t) => t.id == widget.themeId);
+    final originalTheme =
+        service.themes.firstWhere((t) => t.id == widget.themeId);
     _draft = originalTheme;
   }
 
@@ -89,7 +90,8 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen>
         actions: [
           if (_hasChanges)
             IconButton(
-              icon: const Icon(CupertinoIcons.checkmark_alt, color: Colors.white),
+              icon:
+                  const Icon(CupertinoIcons.checkmark_alt, color: Colors.white),
               onPressed: _saveDraft,
             ),
         ],

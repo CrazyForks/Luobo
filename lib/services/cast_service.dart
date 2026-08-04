@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
+import 'diagnostics/diagnostics.dart';
 
 enum CastState { notConnected, connecting, connected, disconnecting }
 
@@ -69,7 +70,6 @@ class CastService extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
-    
     if (Platform.isIOS) return;
     _sessionSubscription = _sessionManager.currentSessionStream.listen((
       session,
@@ -145,7 +145,7 @@ class CastService extends ChangeNotifier {
 
     _mediaState = CastMediaState(
       isPlaying: status.playerState == CastMediaPlayerState.playing,
-      position: _mediaState.position, 
+      position: _mediaState.position,
       duration: mediaInfo?.duration ?? Duration.zero,
       title: title,
       artist: artist,
@@ -164,7 +164,6 @@ class CastService extends ChangeNotifier {
     _stopPositionTimer();
     _positionTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_mediaState.isPlaying && _state == CastState.connected) {
-        
         _mediaState = _mediaState.copyWith(
           position: _mediaState.position + const Duration(seconds: 1),
         );
@@ -212,8 +211,18 @@ class CastService extends ChangeNotifier {
       _mediaState = CastMediaState();
       _stopPositionTimer();
 
+      DiagnosticsService.instance.record(
+        EventType.remoteDisconnect,
+        LogLevel.info,
+        {'remote': 'cast'},
+      );
       debugPrint('CastService: Disconnected successfully');
     } catch (e) {
+      DiagnosticsService.instance.record(
+        EventType.remoteError,
+        LogLevel.warn,
+        {'remote': 'cast', 'error': '$e'},
+      );
       debugPrint('CastService: Error disconnecting: $e');
       _state = CastState.notConnected;
     } finally {
@@ -253,7 +262,6 @@ class CastService extends ChangeNotifier {
       final contentType = _mimeTypeFromUrl(url);
 
       final mediaInfo = GoogleCastMediaInformation(
-        
         contentId: url,
         contentUrl: Uri.tryParse(url),
         streamType: CastMediaStreamType.buffered,
@@ -295,7 +303,7 @@ class CastService extends ChangeNotifier {
     if (lower.endsWith('.aac')) return 'audio/aac';
     if (lower.endsWith('.m4a')) return 'audio/mp4';
     if (lower.endsWith('.mp3')) return 'audio/mpeg';
-    
+
     return 'audio/mpeg';
   }
 

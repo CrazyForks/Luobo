@@ -64,21 +64,21 @@ class _SongsScreenState extends State<SongsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : libraryProvider.randomSongs.isEmpty
-          ? Center(child: Text(AppLocalizations.of(context)!.noSongsFound))
-          : ListView.builder(
-              padding: const EdgeInsets.only(bottom: 150),
-              itemCount: libraryProvider.randomSongs.length,
-              itemBuilder: (context, index) {
-                final song = libraryProvider.randomSongs[index];
-                return SongTile(
-                  song: song,
-                  playlist: libraryProvider.randomSongs,
-                  index: index,
-                  showArtist: true,
-                  showAlbum: true,
-                );
-              },
-            ),
+              ? Center(child: Text(AppLocalizations.of(context)!.noSongsFound))
+              : ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 150),
+                  itemCount: libraryProvider.randomSongs.length,
+                  itemBuilder: (context, index) {
+                    final song = libraryProvider.randomSongs[index];
+                    return SongTile(
+                      song: song,
+                      playlist: libraryProvider.randomSongs,
+                      index: index,
+                      showArtist: true,
+                      showAlbum: true,
+                    );
+                  },
+                ),
     );
   }
 }

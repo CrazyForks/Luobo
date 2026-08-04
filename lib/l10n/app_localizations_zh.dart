@@ -619,6 +619,82 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tabAbout => '关于';
 
   @override
+  String get tabDiagnostics => '诊断';
+
+  @override
+  String get diagnosticsTitle => '诊断';
+
+  @override
+  String get diagnosticsSearchHint => '搜索事件类型/内容';
+
+  @override
+  String get diagnosticsNoLogs => '暂无日志';
+
+  @override
+  String diagnosticsExported(Object path) {
+    return '日志已导出：$path';
+  }
+
+  @override
+  String get diagnosticsExportFailed => '导出失败，请检查存储空间';
+
+  @override
+  String get diagnosticsCopied => '日志已复制到剪贴板（最近 2000 条）';
+
+  @override
+  String get diagnosticsClearTitle => '清空诊断日志';
+
+  @override
+  String get diagnosticsClearMessage => '将删除本机全部诊断日志与指标快照，且不可恢复。建议先导出。';
+
+  @override
+  String get diagnosticsClearAction => '清空';
+
+  @override
+  String get diagnosticsMetricFps => 'FPS';
+
+  @override
+  String get diagnosticsMetricJankRate => 'jank率';
+
+  @override
+  String get diagnosticsMetricRequests => '请求数';
+
+  @override
+  String get diagnosticsMetricNetP90 => '网络p90';
+
+  @override
+  String get diagnosticsMetricErrorRate => '错误率';
+
+  @override
+  String get diagnosticsAll => '全部';
+
+  @override
+  String get diagnosticsLevelDebug => 'debug';
+
+  @override
+  String get diagnosticsLevelInfo => 'info';
+
+  @override
+  String get diagnosticsLevelWarn => 'warn';
+
+  @override
+  String get diagnosticsLevelError => 'error';
+
+  @override
+  String get diagnosticsTooltipCopy => '复制到剪贴板';
+
+  @override
+  String get diagnosticsTooltipExport => '导出到文件';
+
+  @override
+  String get diagnosticsTooltipClear => '清空';
+
+  @override
+  String renderError(Object err) {
+    return '渲染异常\n$err';
+  }
+
+  @override
   String get sectionAutoDj => '自动播放';
 
   @override

@@ -596,6 +596,42 @@
   "tabDisplay": "显示",
   "tabAiPlaylist": "AI 歌单",
   "tabAbout": "关于",
+  "tabDiagnostics": "诊断",
+
+  "diagnosticsTitle": "诊断",
+  "diagnosticsSearchHint": "搜索事件类型/内容",
+  "diagnosticsNoLogs": "暂无日志",
+  "diagnosticsExported": "日志已导出：{path}",
+  "@diagnosticsExported": {
+    "placeholders": {
+      "path": {}
+    }
+  },
+  "diagnosticsExportFailed": "导出失败，请检查存储空间",
+  "diagnosticsCopied": "日志已复制到剪贴板（最近 2000 条）",
+  "diagnosticsClearTitle": "清空诊断日志",
+  "diagnosticsClearMessage": "将删除本机全部诊断日志与指标快照，且不可恢复。建议先导出。",
+  "diagnosticsClearAction": "清空",
+  "diagnosticsMetricFps": "FPS",
+  "diagnosticsMetricJankRate": "jank率",
+  "diagnosticsMetricRequests": "请求数",
+  "diagnosticsMetricNetP90": "网络p90",
+  "diagnosticsMetricErrorRate": "错误率",
+  "diagnosticsAll": "全部",
+  "diagnosticsLevelDebug": "debug",
+  "diagnosticsLevelInfo": "info",
+  "diagnosticsLevelWarn": "warn",
+  "diagnosticsLevelError": "error",
+  "diagnosticsTooltipCopy": "复制到剪贴板",
+  "diagnosticsTooltipExport": "导出到文件",
+  "diagnosticsTooltipClear": "清空",
+  "renderError": "渲染异常\n{err}",
+  "@renderError": {
+    "placeholders": {
+      "err": {}
+    }
+  },
+
   "@_SETTINGS_PLAYBACK": {},
   "sectionAutoDj": "自动播放",
   "autoDjMode": "自动播放模式",

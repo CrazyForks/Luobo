@@ -15,6 +15,7 @@ import '../models/song.dart';
 import '../models/radio_station.dart';
 import '../providers/player_provider.dart';
 import '../providers/library_provider.dart';
+import '../services/diagnostics/diagnostics.dart';
 import '../services/subsonic_service.dart';
 import '../services/player_ui_settings_service.dart';
 import '../widgets/star_rating_widget.dart';
@@ -678,63 +679,64 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                                                     1.0,
                                                     1.0,
                                                   ),
-                                              transformAlignment:
-                                                  Alignment.center,
-                                              child: Column(
-                                                mainAxisSize:
-                                                    MainAxisSize.min,
-                                                children: [
-                                                  // Song title above the
-                                                  // artwork, same width,
-                                                  // 1-2 lines.
-                                                  SizedBox(
-                                                    width: artworkSize,
-                                                    child: Text(
-                                                      song.title,
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        height: 1.25,
+                                                transformAlignment:
+                                                    Alignment.center,
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    // Song title above the
+                                                    // artwork, same width,
+                                                    // 1-2 lines.
+                                                    SizedBox(
+                                                      width: artworkSize,
+                                                      child: Text(
+                                                        song.title,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          height: 1.25,
+                                                        ),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                       ),
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
                                                     ),
-                                                  ),
-                                                  const SizedBox(height: 3),
-                                                  GestureDetector(
-                                                    onTap: () {
-                                                      setState(() {
-                                                        _showLyrics = true;
-                                                      });
-                                                    },
-                                                    child:
-                                                        _SwipeableAlbumArtwork(
-                                                      currentImageUrl:
-                                                          _cachedImageUrl ??
-                                                              '',
-                                                      currentThumbnailUrl:
-                                                          _cachedThumbnailUrl,
-                                                      previewImageUrl:
-                                                          _getPreviewArtworkUrl(
-                                                        _previewSong,
+                                                    const SizedBox(height: 3),
+                                                    GestureDetector(
+                                                      onTap: () {
+                                                        setState(() {
+                                                          _showLyrics = true;
+                                                        });
+                                                      },
+                                                      child:
+                                                          _SwipeableAlbumArtwork(
+                                                        currentImageUrl:
+                                                            _cachedImageUrl ??
+                                                                '',
+                                                        currentThumbnailUrl:
+                                                            _cachedThumbnailUrl,
+                                                        previewImageUrl:
+                                                            _getPreviewArtworkUrl(
+                                                          _previewSong,
+                                                        ),
+                                                        hasPreviewSong:
+                                                            _previewSong !=
+                                                                null,
+                                                        size: artworkSize,
+                                                        swipeProgress:
+                                                            _swipeProgress,
+                                                        horizontalDragOffset:
+                                                            _horizontalDragOffset,
                                                       ),
-                                                      hasPreviewSong:
-                                                          _previewSong != null,
-                                                      size: artworkSize,
-                                                      swipeProgress:
-                                                          _swipeProgress,
-                                                      horizontalDragOffset:
-                                                          _horizontalDragOffset,
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
-                                            ),
                                               SizedBox(height: middleSpacing),
                                               AnimatedOpacity(
                                                 duration: animDuration,
@@ -756,7 +758,8 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                                                         _formatDuration,
                                                     onLyricsPressed: () {
                                                       setState(() {
-                                                        _showLyrics = !_showLyrics;
+                                                        _showLyrics =
+                                                            !_showLyrics;
                                                       });
                                                     },
                                                     isLyricsActive: _showLyrics,
@@ -1106,9 +1109,15 @@ const _kDefaultMeshColors = [
 
 Future<List<Color>> _extractPaletteColors(String imageUrl) async {
   if (_paletteCache.containsKey(imageUrl)) {
+    DiagnosticsService.instance.record(
+      EventType.paletteExtract,
+      LogLevel.debug,
+      {'url': imageUrl, 'cacheHit': true},
+    );
     return _paletteCache[imageUrl]!;
   }
 
+  final sw = Stopwatch()..start();
   try {
     ImageProvider provider;
     if (isLocalFilePath(imageUrl)) {
@@ -1158,8 +1167,25 @@ Future<List<Color>> _extractPaletteColors(String imageUrl) async {
 
     // Keep cache bounded.
     if (_paletteCache.length > 20) {
-      _paletteCache.remove(_paletteCache.keys.first);
+      final evicted = _paletteCache.keys.first;
+      _paletteCache.remove(evicted);
+      DiagnosticsService.instance.record(
+        EventType.paletteEvict,
+        LogLevel.info,
+        {'evicted': evicted, 'cacheSize': _paletteCache.length},
+      );
     }
+
+    sw.stop();
+    DiagnosticsService.instance.record(
+      EventType.paletteExtract,
+      LogLevel.info,
+      {
+        'url': imageUrl,
+        'cacheHit': false,
+        'elapsedMs': sw.elapsedMilliseconds,
+      },
+    );
 
     return result;
   } catch (_) {
@@ -1963,6 +1989,11 @@ class _AlbumArtworkSectionState extends State<_AlbumArtworkSection>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.06).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    DiagnosticsService.instance.record(
+      EventType.animActive,
+      LogLevel.info,
+      {'anim': 'albumArtworkRotation', 'pulseMs': 800, 'rotationSec': 12},
+    );
   }
 
   void _updateRotation(bool coverRotation, double speed, bool isPlaying) {
@@ -2057,8 +2088,8 @@ class _AlbumArtworkSectionState extends State<_AlbumArtworkSection>
                                   widget.thumbnailUrl != null &&
                                           widget.thumbnailUrl!.isNotEmpty
                                       ? CachedNetworkImage(
-                              cacheManager: coverCacheManager,
-                              imageUrl: widget.thumbnailUrl!,
+                                          cacheManager: coverCacheManager,
+                                          imageUrl: widget.thumbnailUrl!,
                                           fit: BoxFit.contain,
                                           memCacheWidth: 200,
                                           fadeInDuration: Duration.zero,
@@ -2486,12 +2517,14 @@ class _SongInfoState extends State<_SongInfo> {
           onPressed: widget.onLyricsPressed,
           icon: Icon(
             CupertinoIcons.music_note_list,
-            color: widget.isLyricsActive ? AppTheme.appleMusicRed : Colors.white,
+            color:
+                widget.isLyricsActive ? AppTheme.appleMusicRed : Colors.white,
             size: 24,
           ),
         ),
         IconButton(
           onPressed: () {
+            final transitionSw = Stopwatch()..start();
             Navigator.push(
               context,
               PageRouteBuilder(
@@ -2503,7 +2536,13 @@ class _SongInfoState extends State<_SongInfo> {
                 transitionDuration: const Duration(milliseconds: 200),
                 reverseTransitionDuration: Duration.zero,
               ),
-            );
+            ).then((_) {
+              DiagnosticsRouteObserver.transition(
+                from: 'NowPlayingScreen',
+                to: 'CarModeScreen',
+                dwellMs: transitionSw.elapsedMilliseconds,
+              );
+            });
           },
           icon: const Icon(
             Icons.directions_car,
@@ -2593,170 +2632,171 @@ class _SongInfoState extends State<_SongInfo> {
         builder: (sheetContext) {
           final l10n = AppLocalizations.of(outerContext)!;
           return Container(
-          decoration: BoxDecoration(
-            color: AppTheme.darkSurface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 36,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: AppTheme.darkDivider,
-                  borderRadius: BorderRadius.circular(2.5),
+            decoration: BoxDecoration(
+              color: AppTheme.darkSurface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 36,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppTheme.darkDivider,
+                    borderRadius: BorderRadius.circular(2.5),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.addToPlaylistTitle,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                const SizedBox(height: 16),
+                Text(
+                  l10n.addToPlaylistTitle,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Material(
-                  color: AppTheme.appleMusicRed,
-                  borderRadius: BorderRadius.circular(8),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      _showCreatePlaylistDialog(outerContext);
-                    },
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Material(
+                    color: AppTheme.appleMusicRed,
                     borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            CupertinoIcons.add_circled_solid,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.createNewPlaylist,
-                            style: const TextStyle(
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        _showCreatePlaylistDialog(outerContext);
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              CupertinoIcons.add_circled_solid,
                               color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
+                              size: 20,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.createNewPlaylist,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  l10n.yourPlaylistsLabel,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    l10n.yourPlaylistsLabel,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: playlists.length,
-                  itemBuilder: (listContext, index) {
-                    final playlist = playlists[index];
-                    final coverArtUrl = playlist.coverArt != null
-                        ? subsonicService.getCoverArtUrl(
-                            playlist.coverArt!,
-                            size: 100,
-                          )
-                        : null;
+                const SizedBox(height: 8),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: playlists.length,
+                    itemBuilder: (listContext, index) {
+                      final playlist = playlists[index];
+                      final coverArtUrl = playlist.coverArt != null
+                          ? subsonicService.getCoverArtUrl(
+                              playlist.coverArt!,
+                              size: 100,
+                            )
+                          : null;
 
-                    return ListTile(
-                      leading: coverArtUrl != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: CachedNetworkImage(
-                              cacheManager: coverCacheManager,
-                              imageUrl: coverArtUrl,
+                      return ListTile(
+                        leading: coverArtUrl != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: CachedNetworkImage(
+                                  cacheManager: coverCacheManager,
+                                  imageUrl: coverArtUrl,
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
+                                  placeholder: (ctx, url) => Container(
+                                    width: 50,
+                                    height: 50,
+                                    color: AppTheme.darkCard,
+                                    child: const Icon(
+                                      CupertinoIcons.music_note_list,
+                                      color: Colors.white30,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  errorWidget: (ctx, e, _) => Container(
+                                    width: 50,
+                                    height: 50,
+                                    color: AppTheme.darkCard,
+                                    child: const Icon(
+                                      CupertinoIcons.music_note_list,
+                                      color: Colors.white30,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Container(
                                 width: 50,
                                 height: 50,
-                                fit: BoxFit.cover,
-                                placeholder: (ctx, url) => Container(
-                                  width: 50,
-                                  height: 50,
+                                decoration: BoxDecoration(
                                   color: AppTheme.darkCard,
-                                  child: const Icon(
-                                    CupertinoIcons.music_note_list,
-                                    color: Colors.white30,
-                                    size: 24,
-                                  ),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
-                                errorWidget: (ctx, e, _) => Container(
-                                  width: 50,
-                                  height: 50,
-                                  color: AppTheme.darkCard,
-                                  child: const Icon(
-                                    CupertinoIcons.music_note_list,
-                                    color: Colors.white30,
-                                    size: 24,
-                                  ),
+                                child: const Icon(
+                                  CupertinoIcons.music_note_list,
+                                  color: Colors.white30,
+                                  size: 24,
                                 ),
                               ),
-                            )
-                          : Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: AppTheme.darkCard,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Icon(
-                                CupertinoIcons.music_note_list,
-                                color: Colors.white30,
-                                size: 24,
-                              ),
-                            ),
-                      title: Text(
-                        playlist.name,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      subtitle: playlist.songCount != null
-                          ? Text(
-                              l10n.songsCount(playlist.songCount!),
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
-                              ),
-                            )
-                          : null,
-                      onTap: () async {
-                        Navigator.pop(sheetContext);
-                        await _addToPlaylist(
-                          outerContext,
-                          playlist.id,
+                        title: Text(
                           playlist.name,
-                        );
-                      },
-                    );
-                  },
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        subtitle: playlist.songCount != null
+                            ? Text(
+                                l10n.songsCount(playlist.songCount!),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                ),
+                              )
+                            : null,
+                        onTap: () async {
+                          Navigator.pop(sheetContext);
+                          await _addToPlaylist(
+                            outerContext,
+                            playlist.id,
+                            playlist.name,
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
         },
       );
     } catch (e) {

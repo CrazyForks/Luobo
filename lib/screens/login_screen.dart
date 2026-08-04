@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _customCertificatePath;
   String? _customCertificateName;
   final _profileNameController = TextEditingController();
-  
+
   String? _clientCertificatePath;
   String? _clientCertificateName;
   final _clientCertPasswordController = TextEditingController();
@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     _serverController.addListener(_clearError);
     _localServerController.addListener(_clearError);
     _usernameController.addListener(_clearError);
@@ -79,12 +79,14 @@ class _LoginScreenState extends State<LoginScreen> {
   /// used to edit a saved connection (opened from the settings page).
   void _prefillFromConfig(ServerConfig? config) {
     if (config == null) return;
-    _serverController.text = config.serverUrl == 'local' ? '' : config.serverUrl;
+    _serverController.text =
+        config.serverUrl == 'local' ? '' : config.serverUrl;
     _localServerController.text = config.localUrl ?? '';
     _usernameController.text = config.username;
     _passwordController.text = config.password;
     _profileNameController.text = config.name ?? '';
-    _serverFamily = config.serverFamily.isEmpty ? 'subsonic' : config.serverFamily;
+    _serverFamily =
+        config.serverFamily.isEmpty ? 'subsonic' : config.serverFamily;
     _useLegacyAuth = config.useLegacyAuth;
     _allowSelfSignedCertificates = config.allowSelfSignedCertificates;
     _customCertificatePath = config.customCertificatePath;
@@ -164,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
     switch (type) {
       case _LoginErrorType.ssl:
         icon = CupertinoIcons.lock_slash;
-        color = const Color(0xFFFF9500); 
+        color = const Color(0xFFFF9500);
         if (!_allowSelfSignedCertificates) {
           hint = l10n.enableSelfSignedCertsHint;
         }
@@ -223,10 +225,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.copy_rounded, size: 16, color: color.withValues(alpha: 0.7)),
+                  icon: Icon(Icons.copy_rounded,
+                      size: 16, color: color.withValues(alpha: 0.7)),
                   tooltip: l10n.copyError,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: error));
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -253,7 +257,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ],
-            
             if (type == _LoginErrorType.ssl &&
                 !_allowSelfSignedCertificates) ...[
               const SizedBox(height: 10),
@@ -326,7 +329,8 @@ class _LoginScreenState extends State<LoginScreen> {
             content: Text(
               AppLocalizations.of(
                 context,
-              )!.failedToSelectClientCert(e.toString()),
+              )!
+                  .failedToSelectClientCert(e.toString()),
             ),
             backgroundColor: Colors.red,
           ),
@@ -356,7 +360,8 @@ class _LoginScreenState extends State<LoginScreen> {
             content: Text(
               AppLocalizations.of(
                 context,
-              )!.failedToSelectCertificate(e.toString()),
+              )!
+                  .failedToSelectCertificate(e.toString()),
             ),
             backgroundColor: Colors.red,
           ),
@@ -379,9 +384,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final localUrl = _localServerController.text.trim();
 
     // Accept at least one URL (LAN-only without WAN is valid).
-    if (_serverFamily != 'youtube' &&
-        serverUrl.isEmpty &&
-        localUrl.isEmpty) {
+    if (_serverFamily != 'youtube' && serverUrl.isEmpty && localUrl.isEmpty) {
       setState(
         () => _loginError = '请至少填写一个服务器地址（远程或局域网）',
       );
@@ -401,8 +404,8 @@ class _LoginScreenState extends State<LoginScreen> {
         !serverUrl.startsWith('http://') &&
         !serverUrl.startsWith('https://')) {
       setState(
-        () => _loginError =
-            AppLocalizations.of(context)!.serverUrlMustStartWith,
+        () =>
+            _loginError = AppLocalizations.of(context)!.serverUrlMustStartWith,
       );
       return;
     }
@@ -436,12 +439,10 @@ class _LoginScreenState extends State<LoginScreen> {
       _popIfPushed();
     } else if (!success && mounted) {
       setState(
-        () => _loginError =
-            authProvider.error ??
+        () => _loginError = authProvider.error ??
             AppLocalizations.of(context)!.failedToConnectToServer,
       );
     }
-    
   }
 
   Future<void> _scanQrCode() async {
@@ -478,8 +479,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!success && mounted) {
       setState(
-        () => _loginError =
-            authProvider.error ??
+        () => _loginError = authProvider.error ??
             AppLocalizations.of(context)!.failedToConnectToServer,
       );
     } else if (success && mounted) {
@@ -522,7 +522,8 @@ class _LoginScreenState extends State<LoginScreen> {
         final added = await localService.pickAndAddFiles();
         if (mounted) {
           if (localService.songs.isNotEmpty) {
-            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+            final authProvider =
+                Provider.of<AuthProvider>(context, listen: false);
             await authProvider.setLocalOnlyMode(true);
             _popIfPushed();
           } else {
@@ -600,707 +601,741 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-        Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(ScreenHelper.loginPadding(context)),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                  Center(
-                    child: Container(
-                      width: ScreenHelper.loginLogoSize(context),
-                      height: ScreenHelper.loginLogoSize(context),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.appleMusicRed.withValues(
-                              alpha: 0.4,
-                            ),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Transform.translate(
-                          offset: const Offset(0, 8),
-                          child: Image.asset(
-                            'assets/logobig.png',
-                            width: ScreenHelper.loginLogoSize(context),
-                            height: ScreenHelper.loginLogoSize(context),
-                            fit: BoxFit.fill,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Text(
-                    AppLocalizations.of(context)!.appName,
-                    style: theme.textTheme.displayLarge?.copyWith(
-                      fontSize: ScreenHelper.isSmallScreen(context) ? 32 : null,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppLocalizations.of(context)!.connectToServerSubtitle,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.lightSecondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  _SavedProfilesSwitcher(
-                    onProfileSelected: (profile) async {
-                      final authProvider = Provider.of<AuthProvider>(
-                        context,
-                        listen: false,
-                      );
-                      await authProvider.switchProfile(profile);
-                      if (mounted && authProvider.error != null) {
-                        setState(
-                          () => _loginError = authProvider.error,
-                        );
-                      }
-                    },
-                    onProfileDeleted: (profile) async {
-                      final authProvider = Provider.of<AuthProvider>(
-                        context,
-                        listen: false,
-                      );
-                      await authProvider.deleteProfile(profile);
-                      setState(() {});
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-                  _ServerFamilyToggle(
-                    serverFamily: _serverFamily,
-                    onChanged: (v) => setState(() {
-                      _serverFamily = v;
-                      _useLegacyAuth = false;
-                    }),
-                  ),
-                  const SizedBox(height: 16),
-
-                  if (_serverFamily == 'youtube') ...[                    
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF0000).withAlpha(20),
-                        border: Border.all(
-                          color: const Color(0xFFFF0000).withAlpha(80),
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            CupertinoIcons.info_circle,
-                            color: Color(0xFFFF0000),
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              AppLocalizations.of(
-                                context,
-                              )!
-                                  .youtubeMusicDescription,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white70
-                                    : Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ] else ...[                    
-                  TextFormField(
-                    controller: _serverController,
-                    focusNode: _serverFocusNode,
-                    keyboardType: TextInputType.url,
-                    autocorrect: false,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) => _localServerFocusNode.requestFocus(),
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.serverUrl,
-                      hintText: AppLocalizations.of(context)!.serverUrlHint,
-                      prefixIcon: const Icon(CupertinoIcons.globe),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    validator: (value) {
-                      final url = (value ?? '').trim();
-                      if (url.isNotEmpty &&
-                          !url.startsWith('http://') &&
-                          !url.startsWith('https://')) {
-                        return AppLocalizations.of(context)!.invalidUrlFormat;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  TextFormField(
-                    controller: _localServerController,
-                    focusNode: _localServerFocusNode,
-                    keyboardType: TextInputType.url,
-                    autocorrect: false,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) => _usernameFocusNode.requestFocus(),
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.lanUrl,
-                      hintText: AppLocalizations.of(context)!.lanUrlHint,
-                      prefixIcon: const Icon(CupertinoIcons.wifi),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) return null;
-                      final url = value.trim();
-                      if (!url.startsWith('http://') &&
-                          !url.startsWith('https://')) {
-                        return AppLocalizations.of(context)!.invalidUrlFormat;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  TextFormField(
-                    controller: _usernameController,
-                    focusNode: _usernameFocusNode,
-                    autocorrect: false,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) => _passwordFocusNode.requestFocus(),
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.username,
-                      prefixIcon: const Icon(CupertinoIcons.person),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return AppLocalizations.of(context)!.pleaseEnterUsername;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  TextFormField(
-                    controller: _passwordController,
-                    focusNode: _passwordFocusNode,
-                    obscureText: _obscurePassword,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) { if (!isBusy) _login(); },
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.password,
-                      prefixIcon: const Icon(CupertinoIcons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? CupertinoIcons.eye
-                              : CupertinoIcons.eye_slash,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return AppLocalizations.of(context)!.pleaseEnterPassword;
-                      }
-                      return null;
-                    },
-                  ),
-                  ],
-                  const SizedBox(height: 16),
-
-                  Row(
-                    children: [
-                      CupertinoSwitch(
-                        value: _useLegacyAuth,
-                        activeTrackColor: AppTheme.appleMusicRed,
-                        onChanged: (value) {
-                          setState(() {
-                            _useLegacyAuth = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.legacyAuthentication,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                            Text(
-                              AppLocalizations.of(context)!.legacyAuthSubtitle,
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  Row(
-                    children: [
-                      CupertinoSwitch(
-                        value: _allowSelfSignedCertificates,
-                        activeTrackColor: AppTheme.appleMusicRed,
-                        onChanged: (value) {
-                          setState(() {
-                            _allowSelfSignedCertificates = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.allowSelfSignedCerts,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                            Text(
-                              AppLocalizations.of(context)!.allowSelfSignedSubtitle,
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  InkWell(
-                    onTap: () {
-                      setState(() {
-                        _showAdvancedOptions = !_showAdvancedOptions;
-                      });
-                    },
-                    child: Row(
-                      children: [
-                        Icon(
-                          _showAdvancedOptions
-                              ? CupertinoIcons.chevron_down
-                              : CupertinoIcons.chevron_right,
-                          size: 18,
-                          color: theme.textTheme.bodyMedium?.color,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppLocalizations.of(context)!.advancedOptions,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  if (_showAdvancedOptions) ...[
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _profileNameController,
-                      autocorrect: false,
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context)!.profileNameLabel,
-                        hintText: AppLocalizations.of(context)!.profileNameHint,
-                        prefixIcon: const Icon(CupertinoIcons.tag),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.brightness == Brightness.dark
-                            ? const Color(0xFF2C2C2E)
-                            : const Color(0xFFF2F2F7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+            Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(ScreenHelper.loginPadding(context)),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Form(
+                      key: _formKey,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            AppLocalizations.of(context)!.customTlsCertificate,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            AppLocalizations.of(context)!.customCertificateSubtitle,
-                            style: theme.textTheme.bodySmall,
-                          ),
-                          const SizedBox(height: 12),
-                          if (_customCertificateName != null)
-                            Container(
-                              padding: const EdgeInsets.all(12),
+                          Center(
+                            child: Container(
+                              width: ScreenHelper.loginLogoSize(context),
+                              height: ScreenHelper.loginLogoSize(context),
+                              alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: theme.brightness == Brightness.dark
-                                    ? const Color(0xFF3C3C3E)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    CupertinoIcons.doc_fill,
-                                    size: 20,
-                                    color: AppTheme.appleMusicRed,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _customCertificateName!,
-                                      style: theme.textTheme.bodyMedium,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      CupertinoIcons.xmark_circle_fill,
-                                      size: 20,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _customCertificatePath = null;
-                                        _customCertificateName = null;
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            )
-                          else
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                onPressed: _pickCertificateFile,
-                                icon: const Icon(
-                                  CupertinoIcons.doc_on_clipboard,
-                                ),
-                                label: Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  )!.selectCertificateFile,
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppTheme.appleMusicRed,
-                                  side: BorderSide(
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
                                     color: AppTheme.appleMusicRed.withValues(
-                                      alpha: 0.5,
+                                      alpha: 0.4,
                                     ),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(24),
+                                child: Transform.translate(
+                                  offset: const Offset(0, 8),
+                                  child: Image.asset(
+                                    'assets/logobig.png',
+                                    width: ScreenHelper.loginLogoSize(context),
+                                    height: ScreenHelper.loginLogoSize(context),
+                                    fit: BoxFit.fill,
                                   ),
                                 ),
                               ),
                             ),
-
-                          const SizedBox(height: 20),
-                          const Divider(height: 1),
-                          const SizedBox(height: 16),
+                          ),
+                          const SizedBox(height: 32),
                           Text(
-                            AppLocalizations.of(context)!.clientCertificate,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
+                            AppLocalizations.of(context)!.appName,
+                            style: theme.textTheme.displayLarge?.copyWith(
+                              fontSize: ScreenHelper.isSmallScreen(context)
+                                  ? 32
+                                  : null,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                           Text(
-                            AppLocalizations.of(
-                              context,
-                            )!.clientCertificateSubtitle,
-                            style: theme.textTheme.bodySmall,
+                            AppLocalizations.of(context)!
+                                .connectToServerSubtitle,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.lightSecondaryText,
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          if (_clientCertificateName != null) ...[
+                          const SizedBox(height: 24),
+                          _SavedProfilesSwitcher(
+                            onProfileSelected: (profile) async {
+                              final authProvider = Provider.of<AuthProvider>(
+                                context,
+                                listen: false,
+                              );
+                              await authProvider.switchProfile(profile);
+                              if (mounted && authProvider.error != null) {
+                                setState(
+                                  () => _loginError = authProvider.error,
+                                );
+                              }
+                            },
+                            onProfileDeleted: (profile) async {
+                              final authProvider = Provider.of<AuthProvider>(
+                                context,
+                                listen: false,
+                              );
+                              await authProvider.deleteProfile(profile);
+                              setState(() {});
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          _ServerFamilyToggle(
+                            serverFamily: _serverFamily,
+                            onChanged: (v) => setState(() {
+                              _serverFamily = v;
+                              _useLegacyAuth = false;
+                            }),
+                          ),
+                          const SizedBox(height: 16),
+                          if (_serverFamily == 'youtube') ...[
                             Container(
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: theme.brightness == Brightness.dark
-                                    ? const Color(0xFF3C3C3E)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(8),
+                                color: const Color(0xFFFF0000).withAlpha(20),
+                                border: Border.all(
+                                  color: const Color(0xFFFF0000).withAlpha(80),
+                                ),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
                                 children: [
                                   const Icon(
-                                    Icons.security_rounded,
-                                    size: 20,
-                                    color: AppTheme.appleMusicRed,
+                                    CupertinoIcons.info_circle,
+                                    color: Color(0xFFFF0000),
+                                    size: 18,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      _clientCertificateName!,
-                                      style: theme.textTheme.bodyMedium,
-                                      overflow: TextOverflow.ellipsis,
+                                      AppLocalizations.of(
+                                        context,
+                                      )!
+                                          .youtubeMusicDescription,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.white70
+                                            : Colors.black87,
+                                      ),
                                     ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      CupertinoIcons.xmark_circle_fill,
-                                      size: 20,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _clientCertificatePath = null;
-                                        _clientCertificateName = null;
-                                        _clientCertPasswordController.clear();
-                                      });
-                                    },
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _clientCertPasswordController,
-                              obscureText: _obscureClientCertPassword,
+                          ] else ...[
+                            TextFormField(
+                              controller: _serverController,
+                              focusNode: _serverFocusNode,
+                              keyboardType: TextInputType.url,
+                              autocorrect: false,
+                              textInputAction: TextInputAction.next,
+                              onFieldSubmitted: (_) =>
+                                  _localServerFocusNode.requestFocus(),
                               decoration: InputDecoration(
-                                hintText: AppLocalizations.of(
-                                  context,
-                                )!.clientCertPassword,
-                                prefixIcon: const Icon(
-                                  CupertinoIcons.lock,
-                                  size: 20,
+                                labelText:
+                                    AppLocalizations.of(context)!.serverUrl,
+                                hintText:
+                                    AppLocalizations.of(context)!.serverUrlHint,
+                                prefixIcon: const Icon(CupertinoIcons.globe),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
+                              ),
+                              validator: (value) {
+                                final url = (value ?? '').trim();
+                                if (url.isNotEmpty &&
+                                    !url.startsWith('http://') &&
+                                    !url.startsWith('https://')) {
+                                  return AppLocalizations.of(context)!
+                                      .invalidUrlFormat;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _localServerController,
+                              focusNode: _localServerFocusNode,
+                              keyboardType: TextInputType.url,
+                              autocorrect: false,
+                              textInputAction: TextInputAction.next,
+                              onFieldSubmitted: (_) =>
+                                  _usernameFocusNode.requestFocus(),
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context)!.lanUrl,
+                                hintText:
+                                    AppLocalizations.of(context)!.lanUrlHint,
+                                prefixIcon: const Icon(CupertinoIcons.wifi),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty)
+                                  return null;
+                                final url = value.trim();
+                                if (!url.startsWith('http://') &&
+                                    !url.startsWith('https://')) {
+                                  return AppLocalizations.of(context)!
+                                      .invalidUrlFormat;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _usernameController,
+                              focusNode: _usernameFocusNode,
+                              autocorrect: false,
+                              textInputAction: TextInputAction.next,
+                              onFieldSubmitted: (_) =>
+                                  _passwordFocusNode.requestFocus(),
+                              decoration: InputDecoration(
+                                labelText:
+                                    AppLocalizations.of(context)!.username,
+                                prefixIcon: const Icon(CupertinoIcons.person),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return AppLocalizations.of(context)!
+                                      .pleaseEnterUsername;
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _passwordController,
+                              focusNode: _passwordFocusNode,
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) {
+                                if (!isBusy) _login();
+                              },
+                              decoration: InputDecoration(
+                                labelText:
+                                    AppLocalizations.of(context)!.password,
+                                prefixIcon: const Icon(CupertinoIcons.lock),
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    _obscureClientCertPassword
+                                    _obscurePassword
                                         ? CupertinoIcons.eye
                                         : CupertinoIcons.eye_slash,
-                                    size: 20,
                                   ),
-                                  onPressed: () => setState(() {
-                                    _obscureClientCertPassword =
-                                        !_obscureClientCertPassword;
-                                  }),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
                                 ),
-                                isDense: true,
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context)!
+                                      .pleaseEnterPassword;
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              CupertinoSwitch(
+                                value: _useLegacyAuth,
+                                activeTrackColor: AppTheme.appleMusicRed,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _useLegacyAuth = value;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .legacyAuthentication,
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .legacyAuthSubtitle,
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              CupertinoSwitch(
+                                value: _allowSelfSignedCertificates,
+                                activeTrackColor: AppTheme.appleMusicRed,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _allowSelfSignedCertificates = value;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .allowSelfSignedCerts,
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .allowSelfSignedSubtitle,
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _showAdvancedOptions = !_showAdvancedOptions;
+                              });
+                            },
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _showAdvancedOptions
+                                      ? CupertinoIcons.chevron_down
+                                      : CupertinoIcons.chevron_right,
+                                  size: 18,
+                                  color: theme.textTheme.bodyMedium?.color,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  AppLocalizations.of(context)!.advancedOptions,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_showAdvancedOptions) ...[
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _profileNameController,
+                              autocorrect: false,
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context)!
+                                    .profileNameLabel,
+                                hintText: AppLocalizations.of(context)!
+                                    .profileNameHint,
+                                prefixIcon: const Icon(CupertinoIcons.tag),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                             ),
-                          ] else
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: theme.brightness == Brightness.dark
+                                    ? const Color(0xFF2C2C2E)
+                                    : const Color(0xFFF2F2F7),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .customTlsCertificate,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .customCertificateSubtitle,
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  if (_customCertificateName != null)
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            theme.brightness == Brightness.dark
+                                                ? const Color(0xFF3C3C3E)
+                                                : Colors.white,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            CupertinoIcons.doc_fill,
+                                            size: 20,
+                                            color: AppTheme.appleMusicRed,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              _customCertificateName!,
+                                              style: theme.textTheme.bodyMedium,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(
+                                              CupertinoIcons.xmark_circle_fill,
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _customCertificatePath = null;
+                                                _customCertificateName = null;
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  else
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: _pickCertificateFile,
+                                        icon: const Icon(
+                                          CupertinoIcons.doc_on_clipboard,
+                                        ),
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!
+                                              .selectCertificateFile,
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor:
+                                              AppTheme.appleMusicRed,
+                                          side: BorderSide(
+                                            color: AppTheme.appleMusicRed
+                                                .withValues(
+                                              alpha: 0.5,
+                                            ),
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 20),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .clientCertificate,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!
+                                        .clientCertificateSubtitle,
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  if (_clientCertificateName != null) ...[
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            theme.brightness == Brightness.dark
+                                                ? const Color(0xFF3C3C3E)
+                                                : Colors.white,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.security_rounded,
+                                            size: 20,
+                                            color: AppTheme.appleMusicRed,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              _clientCertificateName!,
+                                              style: theme.textTheme.bodyMedium,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(
+                                              CupertinoIcons.xmark_circle_fill,
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _clientCertificatePath = null;
+                                                _clientCertificateName = null;
+                                                _clientCertPasswordController
+                                                    .clear();
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextField(
+                                      controller: _clientCertPasswordController,
+                                      obscureText: _obscureClientCertPassword,
+                                      decoration: InputDecoration(
+                                        hintText: AppLocalizations.of(
+                                          context,
+                                        )!
+                                            .clientCertPassword,
+                                        prefixIcon: const Icon(
+                                          CupertinoIcons.lock,
+                                          size: 20,
+                                        ),
+                                        suffixIcon: IconButton(
+                                          icon: Icon(
+                                            _obscureClientCertPassword
+                                                ? CupertinoIcons.eye
+                                                : CupertinoIcons.eye_slash,
+                                            size: 20,
+                                          ),
+                                          onPressed: () => setState(() {
+                                            _obscureClientCertPassword =
+                                                !_obscureClientCertPassword;
+                                          }),
+                                        ),
+                                        isDense: true,
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: _pickClientCertificate,
+                                        icon:
+                                            const Icon(Icons.security_rounded),
+                                        label: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!
+                                              .selectClientCertificate,
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor:
+                                              AppTheme.appleMusicRed,
+                                          side: BorderSide(
+                                            color: AppTheme.appleMusicRed
+                                                .withValues(
+                                              alpha: 0.5,
+                                            ),
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 24),
+                          _buildErrorCard(theme),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: isLoading ? null : _login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.appleMusicRed,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: isLoading
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
+                                      AppLocalizations.of(context)!.connect,
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              const Expanded(child: Divider()),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  AppLocalizations.of(context)!.or,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: AppTheme.lightSecondaryText,
+                                  ),
+                                ),
+                              ),
+                              const Expanded(child: Divider()),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: OutlinedButton.icon(
+                              onPressed: isBusy ? null : _scanQrCode,
+                              icon:
+                                  const Icon(CupertinoIcons.qrcode_viewfinder),
+                              label: Text(
+                                AppLocalizations.of(context)!.scanQrCode,
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.appleMusicRed,
+                                side: const BorderSide(
+                                    color: AppTheme.appleMusicRed),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (!Platform.isIOS) ...[
+                            const SizedBox(height: 12),
                             SizedBox(
                               width: double.infinity,
+                              height: 50,
                               child: OutlinedButton.icon(
-                                onPressed: _pickClientCertificate,
-                                icon: const Icon(Icons.security_rounded),
+                                onPressed: isBusy ? null : _useLocalFiles,
+                                icon: _isScanning
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            AppTheme.appleMusicRed,
+                                          ),
+                                        ),
+                                      )
+                                    : const Icon(CupertinoIcons.folder),
                                 label: Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  )!.selectClientCertificate,
+                                  _isScanning
+                                      ? _scanStatus
+                                      : AppLocalizations.of(context)!
+                                          .useLocalFiles,
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppTheme.appleMusicRed,
-                                  side: BorderSide(
-                                    color: AppTheme.appleMusicRed.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                  ),
+                                  side: const BorderSide(
+                                      color: AppTheme.appleMusicRed),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
                               ),
                             ),
+                          ],
+                          if (!Platform.isIOS && _isScanning) ...[
+                            const SizedBox(height: 12),
+                            LinearProgressIndicator(
+                              value: _scanProgress > 0 ? _scanProgress : null,
+                              backgroundColor:
+                                  AppTheme.appleMusicRed.withValues(
+                                alpha: 0.2,
+                              ),
+                              color: AppTheme.appleMusicRed,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                  ],
-                  const SizedBox(height: 24),
-
-                  _buildErrorCard(theme),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.appleMusicRed,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : Text(
-                              AppLocalizations.of(context)!.connect,
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  Row(
-                    children: [
-                      const Expanded(child: Divider()),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          AppLocalizations.of(context)!.or,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.lightSecondaryText,
-                          ),
-                        ),
-                      ),
-                      const Expanded(child: Divider()),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton.icon(
-                      onPressed: isBusy ? null : _scanQrCode,
-                      icon: const Icon(CupertinoIcons.qrcode_viewfinder),
-                      label: Text(
-                        AppLocalizations.of(context)!.scanQrCode,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.appleMusicRed,
-                        side: const BorderSide(color: AppTheme.appleMusicRed),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  if (!Platform.isIOS) ...[
-                  const SizedBox(height: 12),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton.icon(
-                      onPressed: isBusy ? null : _useLocalFiles,
-                      icon: _isScanning
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppTheme.appleMusicRed,
-                                ),
-                              ),
-                            )
-                          : const Icon(CupertinoIcons.folder),
-                      label: Text(
-                        _isScanning ? _scanStatus : AppLocalizations.of(context)!.useLocalFiles,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.appleMusicRed,
-                        side: const BorderSide(color: AppTheme.appleMusicRed),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  ],
-
-                  if (!Platform.isIOS && _isScanning) ...[
-                    const SizedBox(height: 12),
-                    LinearProgressIndicator(
-                      value: _scanProgress > 0 ? _scanProgress : null,
-                      backgroundColor: AppTheme.appleMusicRed.withValues(
-                        alpha: 0.2,
-                      ),
-                      color: AppTheme.appleMusicRed,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ],
-                    ],
                   ),
                 ),
               ),
             ),
-          ),
+            if (Navigator.of(context).canPop())
+              Positioned(
+                top: 4,
+                left: 4,
+                child: IconButton(
+                  icon: const Icon(CupertinoIcons.xmark),
+                  tooltip: AppLocalizations.of(context)!.close,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+          ],
         ),
-        if (Navigator.of(context).canPop())
-          Positioned(
-            top: 4,
-            left: 4,
-            child: IconButton(
-              icon: const Icon(CupertinoIcons.xmark),
-              tooltip: AppLocalizations.of(context)!.close,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ],
       ),
-    ),
-  );
+    );
   }
 }
 
@@ -1461,7 +1496,8 @@ class _ServerFamilyToggle extends StatelessWidget {
               onTap: () => onChanged(c.family),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: selected
                       ? c.activeColor.withAlpha(30)

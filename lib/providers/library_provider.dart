@@ -135,7 +135,8 @@ class LibraryProvider extends ChangeNotifier {
   }
 
   String getCoverArtUrl(String? coverArt) {
-    return _subsonicService.getCoverArtUrl(coverArt, size: kCoverArtRequestSize);
+    return _subsonicService.getCoverArtUrl(coverArt,
+        size: kCoverArtRequestSize);
   }
 
   /// Cover art for an artist, falling back to one of the artist's album
@@ -495,11 +496,9 @@ class LibraryProvider extends ChangeNotifier {
         final albumCount = await _db.getAlbumCount();
         const albumBatchSize = 50;
         const concurrentFetches = 8;
-        for (int aOffset = 0;
-            aOffset < albumCount;
-            aOffset += albumBatchSize) {
-          final albums =
-              await _db.getAlbumsPaginated(limit: albumBatchSize, offset: aOffset);
+        for (int aOffset = 0; aOffset < albumCount; aOffset += albumBatchSize) {
+          final albums = await _db.getAlbumsPaginated(
+              limit: albumBatchSize, offset: aOffset);
           // Fetch songs for albums concurrently (bounded) instead of one
           // HTTP request at a time, which made large libraries take minutes.
           for (var i = 0; i < albums.length; i += concurrentFetches) {

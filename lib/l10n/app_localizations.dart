@@ -1300,6 +1300,150 @@ abstract class AppLocalizations {
   /// **'About'**
   String get tabAbout;
 
+  /// No description provided for @tabDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get tabDiagnostics;
+
+  /// No description provided for @diagnosticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get diagnosticsTitle;
+
+  /// No description provided for @diagnosticsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search event type / content'**
+  String get diagnosticsSearchHint;
+
+  /// No description provided for @diagnosticsNoLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'No logs yet'**
+  String get diagnosticsNoLogs;
+
+  /// No description provided for @diagnosticsExported.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs exported: {path}'**
+  String diagnosticsExported(Object path);
+
+  /// No description provided for @diagnosticsExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed, check storage space'**
+  String get diagnosticsExportFailed;
+
+  /// No description provided for @diagnosticsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs copied to clipboard (latest 2000)'**
+  String get diagnosticsCopied;
+
+  /// No description provided for @diagnosticsClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear diagnostics logs'**
+  String get diagnosticsClearTitle;
+
+  /// No description provided for @diagnosticsClearMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete all local diagnostics logs and metrics. Export first if needed.'**
+  String get diagnosticsClearMessage;
+
+  /// No description provided for @diagnosticsClearAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get diagnosticsClearAction;
+
+  /// No description provided for @diagnosticsMetricFps.
+  ///
+  /// In en, this message translates to:
+  /// **'FPS'**
+  String get diagnosticsMetricFps;
+
+  /// No description provided for @diagnosticsMetricJankRate.
+  ///
+  /// In en, this message translates to:
+  /// **'jank rate'**
+  String get diagnosticsMetricJankRate;
+
+  /// No description provided for @diagnosticsMetricRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'requests'**
+  String get diagnosticsMetricRequests;
+
+  /// No description provided for @diagnosticsMetricNetP90.
+  ///
+  /// In en, this message translates to:
+  /// **'net p90'**
+  String get diagnosticsMetricNetP90;
+
+  /// No description provided for @diagnosticsMetricErrorRate.
+  ///
+  /// In en, this message translates to:
+  /// **'error rate'**
+  String get diagnosticsMetricErrorRate;
+
+  /// No description provided for @diagnosticsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get diagnosticsAll;
+
+  /// No description provided for @diagnosticsLevelDebug.
+  ///
+  /// In en, this message translates to:
+  /// **'debug'**
+  String get diagnosticsLevelDebug;
+
+  /// No description provided for @diagnosticsLevelInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'info'**
+  String get diagnosticsLevelInfo;
+
+  /// No description provided for @diagnosticsLevelWarn.
+  ///
+  /// In en, this message translates to:
+  /// **'warn'**
+  String get diagnosticsLevelWarn;
+
+  /// No description provided for @diagnosticsLevelError.
+  ///
+  /// In en, this message translates to:
+  /// **'error'**
+  String get diagnosticsLevelError;
+
+  /// No description provided for @diagnosticsTooltipCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to clipboard'**
+  String get diagnosticsTooltipCopy;
+
+  /// No description provided for @diagnosticsTooltipExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export to file'**
+  String get diagnosticsTooltipExport;
+
+  /// No description provided for @diagnosticsTooltipClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get diagnosticsTooltipClear;
+
+  /// No description provided for @renderError.
+  ///
+  /// In en, this message translates to:
+  /// **'Render error\n{err}'**
+  String renderError(Object err);
+
   /// Playback settings section header for Auto DJ
   ///
   /// In en, this message translates to:

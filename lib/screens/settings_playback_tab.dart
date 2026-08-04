@@ -632,7 +632,9 @@ class _SettingsPlaybackTabState extends State<SettingsPlaybackTab> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  isWifi ? AppLocalizations.of(context)!.networkWifi : AppLocalizations.of(context)!.networkMobile,
+                  isWifi
+                      ? AppLocalizations.of(context)!.networkWifi
+                      : AppLocalizations.of(context)!.networkMobile,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
