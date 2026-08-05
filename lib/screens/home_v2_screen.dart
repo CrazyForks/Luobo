@@ -21,6 +21,7 @@ import 'album_screen.dart';
 import 'favorites_screen.dart';
 import 'history_screen.dart';
 import 'playlist_screen.dart';
+import 'settings_screen.dart';
 import 'song_list_screen.dart';
 
 /// 新首页（§5.1，Apple Music「现在就听」风格，v2 独立实现）。
@@ -133,11 +134,14 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
                 ),
                 IconButton(
                   icon: Icon(
-                    Icons.search_rounded,
+                    Icons.settings_rounded,
                     color: isDark ? Colors.white : Colors.black,
                   ),
-                  tooltip: AppLocalizations.of(context)!.search,
-                  onPressed: () => NavigationHelper.switchToTab(2),
+                  tooltip: AppLocalizations.of(context)!.settings,
+                  onPressed: () => NavigationHelper.push(
+                    context,
+                    const SettingsScreen(),
+                  ),
                 ),
                 IconButton(
                   icon: Icon(
@@ -301,13 +305,22 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
         ? libraryProvider.cachedAllSongs
         : allSongs;
     final byId = {for (final s in pool) s.id: s};
+    // 多行横滑：2 行 × 每行 5 个 = 10 首，横滑 5 下看全（用户反馈）。
+    const rows = 2;
+    const perRow = 5;
     final recent = recommendationService.recentlyPlayed
         .map((id) => byId[id])
         .whereType<Song>()
-        .take(10)
+        .take(rows * perRow)
         .toList();
     if (recent.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
+
+    const cardWidth = 200.0;
+    const cardHeight = 72.0;
+    const rowSpacing = 10.0;
+    const colSpacing = 12.0;
+    final gridHeight = rows * cardHeight + (rows - 1) * rowSpacing;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,17 +332,23 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 72,
-          child: ListView.separated(
+          height: gridHeight,
+          child: GridView.builder(
             padding: EdgeInsets.symmetric(horizontal: hPad),
             scrollDirection: Axis.horizontal,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: rows,
+              crossAxisSpacing: rowSpacing,
+              mainAxisSpacing: colSpacing,
+              childAspectRatio: cardHeight / cardWidth,
+            ),
             itemCount: recent.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final song = recent[index];
               return ContinuePlayingCard(
                 song: song,
                 coverArt: libraryProvider.effectiveCoverArt(song),
+                width: cardWidth,
                 onTap: () => _play(context, song, recent, index),
               );
             },

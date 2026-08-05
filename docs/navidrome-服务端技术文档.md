@@ -384,7 +384,7 @@ Luobo 客户端自身在 `debugPrint('[Musly] →/← ...')` 记录每个 Subson
 | `search3` | FTS5/bm25（CJK 自动 LIKE） | |
 | `getLyricsBySongId` | structuredLyrics（含 enhanced cue） | 客户端三级回退：离线缓存 → Subsonic → LRCLIB/网易云 |
 | `updatePlaylist` 重复 `songIdToAdd` 参数 | `p.Strings("songIdToAdd")` 多值解析 | Navidrome 不识别 `songIdToAdd[i]` 形式（客户端注释） |
-| LAN/远程双地址探测 | 无特殊处理，任意可达地址均可 | 客户端 `resolveActiveUrl` 3s 超时探测 |
+| LAN/远程双地址探测 | 无特殊处理，任意可达地址均可 | 客户端 `resolveActiveUrl` 3s 超时探测（2026-08-03 优化：上次会话在远端时冷启跳过探测 + 后台静默切换，`subsonic_service.dart:86-197`） |
 
 ## 16. NAS 部署参考（Docker）
 

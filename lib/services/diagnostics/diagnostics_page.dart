@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -57,6 +61,32 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> {
     setState(() => _busy = true);
     final l10n = AppLocalizations.of(context)!;
     try {
+      // 移动端：弹系统保存对话框手选路径（release 下 adb 访问不了 app
+      // 私有目录，必须走 SAF 才能把日志取出来）。
+      if (!kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.android ||
+              defaultTargetPlatform == TargetPlatform.iOS)) {
+        final content =
+            await DiagnosticsService.instance.exportReadableText();
+        final bytes = Uint8List.fromList(utf8.encode(content));
+        final fileName =
+            'luobo_diagnostics_${DateTime.now().millisecondsSinceEpoch}.txt';
+        final path = await FilePicker.platform.saveFile(
+          dialogTitle: l10n.diagnosticsTitle,
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['txt'],
+          bytes: bytes,
+        );
+        if (!mounted) return;
+        if (path != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.diagnosticsExported(path))),
+          );
+        }
+        return;
+      }
+      // 桌面端：导出完整目录（events/metrics/export.txt/meta.json）
       final path = await DiagnosticsService.instance.export();
       if (!mounted) return;
       if (path != null) {

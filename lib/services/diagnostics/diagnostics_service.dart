@@ -42,6 +42,10 @@ class DiagnosticsService extends ChangeNotifier {
   int _seq = 0;
   bool _inited = false;
   bool _persistDisabled = false;
+
+  /// 写锁被其他存活实例持有：本实例降级为仅内存 ring，不落盘；
+  /// 快照定时器周期性尝试接管（旧实例可能已退出）。
+  bool _secondaryInstance = false;
   int _persistFailures = 0;
   String _appSessionId = 'as-init';
   String _playbackSessionId = '';
@@ -71,12 +75,36 @@ class DiagnosticsService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final savedSeq = prefs.getInt(_seqPrefsKey) ?? 0;
       if (savedSeq > _seq) _seq = savedSeq; // 不覆盖本启动已推进的 seq
-      final saved = prefs.getString(_appSessionKey);
-      _appSessionId = (saved != null && saved.isNotEmpty)
-          ? saved
-          : 'as-${_uuid.v4().substring(0, 8)}';
-      await prefs.setString(_appSessionKey, _appSessionId);
       await _store.init();
+      // 写锁：防止进程/引擎重建后两个实例并发追加同一文件（曾导致 JSONL
+      // 写穿、seq 重复、双 appSessionId 并存）。busy → 降级为仅内存 ring，
+      // 由快照定时器周期性尝试接管（旧实例可能已退出）。
+      final lock = await _store.acquireWriterLock();
+      if (lock == WriterLockResult.busy) {
+        _secondaryInstance = true;
+      }
+      // 从文件尾对账 seq/appSessionId（与 prefs 取大/补齐），修复实例重建
+      // 后 seq 回退、会话分叉导致的重复序号与时间线割裂。
+      final tail = await _store.readTailState();
+      if (tail.seq != null && tail.seq! > _seq) _seq = tail.seq!;
+      final saved = prefs.getString(_appSessionKey);
+      if (saved != null && saved.isNotEmpty) {
+        _appSessionId = saved;
+      } else if (tail.appSessionId != null) {
+        _appSessionId = tail.appSessionId!; // 沿用文件尾会话，跨启动时间线连续
+      } else {
+        _appSessionId = 'as-${_uuid.v4().substring(0, 8)}';
+      }
+      // 仅持锁实例落 prefs：次级实例（busy）不写，避免并发冷启动时自生成的
+      // 会话 id 覆盖主写入者，导致下次启动会话分叉。
+      if (!_secondaryInstance) {
+        await prefs.setString(_appSessionKey, _appSessionId);
+      }
+      if (lock == WriterLockResult.staleTakenOver) {
+        // 前序实例崩溃残留：轮转隔离可能仍持有旧句柄的僵尸写入者，
+        // 本实例从 0 字节的干净文件开始追加。
+        await _store.rotateEvents();
+      }
     } catch (_) {
       _appSessionId = 'as-${_uuid.v4().substring(0, 8)}';
       // 存储初始化失败：降级为仅内存 ring 模式，避免 _pending 无界增长
@@ -84,12 +112,16 @@ class DiagnosticsService extends ChangeNotifier {
     }
     _inited = true;
 
-    // 初始化前暂存的事件补录
+    // 初始化前暂存的事件补录；补录时把默认 as-init 改写为真实 appSessionId，
+    // 避免启动早期事件永久归属错误会话（曾导致 19 条 as-init 落盘）。
     if (_pending.isNotEmpty) {
       final events = List<DiagnosticEvent>.from(_pending);
       _pending.clear();
       for (final e in events) {
-        _persist(e);
+        final appSessionId = e.appSessionId;
+        _persist(appSessionId.isEmpty || appSessionId == 'as-init'
+            ? _withAppSessionId(e, _appSessionId)
+            : e);
       }
       notifyListeners();
     }
@@ -153,8 +185,21 @@ class DiagnosticsService extends ChangeNotifier {
   String _effectiveSessionId() =>
       _playbackSessionId.isNotEmpty ? _playbackSessionId : 'app';
 
+  /// 生成 appSessionId 被改写的事件副本（用于 pending 补录时修正 as-init）。
+  DiagnosticEvent _withAppSessionId(DiagnosticEvent e, String appSessionId) =>
+      DiagnosticEvent(
+        seq: e.seq,
+        ts: e.ts,
+        sessionId: e.sessionId,
+        appSessionId: appSessionId,
+        netSessionId: e.netSessionId,
+        type: e.type,
+        level: e.level,
+        payload: e.payload,
+      );
+
   void _persist(DiagnosticEvent e) {
-    if (_persistDisabled) return;
+    if (_persistDisabled || _secondaryInstance) return;
     unawaited(_appendSafe(e));
   }
 
@@ -174,6 +219,8 @@ class DiagnosticsService extends ChangeNotifier {
 
   int _seqPersistCounter = 0;
   void _maybePersistSeq() {
+    // 次级实例不写 prefs：避免覆盖主写入者的 seq 造成跨实例回退
+    if (_secondaryInstance) return;
     if (++_seqPersistCounter < 50) return;
     _seqPersistCounter = 0;
     final seqSnapshot = _seq; // 快照，避免 await 期间被后续 record 递增
@@ -244,6 +291,22 @@ class DiagnosticsService extends ChangeNotifier {
   // ---- 指标快照 ----
 
   Future<void> _writeSnapshot() async {
+    if (_secondaryInstance) {
+      // 周期性尝试接管写锁：旧实例可能已退出；成功后恢复落盘并同步
+      // 文件尾状态，避免与旧实例残留写入产生重复 seq。
+      try {
+        final lock = await _store.acquireWriterLock();
+        if (lock != WriterLockResult.busy) {
+          _secondaryInstance = false;
+          if (lock == WriterLockResult.staleTakenOver) {
+            await _store.rotateEvents();
+          }
+          final tail = await _store.readTailState();
+          if (tail.seq != null && tail.seq! > _seq) _seq = tail.seq!;
+        }
+      } catch (_) {}
+      return; // 未接管期间不写指标快照（事件也不落盘，见 _persist）
+    }
     if (_persistDisabled) {
       // 熔断恢复探测：每 60s 走事件写入路径试写一次（与熔断同源），
       // 成功则恢复持久化；按完整事件结构写入，避免污染事件流解析
@@ -253,7 +316,7 @@ class DiagnosticsService extends ChangeNotifier {
           ts: DateTime.now(),
           sessionId: 'app',
           appSessionId: _appSessionId,
-          type: 'app.probe',
+          type: EventType.appProbe,
           level: LogLevel.debug,
           payload: const <String, dynamic>{},
         );
@@ -320,6 +383,32 @@ class DiagnosticsService extends ChangeNotifier {
   Future<String?> export() async {
     final text = await readableText(maxLines: 2000);
     return _store.export(text, _meta());
+  }
+
+  /// 生成自包含的单文件导出文本（meta 概要 + 可读日志），供移动端
+  /// 手选路径保存。release 下 adb 无法访问 app 私有目录，需走系统
+  /// 保存对话框（SAF）才能把日志取出来。
+  Future<String> exportReadableText() async {
+    final text = await readableText(maxLines: 2000);
+    final meta = _meta();
+    // 原始 JSONL 尾部：供核对 seq/appSessionId/写穿——可读文本是解析产物，
+    // 损坏行会被静默丢弃，无法验证数据完整性。
+    final raw = await _store.readEventLines(maxLines: 400);
+    final buffer = StringBuffer()
+      ..writeln('# Luobo diagnostics export')
+      ..writeln('appVersion: ${meta['appVersion']}')
+      ..writeln('platform: ${meta['platform']}')
+      ..writeln('appSessionId: ${meta['appSessionId']}')
+      ..writeln('startedAt: ${meta['startedAt']}')
+      ..writeln('---')
+      ..write(text);
+    if (raw.trim().isNotEmpty) {
+      buffer
+        ..writeln('')
+        ..writeln('--- raw events (tail, JSONL) ---')
+        ..write(raw);
+    }
+    return buffer.toString();
   }
 
   Future<void> clear() async {

@@ -14,6 +14,7 @@ class StorageService {
   static const String _lrcLibFallbackKey = 'lrclib_fallback';
   static const String _neteaseFallbackKey = 'netease_fallback';
   static const String _volumeKey = 'volume';
+  static const String _lastActiveBaseUrlKey = 'last_active_base_url';
 
   Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
@@ -29,6 +30,19 @@ class StorageService {
       return ServerConfig.fromJson(json.decode(configJson));
     }
     return null;
+  }
+
+  /// The base URL (remote or LAN) last successfully resolved by
+  /// `SubsonicService.resolveActiveUrl` — used to skip the LAN probe on cold
+  /// start when the previous session already ended on the remote URL.
+  Future<String?> getLastActiveBaseUrl() async {
+    final prefs = await _prefs;
+    return prefs.getString(_lastActiveBaseUrlKey);
+  }
+
+  Future<void> saveLastActiveBaseUrl(String url) async {
+    final prefs = await _prefs;
+    await prefs.setString(_lastActiveBaseUrlKey, url);
   }
 
   Future<void> clearServerConfig() async {

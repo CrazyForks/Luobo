@@ -19,6 +19,9 @@ class EventType {
   // metrics.* —— 周期性采样指标
   static const String metricsMemory = 'metrics.memory';
 
+  // 持久化熔断探测（_writeSnapshot 熔断期间每 60s 试写一条）
+  static const String appProbe = 'app.probe';
+
   // audio.* —— 场景 A：播放中断无声
   static const String audioInterruption = 'audio.interruption';
   static const String audioNoisy = 'audio.noisy';

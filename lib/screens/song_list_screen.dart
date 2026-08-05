@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../providers/player_provider.dart';
 import '../theme/app_theme.dart';
+import '../utils/image_cache.dart';
 import '../widgets/pressable_scale.dart';
 import '../widgets/widgets.dart';
 
@@ -81,7 +83,9 @@ class _SongListScreenState extends State<SongListScreen> {
     }
     try {
       final palette = await PaletteGenerator.fromImageProvider(
-        NetworkImage(url),
+        // 与展示图同一 300 URL + coverCacheManager，命中共享磁盘缓存
+        // （图片缓存文档 §4.2/§4.3：取色不重复下载）。
+        CachedNetworkImageProvider(url, cacheManager: coverCacheManager),
         maximumColorCount: 12,
       );
       final color = palette.vibrantColor?.color ??

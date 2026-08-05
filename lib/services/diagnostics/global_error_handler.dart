@@ -22,6 +22,14 @@ class GlobalErrorHandler {
   /// 供 ErrorWidget 兜底页获取 AppLocalizations；取不到时回退硬编码文案。
   static BuildContext? Function()? contextProvider;
 
+  /// debug print 兜底无节流会淹没事件流（曾见单条循环打印 1600+ 条、队列状态
+  /// 每秒 1 条）。以消息前 [printSuppressKeyLen] 字符为键做时间窗去重：
+  /// [printSuppressWindowMs] 内同类消息只记 1 条，控制台输出不受影响。
+  /// 取前缀而非全文：位置/耗时变化的消息也能被折叠。
+  static const int printSuppressWindowMs = 10000;
+  static const int printSuppressKeyLen = 64;
+  static final Map<String, int> _printSuppress = {};
+
   static void install() {
     FlutterError.onError = (details) {
       DiagnosticsService.instance.record(
@@ -96,6 +104,19 @@ class GlobalErrorHandler {
           specification: ZoneSpecification(
             print: (self, parent, zone, line) {
               parent.print(zone, line); // 保留控制台输出
+              final now = DateTime.now().millisecondsSinceEpoch;
+              final key = line.length > printSuppressKeyLen
+                  ? line.substring(0, printSuppressKeyLen)
+                  : line;
+              final last = _printSuppress[key];
+              if (last != null && now - last < printSuppressWindowMs) {
+                return; // 时间窗内同类消息已记录，抑制落盘
+              }
+              _printSuppress[key] = now;
+              if (_printSuppress.length > 256) {
+                _printSuppress.removeWhere(
+                    (_, t) => now - t >= printSuppressWindowMs);
+              }
               DiagnosticsService.instance.record(
                 EventType.logPrint,
                 LogLevel.debug,

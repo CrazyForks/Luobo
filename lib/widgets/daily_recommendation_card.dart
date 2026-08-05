@@ -1,8 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../utils/image_cache.dart';
 import '../widgets/album_artwork.dart';
 import '../widgets/pressable_scale.dart';
 
@@ -66,7 +68,9 @@ class _DailyRecommendationCardState extends State<DailyRecommendationCard> {
     }
     try {
       final palette = await PaletteGenerator.fromImageProvider(
-        NetworkImage(url),
+        // 与展示图同一 300 URL + coverCacheManager，命中共享磁盘缓存
+        // （图片缓存文档 §4.2/§4.3：取色不重复下载）。
+        CachedNetworkImageProvider(url, cacheManager: coverCacheManager),
         maximumColorCount: 12,
       );
       // 取色标准：优先 vibrant（最鲜艳、最有辨识度），再回落 dominant。

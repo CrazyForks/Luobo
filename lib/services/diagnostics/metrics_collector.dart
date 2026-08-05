@@ -10,7 +10,8 @@ import 'platform.dart';
 /// 性能指标采集器。
 ///
 /// - 帧摘要：FrameTimings 入帧数据环形缓冲（10s），供派生检测器消费；
-/// - 派生检测器：单帧 >50ms 产出 frame.jank（带当前路由/交互上下文）；
+/// - 派生检测器：单帧 UI 线程 build+raster >50ms 产出 frame.jank（带当前
+///   路由/交互上下文；不采用 totalSpan，避免低帧率上下文误报）；
 /// - 启动里程碑：main() 各阶段打点；
 /// - 页面 build 计时：>16ms 记录 screen.buildTime；
 /// - 内存/缓存：60s 采样（原生端 RSS + 图片缓存）；
@@ -123,8 +124,15 @@ class MetricsCollector {
     for (final t in timings) {
       _frames.add(t);
       _frameSeq++;
-      final totalMs = (t.totalSpan.inMicroseconds) / 1000;
-      if (totalMs > _jankThresholdMs) {
+      // jank 判定用 UI 线程实际工作量（build+raster），而非 totalSpan：
+      // totalSpan 含帧管线等待（vsync 错过、低帧率上下文如 Android Auto
+      // 投射/后台），build/raster 仅 ~10ms 却报 50ms+，会系统性误报
+      // （曾见 892 条 jank 全部 buildMs 5-8ms）。
+      final buildMs = t.buildDuration.inMicroseconds / 1000;
+      final rasterMs = t.rasterDuration.inMicroseconds / 1000;
+      final uiMs = buildMs + rasterMs;
+      final totalMs = t.totalSpan.inMicroseconds / 1000;
+      if (uiMs > _jankThresholdMs) {
         // 秒级聚合：持续卡顿时避免逐帧事件淹没缓冲
         final last = _lastJankRecordedAt;
         if (last == null ||
@@ -135,9 +143,9 @@ class MetricsCollector {
             LogLevel.warn,
             {
               'frame': _frameSeq,
-              'totalMs': totalMs.round(),
-              'buildMs': (t.buildDuration.inMicroseconds / 1000).round(),
-              'rasterMs': (t.rasterDuration.inMicroseconds / 1000).round(),
+              'totalMs': totalMs.round(), // 保留管线总耗时供上下文参考
+              'buildMs': buildMs.round(),
+              'rasterMs': rasterMs.round(),
               'route': DiagnosticsService.instance.currentRoute,
             },
           );
@@ -154,9 +162,12 @@ class MetricsCollector {
   void _aggregate() {
     if (_frames.isEmpty) return;
     // 以采样到的帧数估算 FPS：帧间采样无法精确计时，
-    // 采用"最近 10s 窗口内 jank 帧占比"作为卡顿指标。
+    // 采用"最近 10s 窗口内 jank 帧占比"作为卡顿指标（与事件判定同源）。
     final jank = _frames.where((f) {
-      return f.totalSpan.inMicroseconds / 1000 > _jankThresholdMs;
+      return (f.buildDuration.inMicroseconds +
+                  f.rasterDuration.inMicroseconds) /
+              1000 >
+          _jankThresholdMs;
     }).length;
     final jankRate = jank / _frames.length;
     final fps = _estimateFps();

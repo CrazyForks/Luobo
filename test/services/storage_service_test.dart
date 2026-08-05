@@ -26,5 +26,19 @@ void main() {
       await storageService.saveDiscordRpcEnabled(false);
       expect(await storageService.getDiscordRpcEnabled(), false);
     });
+
+    test('last active base URL roundtrip', () async {
+      expect(await storageService.getLastActiveBaseUrl(), isNull);
+      await storageService.saveLastActiveBaseUrl('https://remote.example');
+      expect(
+        await storageService.getLastActiveBaseUrl(),
+        'https://remote.example',
+      );
+      await storageService.saveLastActiveBaseUrl('http://192.168.1.10:4533');
+      expect(
+        await storageService.getLastActiveBaseUrl(),
+        'http://192.168.1.10:4533',
+      );
+    });
   });
 }

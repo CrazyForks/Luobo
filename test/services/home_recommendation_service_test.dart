@@ -52,7 +52,7 @@ void main() {
       expect(pref['治愈'], greaterThan(0.0));
     });
 
-    test('熟悉/探索分层：每日推荐只推听过的，探索发现只推未听过的', () async {
+    test('分层：每日推荐熟悉优先 + 未听过补足，探索发现只推未听过的', () async {
       final heard = List.generate(15, (i) => _song('h$i', artist: 'A${i % 3}', albumId: 'al$i'));
       final unheard = List.generate(10, (i) => _song('u$i', artist: 'B$i', albumId: 'bl$i'));
       for (final s in heard) {
@@ -61,11 +61,17 @@ void main() {
       service.rebuildKnowledge(_tagsFor([...heard, ...unheard], '摇滚,深夜'));
       service.refreshUserPref();
 
-      final daily = service.dailyRecommendation(allSongs: [...heard, ...unheard]);
-      final discover = service.discoverSongs(allSongs: [...heard, ...unheard]);
+      final all = [...heard, ...unheard];
+      final daily = service.dailyRecommendation(allSongs: all);
+      final discover = service.discoverSongs(allSongs: all);
 
       expect(daily, isNotEmpty);
-      expect(daily.every((s) => s.id.startsWith('h')), isTrue);
+      // 熟悉优先：融合分（行为 0.7 权重）让听过的歌排在未听过之前。
+      expect(daily.first.id.startsWith('h'), isTrue);
+      // 去重上限卡满后由未听过的歌补足：听过的只占 6 首（3 歌手×≤2），
+      // 未听过的 10 首全部进池。
+      expect(daily.length, 16);
+      expect(daily.any((s) => s.id.startsWith('u')), isTrue);
       expect(discover, isNotEmpty);
       expect(discover.every((s) => s.id.startsWith('u')), isTrue);
     });

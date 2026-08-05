@@ -39,6 +39,10 @@ void main() {
     ) async {
       await tester.pumpWidget(createTestApp(child: const SettingsScreen()));
       await tester.pump();
+      // SettingsPlaybackTab 的 initState 会惰性创建 PlayerProvider，
+      // 其 _restoreQueueState 埋点触发 DiagnosticsService 200ms 节流定时器；
+      // 推进假时钟让其走完，避免测试结束时残留 pending timer。
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(SettingsScreen), findsOneWidget);
     });
   });

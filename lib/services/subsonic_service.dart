@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
@@ -9,6 +10,7 @@ import 'package:uuid/uuid.dart';
 import '../models/models.dart';
 import 'diagnostics/diagnostics.dart';
 import 'jellyfin_service.dart';
+import 'storage_service.dart';
 import 'youtube_service.dart';
 
 class PingResult {
@@ -31,11 +33,14 @@ class SubsonicService {
   JellyfinService? _jellyfin;
   YoutubeService? _youtube;
   String? _activeBaseUrl;
+  final StorageService? _storageService;
 
   static const String _clientName = 'Musly';
   static const String _apiVersion = '1.16.1';
 
-  SubsonicService() : _dio = Dio() {
+  SubsonicService({StorageService? storageService})
+      : _storageService = storageService,
+        _dio = Dio() {
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.options.receiveTimeout = const Duration(seconds: 30);
     _addLogInterceptor(_dio);
@@ -73,6 +78,11 @@ class SubsonicService {
 
   /// Probes the local URL; if reachable, uses it. Otherwise falls back to the
   /// remote (serverUrl). Call this after [configure] and before making requests.
+  ///
+  /// The last successfully resolved URL is persisted so cold start doesn't
+  /// stall up to 3s probing a LAN that is not reachable: when the previous
+  /// session ended on the remote URL, the probe is skipped and the LAN is
+  /// re-probed in the background, switching silently once it responds.
   Future<void> resolveActiveUrl() async {
     if (_config == null) return;
     final localUrl = _config!.normalizedLocalUrl;
@@ -84,10 +94,59 @@ class SubsonicService {
         LogLevel.info,
         {'host': _activeBaseUrl, 'switched': false},
       );
+      await _persistLastActiveBaseUrl();
       return;
     }
 
-    // Try local URL with a short timeout
+    // Last session ended on the remote URL — use it immediately and probe the
+    // LAN in the background instead of blocking startup.
+    final lastActive = await _storageService?.getLastActiveBaseUrl();
+    if (lastActive != null && lastActive == _config!.normalizedUrl) {
+      _activeBaseUrl = _config!.normalizedUrl;
+      Log.i('Net', 'Last session on remote, skipping LAN probe: $_activeBaseUrl');
+      DiagnosticsService.instance.record(
+        EventType.netUrlResolved,
+        LogLevel.info,
+        {'host': _activeBaseUrl, 'switched': false, 'skipProbe': true},
+      );
+      await _persistLastActiveBaseUrl();
+      unawaited(_probeLocalUrlInBackground(localUrl));
+      return;
+    }
+
+    // First run, or the last session was on the LAN — probe the LAN first.
+    final probe = await _probeLocalUrl(localUrl);
+    if (probe.ok) {
+      final switched = _activeBaseUrl != localUrl;
+      _activeBaseUrl = localUrl;
+      DiagnosticsService.instance.record(
+        EventType.netUrlResolved,
+        LogLevel.info,
+        {
+          'host': _activeBaseUrl,
+          'probeMs': probe.ms,
+          'switched': switched,
+        },
+      );
+      Log.i('Net', 'LAN URL reachable, using: $_activeBaseUrl');
+      await _persistLastActiveBaseUrl();
+      return;
+    }
+
+    final switched = _activeBaseUrl != _config!.normalizedUrl;
+    _activeBaseUrl = _config!.normalizedUrl;
+    DiagnosticsService.instance.record(
+      EventType.netUrlResolved,
+      LogLevel.info,
+      {'host': _activeBaseUrl, 'switched': switched},
+    );
+    Log.i('Net', 'Falling back to remote URL: $_activeBaseUrl');
+    await _persistLastActiveBaseUrl();
+  }
+
+  /// Pings the local URL with a short timeout. Returns whether the LAN
+  /// endpoint responded 200, plus the probe duration in ms.
+  Future<({bool ok, int ms})> _probeLocalUrl(String localUrl) async {
     try {
       final params = _getAuthParams();
       final queryString = params.entries
@@ -102,33 +161,42 @@ class SubsonicService {
       final probeSw = Stopwatch()..start();
       final response = await probeDio.get(pingUrl);
       probeSw.stop();
-      if (response.statusCode == 200) {
-        final switched = _activeBaseUrl != localUrl;
-        _activeBaseUrl = localUrl;
-        DiagnosticsService.instance.record(
-          EventType.netUrlResolved,
-          LogLevel.info,
-          {
-            'host': _activeBaseUrl,
-            'probeMs': probeSw.elapsedMilliseconds,
-            'switched': switched,
-          },
-        );
-        Log.i('Net', 'LAN URL reachable, using: $_activeBaseUrl');
-        return;
-      }
+      return (ok: response.statusCode == 200, ms: probeSw.elapsedMilliseconds);
     } catch (e) {
       Log.w('Net', 'LAN URL probe failed', error: e);
+      return (ok: false, ms: 0);
     }
+  }
 
-    final switched = _activeBaseUrl != _config!.normalizedUrl;
-    _activeBaseUrl = _config!.normalizedUrl;
+  /// Background LAN probe after a skipped startup probe: switches the active
+  /// base URL (and persists it) once the LAN becomes reachable.
+  Future<void> _probeLocalUrlInBackground(String localUrl) async {
+    final probe = await _probeLocalUrl(localUrl);
+    if (!probe.ok || _config == null) return;
+    final switched = _activeBaseUrl != localUrl;
+    _activeBaseUrl = localUrl;
     DiagnosticsService.instance.record(
       EventType.netUrlResolved,
       LogLevel.info,
-      {'host': _activeBaseUrl, 'switched': switched},
+      {
+        'host': _activeBaseUrl,
+        'probeMs': probe.ms,
+        'switched': switched,
+        'background': true,
+      },
     );
-    Log.i('Net', 'Falling back to remote URL: $_activeBaseUrl');
+    Log.i('Net', 'LAN URL reachable (background), using: $_activeBaseUrl');
+    await _persistLastActiveBaseUrl();
+  }
+
+  Future<void> _persistLastActiveBaseUrl() async {
+    final base = _activeBaseUrl;
+    if (base == null) return;
+    try {
+      await _storageService?.saveLastActiveBaseUrl(base);
+    } catch (e) {
+      Log.w('Net', 'Failed to persist last active URL', error: e);
+    }
   }
 
   String get activeBaseUrl => _activeBaseUrl ?? _config?.normalizedUrl ?? '';

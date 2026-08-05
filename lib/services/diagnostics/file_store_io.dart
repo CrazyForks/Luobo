@@ -3,16 +3,38 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
+/// 写锁获取结果。
+enum WriterLockResult {
+  /// 拿到锁（前序实例正常退出或无锁）。
+  acquired,
+
+  /// 锁存在但已过期（前序实例崩溃未释放），已接管；调用方应轮转隔离
+  /// 可能残留的僵尸写入句柄。
+  staleTakenOver,
+
+  /// 锁被存活实例持有：本实例应降级为仅内存 ring，不落盘。
+  busy,
+}
+
 /// 原生平台事件/快照文件存储（dart:io）。
 ///
 /// - events.jsonl：事件流，增量追加、跨冷启动保留；
 /// - 轮转：单文件满 [maxFileBytes] 切新文件，最多 [maxFiles] 个，删最旧；
 /// - metrics.jsonl：60s 指标快照，独立上限；
-/// - 导出：拷贝文件 + 生成可读文本 + meta.json 到 `export_<ts>/` 目录。
+/// - 导出：拷贝文件 + 生成可读文本 + meta.json 到 `export_<ts>/` 目录；
+/// - 写锁：`.writer.lock` 防止进程/引擎重建后两个实例并发追加同一文件
+///   （曾导致 JSONL 记录被写穿、seq 重复、双 appSessionId 并存）。
 ///
 /// 所有写入经单一串行 Future 链执行，避免并发 append 与轮转
 /// （close/rename/reopen）交错导致的竞态。
 class DiagFileStore {
+  static const String _lockFileName = '.writer.lock';
+
+  /// 锁心跳间隔：存活实例每 [lockHeartbeat] 刷新一次锁时间戳。
+  static const Duration lockHeartbeat = Duration(seconds: 10);
+
+  /// 锁过期阈值：超过此时长无心跳视为前序实例崩溃，可接管。
+  static const Duration lockStaleAfter = Duration(seconds: 30);
   final int maxFileBytes;
   final int maxFiles;
 
@@ -27,6 +49,8 @@ class DiagFileStore {
   int _eventBytes = 0;
   int _metricsBytes = 0;
   Future<void> _writeChain = Future.value(); // 串行化写入队列
+  File? _lockFile;
+  DateTime? _lockRefreshedAt;
 
   Future<Directory> _ensureDir() async {
     if (_dir != null) return _dir!;
@@ -143,6 +167,114 @@ class DiagFileStore {
     await _openEventSink();
   }
 
+  /// 供外部（诊断服务）在接管陈旧写锁后调用：轮转当前事件文件，
+  /// 隔离可能残留的僵尸写入句柄，保证新文件从 0 字节干净开始。
+  Future<void> rotateEvents() => _rotateEvents();
+
+  // ── 写锁（跨实例防并发追加）────────────────────────────────────────────
+
+  /// 以独占方式获取写锁。
+  ///
+  /// - 锁文件不存在 → 创建并返回 [WriterLockResult.acquired]；
+  /// - 锁存在但超过 [lockStaleAfter] 无心跳（内容缺失/超时）→ 接管并返回
+  ///   [WriterLockResult.staleTakenOver]；
+  /// - 锁被存活实例持有 → 返回 [WriterLockResult.busy]，调用方应降级为
+  ///   仅内存 ring（不落盘）。
+  Future<WriterLockResult> acquireWriterLock() async {
+    final dir = await _ensureDir();
+    final lockFile = File('${dir.path}/$_lockFileName');
+    _lockFile = lockFile;
+    try {
+      await lockFile.create(exclusive: true);
+      await _touchLock();
+      return WriterLockResult.acquired;
+    } on FileSystemException {
+      // 已存在：内容缺失或心跳超时视为陈旧（前序实例崩溃未释放）
+      try {
+        final createdMs = int.tryParse((await lockFile.readAsString()).trim());
+        final isStale = createdMs == null ||
+            DateTime.now().difference(
+                    DateTime.fromMillisecondsSinceEpoch(createdMs)) >
+                lockStaleAfter;
+        if (isStale) {
+          await _touchLock();
+          return WriterLockResult.staleTakenOver;
+        }
+      } catch (_) {}
+      _lockFile = null;
+      return WriterLockResult.busy;
+    }
+  }
+
+  /// 心跳刷新锁时间戳（由周期 flush 调用，内部按 [lockHeartbeat] 节流）。
+  /// 仅锁持有者调用；未持有锁（_lockFile 为空）时为空操作。
+  Future<void> refreshWriterLock() async {
+    final lock = _lockFile;
+    if (lock == null) return;
+    final now = DateTime.now();
+    if (_lockRefreshedAt != null &&
+        now.difference(_lockRefreshedAt!) < lockHeartbeat) {
+      return;
+    }
+    try {
+      await _touchLock();
+    } catch (_) {}
+  }
+
+  Future<void> _touchLock() async {
+    final lock = _lockFile;
+    if (lock == null) return;
+    await lock.writeAsString('${DateTime.now().millisecondsSinceEpoch}');
+    _lockRefreshedAt = DateTime.now();
+  }
+
+  /// 释放写锁（正常退出/切换实例时调用；崩溃场景由陈旧超时兜底）。
+  Future<void> releaseWriterLock() async {
+    final lock = _lockFile;
+    _lockFile = null;
+    _lockRefreshedAt = null;
+    if (lock == null) return;
+    try {
+      await lock.delete();
+    } catch (_) {}
+  }
+
+  /// 从事件文件尾恢复 {seq, appSessionId}：跨启动状态对账，修复双实例
+  /// 写穿后新实例 seq/appSessionId 与文件不一致（重复 seq、会话分叉）的问题。
+  /// 只读各文件尾部，与导出解析策略一致：损坏行跳过。
+  Future<({int? seq, String? appSessionId})> readTailState() async {
+    final dir = await _ensureDir();
+    int? maxSeq;
+    String? lastAppSessionId;
+    Future<void> scan(File f) async {
+      try {
+        final lines = await f.readAsLines();
+        final tail =
+            lines.length > 40 ? lines.sublist(lines.length - 40) : lines;
+        for (final line in tail) {
+          try {
+            final m = jsonDecode(line) as Map<String, dynamic>;
+            final s = (m['seq'] as num?)?.toInt();
+            if (s != null && (maxSeq == null || s > maxSeq!)) maxSeq = s;
+            final aid = m['appSessionId'] as String?;
+            if (aid != null && aid.isNotEmpty) lastAppSessionId = aid;
+          } catch (_) {
+            // 损坏行跳过（与导出解析策略一致）
+          }
+        }
+      } catch (_) {
+        // 文件不可读跳过
+      }
+    }
+
+    // 最旧分卷 → 最新分卷 → 当前文件；appSessionId 取最新有效行（覆盖赋值）
+    for (var i = maxFiles; i >= 1; i--) {
+      await scan(File('${dir.path}/events.$i.jsonl'));
+    }
+    await scan(File('${dir.path}/events.jsonl'));
+    return (seq: maxSeq, appSessionId: lastAppSessionId);
+  }
+
   Future<void> _flushSinks() async {
     try {
       await _eventSink?.flush();
@@ -154,6 +286,7 @@ class DiagFileStore {
     // 先等待写链排空，再 flush sink，避免与链内轮转交错
     await _writeChain.catchError((_) {});
     await _flushSinks();
+    await refreshWriterLock(); // 心跳：维持写锁存活，防被误判陈旧接管
   }
 
   Future<void> close() async {
@@ -166,6 +299,7 @@ class DiagFileStore {
     } catch (_) {}
     _eventSink = null;
     _metricsSink = null;
+    await releaseWriterLock();
   }
 
   /// 清空全部日志/指标/导出目录。与写入、导出共享同一串行链，避免竞态。
@@ -197,6 +331,10 @@ class DiagFileStore {
     if (await m.exists()) await m.delete();
     final tmp = File('${dir.path}/metrics.tmp');
     if (await tmp.exists()) await tmp.delete();
+    final lock = File('${dir.path}/$_lockFileName');
+    if (await lock.exists()) await lock.delete();
+    _lockFile = null;
+    _lockRefreshedAt = null;
     await for (final entry in dir.list()) {
       if (entry is Directory &&
           entry.uri.pathSegments.isNotEmpty &&

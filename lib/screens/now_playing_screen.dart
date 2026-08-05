@@ -1947,7 +1947,7 @@ class _PlayerHeader extends StatelessWidget {
     showGlassBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _QueueSheet(),
+      builder: (context) => const QueueSheet(),
     );
   }
 }
@@ -3552,12 +3552,15 @@ class _VolumeSliderState extends State<_VolumeSlider> {
   }
 }
 
-class _QueueSheet extends StatelessWidget {
-  const _QueueSheet();
+class QueueSheet extends StatelessWidget {
+  const QueueSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
+      // 不撑满整屏：否则 showGlassBottomSheet 的实色外层容器会被顶到全屏高度，
+      // 亮色主题下弹层上方露出一整块白色色块（暗色下为深色色块）。
+      expand: false,
       initialChildSize: 0.7,
       minChildSize: 0.5,
       maxChildSize: 0.95,

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:luobo/models/song.dart';
+import 'package:luobo/providers/library_provider.dart';
 import 'package:luobo/providers/player_provider.dart';
 import 'package:luobo/services/subsonic_service.dart';
 import 'package:luobo/services/storage_service.dart';
 import 'package:luobo/services/upnp_service.dart';
 import 'package:luobo/services/audio_handler.dart';
 import 'package:luobo/services/jukebox_service.dart';
+import 'package:luobo/services/transcoding_service.dart';
 import 'package:luobo/widgets/song_tile.dart';
 import '../test_helpers.dart';
 import '../bootstrap.dart';
@@ -28,6 +30,7 @@ void main() {
         UpnpService(),
         MuslyAudioHandler(),
         JukeboxService(),
+        TranscodingService(),
       );
     });
 
@@ -48,6 +51,9 @@ void main() {
         MultiProvider(
           providers: [
             Provider<SubsonicService>.value(value: subsonicService),
+            ChangeNotifierProvider<LibraryProvider>(
+              create: (_) => LibraryProvider(subsonicService),
+            ),
             ChangeNotifierProvider<PlayerProvider>.value(value: playerProvider),
           ],
           child: MaterialApp(
@@ -72,6 +78,9 @@ void main() {
         MultiProvider(
           providers: [
             Provider<SubsonicService>.value(value: subsonicService),
+            ChangeNotifierProvider<LibraryProvider>(
+              create: (_) => LibraryProvider(subsonicService),
+            ),
             ChangeNotifierProvider<PlayerProvider>.value(value: playerProvider),
           ],
           child: MaterialApp(
@@ -95,6 +104,9 @@ void main() {
         MultiProvider(
           providers: [
             Provider<SubsonicService>.value(value: subsonicService),
+            ChangeNotifierProvider<LibraryProvider>(
+              create: (_) => LibraryProvider(subsonicService),
+            ),
             ChangeNotifierProvider<PlayerProvider>.value(value: playerProvider),
           ],
           child: MaterialApp(

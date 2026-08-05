@@ -43,7 +43,8 @@ class HomeFeed {
 /// 职责：把「用户行为（[RecommendationService]）」与「知识图谱内容
 /// （[KnowledgeRecommendationEngine]）」融合成首页各模块数据：
 /// - 融合打分 finalScore = α·行为分 + (1-α)·内容分，α=0.7（§4.4）
-/// - 熟悉/探索分层：每日推荐与场景 Mix 只推听过的，探索发现只推未听过的（§4.5）
+/// - 熟悉/探索分层：每日推荐按融合分从全库取（熟悉优先、未听过补足），场景 Mix
+///   仍以熟悉层为主，探索发现只推未听过的（§4.5）
 /// - 跨模块全局去重 + 同歌手≤2 首 / 同专辑≤1 首（§4.6）
 /// - 每日推荐当日固定、探索发现按周固定（§4.8）
 /// - 无图谱 / 无行为自动退化（§4.4）
@@ -207,7 +208,9 @@ class HomeRecommendationService extends ChangeNotifier {
   // 首页各模块（§6 数据契约）
   // ──────────────────────────────────────────────────────────────────────────
 
-  /// 每日推荐：熟悉层 + 融合分 Top30，当日固定（key=日期）。
+  /// 每日推荐：全库按融合分 Top30——行为分让听过的歌优先，去重上限卡满后由
+  /// 未听过的歌（内容分）补足，避免熟悉池过小/集中时推不满 30 首；当日固定
+  /// （key=日期）。
   List<Song> dailyRecommendation({
     required List<Song> allSongs,
     int limit = dailyLimit,
@@ -221,7 +224,7 @@ class HomeRecommendationService extends ChangeNotifier {
     }
 
     final list = _selectWithDedup(
-      _familiarPool(allSongs),
+      allSongs,
       limit: limit,
       exclude: exclude,
     );

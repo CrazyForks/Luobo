@@ -29,6 +29,10 @@ import 'utils/image_cache.dart';
 
 // Global instance for analytics (to be shown after auth)
 
+/// 运行时上报的应用版本，写入诊断导出 meta.json；
+/// 与 pubspec.yaml `version` 保持一致，发版时同步更新。
+const String kAppVersion = '1.1.6+1';
+
 /// Shows the privacy policy dialog on first launch
 Future<void> _showPrivacyPolicyIfNeeded() async {
   if (await PrivacyPolicyDialog.shouldShow()) {
@@ -135,6 +139,7 @@ void main() async {
 
   // ── 诊断系统：尽早初始化（runApp 前），保证启动早期日志不丢 ──
   final diag = DiagnosticsService.instance;
+  diag.setAppVersion(kAppVersion); // 导出 meta 携带版本，否则恒为 unknown
   unawaited(diag.init());
   GlobalErrorHandler.install();
   GlobalErrorHandler.contextProvider = () => navigatorKey.currentContext;
@@ -176,7 +181,7 @@ void main() async {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   final storageService = StorageService();
-  final subsonicService = SubsonicService();
+  final subsonicService = SubsonicService(storageService: storageService);
   final offlineService = OfflineService();
   final recommendationService = RecommendationService();
   final localMusicService = LocalMusicService();
