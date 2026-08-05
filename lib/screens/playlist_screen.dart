@@ -6,6 +6,7 @@ import '../providers/providers.dart';
 import '../services/subsonic_service.dart';
 import '../services/offline_service.dart';
 import '../services/favorite_playlists_service.dart';
+import '../services/playback_context_tracker.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../l10n/app_localizations.dart';
@@ -71,6 +72,36 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     }
 
     playerProvider.playSong(songs.first, playlist: songs.cast(), startIndex: 0);
+    _recordPlayback();
+  }
+
+  /// 记录「最近播放的手动歌单」（首页最近播放混合区，§5.1）。
+  void _recordPlayback() {
+    final playlist = _playlist;
+    if (playlist == null) return;
+    Provider.of<PlaybackContextTracker>(context, listen: false).record(
+      kind: 'playlist',
+      id: playlist.id,
+      name: playlist.name,
+      coverArts: _collectionCovers(),
+    );
+  }
+
+  List<String> _collectionCovers() {
+    final songs = _playlist?.songs ?? const [];
+    if (songs.isEmpty) return const [];
+    final primary = _playlist?.coverArt;
+    if (primary != null && primary.isNotEmpty) return [primary];
+    final seen = <String>{};
+    final out = <String>[];
+    for (final song in songs) {
+      final cover = song.coverArt;
+      if (cover != null && cover.isNotEmpty && seen.add(cover)) {
+        out.add(cover);
+        if (out.length == 4) break;
+      }
+    }
+    return out;
   }
 
   Future<void> _removeSongFromPlaylist(int index) async {
@@ -700,6 +731,16 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                     playlist: _playlist!.songs,
                     index: index,
                     showArtist: true,
+                    // 逐首播放也记录「最近播放的歌单」。
+                    onTap: () {
+                      _recordPlayback();
+                      Provider.of<PlayerProvider>(context, listen: false)
+                          .playSong(
+                        song,
+                        playlist: _playlist!.songs,
+                        startIndex: index,
+                      );
+                    },
                     onLongPress: () {
                       _toggleSelectMode();
                       _toggleSelection(index);

@@ -69,6 +69,119 @@ class AppLocalizationsZh extends AppLocalizations {
   String get madeForYou => '为你制作';
 
   @override
+  String get dailyRecommendation => '今日推荐';
+
+  @override
+  String get continueListening => '继续播放';
+
+  @override
+  String get commuteMix => '通勤活力';
+
+  @override
+  String get studyMix => '专注学习';
+
+  @override
+  String get sleepMix => '睡前放松';
+
+  @override
+  String get favoritesMix => '你的最爱';
+
+  @override
+  String get discover => '探索发现';
+
+  @override
+  String get aiPlaylist => 'AI 歌单';
+
+  @override
+  String get aiPlaylistSubtitle => '描述你想听的歌';
+
+  @override
+  String get generating => '生成中…';
+
+  @override
+  String get addToCurrentQueue => '加入播放列表';
+
+  @override
+  String get addedToQueue => '已加入播放队列';
+
+  @override
+  String songCount(int count) {
+    return '$count 首';
+  }
+
+  @override
+  String get dailySubtitle => '每日更新';
+
+  @override
+  String get commuteSubtitle => '高能节奏';
+
+  @override
+  String get studySubtitle => '专注不扰';
+
+  @override
+  String get sleepSubtitle => '舒缓入眠';
+
+  @override
+  String get favoritesSubtitle => '收藏常听';
+
+  @override
+  String get discoverSubtitle => '未听过的新歌';
+
+  @override
+  String get dailySlogan1 => '让今天从一首好歌开始';
+
+  @override
+  String get dailySlogan2 => '每天都有新惊喜';
+
+  @override
+  String get dailySlogan3 => '今天想听点什么？';
+
+  @override
+  String get commuteSlogan1 => '让通勤路上电量满格';
+
+  @override
+  String get commuteSlogan2 => '出发之前，先加满油';
+
+  @override
+  String get commuteSlogan3 => '把平凡的路走成自己的节奏';
+
+  @override
+  String get studySlogan1 => '世界安静下来，只剩你和音乐';
+
+  @override
+  String get studySlogan2 => '心无旁骛，音符相伴';
+
+  @override
+  String get studySlogan3 => '让专注有它的 BGM';
+
+  @override
+  String get sleepSlogan1 => '让今晚的梦轻柔一点';
+
+  @override
+  String get sleepSlogan2 => '慢慢来，睡个好觉';
+
+  @override
+  String get sleepSlogan3 => '夜色正好，适合一首慢歌';
+
+  @override
+  String get favoritesSlogan1 => '收藏的都是心动';
+
+  @override
+  String get favoritesSlogan2 => '常听的都在这里';
+
+  @override
+  String get favoritesSlogan3 => '你爱过的歌都算数';
+
+  @override
+  String get discoverSlogan1 => '下一首可能是你的新欢';
+
+  @override
+  String get discoverSlogan2 => '去没去过的地方逛逛';
+
+  @override
+  String get discoverSlogan3 => '换个口味，听点新鲜的';
+
+  @override
   String get topRated => '评分最高';
 
   @override
@@ -2685,6 +2798,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String transcodedTo(String format, int bitrate, String network) {
     return '转码为 $format ${bitrate}kbps（$network）';
+  }
+
+  @override
+  String transcodedToNoNetwork(String format, int bitrate) {
+    return '转码为 $format ${bitrate}kbps';
   }
 
   @override

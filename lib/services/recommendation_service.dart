@@ -72,6 +72,33 @@ class RecommendationService extends ChangeNotifier {
   Map<String, SongProfile> get profiles => Map.unmodifiable(_profiles);
   List<String> get recentlyPlayed => List.unmodifiable(_recentlyPlayed);
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // 只读视图：供新首页推荐引擎（HomeRecommendationService）读取行为画像。
+  // 仅暴露读取能力，不改任何逻辑（首页重构 P0 的唯一侵入点，见
+  // docs/首页重构技术方案.md §8-6）。
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /// 歌手亲和度（播放加权）只读视图。
+  Map<String, double> get artistAffinityView =>
+      Map.unmodifiable(_artistAffinity);
+
+  /// 风格亲和度（播放加权）只读视图。
+  Map<String, double> get genreAffinityView => Map.unmodifiable(_genreAffinity);
+
+  /// 专辑亲和度（播放加权）只读视图。
+  Map<String, double> get albumAffinityView => Map.unmodifiable(_albumAffinity);
+
+  /// 歌手评分亲和度只读视图。
+  Map<String, double> get artistRatingAffinityView =>
+      Map.unmodifiable(_artistRatingAffinity);
+
+  /// 风格评分亲和度只读视图。
+  Map<String, double> get genreRatingAffinityView =>
+      Map.unmodifiable(_genreRatingAffinity);
+
+  /// 收藏歌曲 id 集合只读视图。
+  Set<String> get starredSongIds => Set.unmodifiable(_starredSongs);
+
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     _enabled = _prefs!.getBool(_kEnabledKey) ?? true;

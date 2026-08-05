@@ -70,6 +70,119 @@ class AppLocalizationsEl extends AppLocalizations {
   String get madeForYou => 'Made For You';
 
   @override
+  String get dailyRecommendation => 'Today\'s Picks';
+
+  @override
+  String get continueListening => 'Continue Listening';
+
+  @override
+  String get commuteMix => 'Commute Mix';
+
+  @override
+  String get studyMix => 'Study Mix';
+
+  @override
+  String get sleepMix => 'Sleep Mix';
+
+  @override
+  String get favoritesMix => 'Favorites Mix';
+
+  @override
+  String get discover => 'Discover';
+
+  @override
+  String get aiPlaylist => 'AI Playlist';
+
+  @override
+  String get aiPlaylistSubtitle => 'Describe what you want to hear';
+
+  @override
+  String get generating => 'Generating…';
+
+  @override
+  String get addToCurrentQueue => 'Add to Queue';
+
+  @override
+  String get addedToQueue => 'Added to queue';
+
+  @override
+  String songCount(int count) {
+    return '$count Songs';
+  }
+
+  @override
+  String get dailySubtitle => 'Updated daily';
+
+  @override
+  String get commuteSubtitle => 'High energy';
+
+  @override
+  String get studySubtitle => 'Stay focused';
+
+  @override
+  String get sleepSubtitle => 'Wind down';
+
+  @override
+  String get favoritesSubtitle => 'Your favorites';
+
+  @override
+  String get discoverSubtitle => 'Fresh to you';
+
+  @override
+  String get dailySlogan1 => 'Start today with a great song';
+
+  @override
+  String get dailySlogan2 => 'Something new every day';
+
+  @override
+  String get dailySlogan3 => 'What do you feel like today?';
+
+  @override
+  String get commuteSlogan1 => 'Power up your commute';
+
+  @override
+  String get commuteSlogan2 => 'Fuel up before you go';
+
+  @override
+  String get commuteSlogan3 => 'Make the ride your own rhythm';
+
+  @override
+  String get studySlogan1 => 'A quiet world, just you and the music';
+
+  @override
+  String get studySlogan2 => 'Stay focused, notes in flow';
+
+  @override
+  String get studySlogan3 => 'Let focus have its soundtrack';
+
+  @override
+  String get sleepSlogan1 => 'Make tonight\'s dreams a little softer';
+
+  @override
+  String get sleepSlogan2 => 'Take it slow, sleep well';
+
+  @override
+  String get sleepSlogan3 => 'A slow song for the night';
+
+  @override
+  String get favoritesSlogan1 => 'The ones you saved are the ones you love';
+
+  @override
+  String get favoritesSlogan2 => 'Your most-played, all here';
+
+  @override
+  String get favoritesSlogan3 => 'Every song you loved counts';
+
+  @override
+  String get discoverSlogan1 => 'The next one might be your new favorite';
+
+  @override
+  String get discoverSlogan2 => 'Wander somewhere you haven\'t been';
+
+  @override
+  String get discoverSlogan3 => 'Switch it up, hear something fresh';
+
+  @override
   String get topRated => 'Top Rated';
 
   @override
@@ -2787,6 +2900,11 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String transcodedTo(String format, int bitrate, String network) {
     return 'Transcoded to $format ${bitrate}kbps ($network)';
+  }
+
+  @override
+  String transcodedToNoNetwork(String format, int bitrate) {
+    return 'Transcoded to $format ${bitrate}kbps';
   }
 
   @override

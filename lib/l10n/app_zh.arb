@@ -53,6 +53,126 @@
   "@madeForYou": {
     "description": "Made for you section title"
   },
+
+  "dailyRecommendation": "今日推荐",
+  "@dailyRecommendation": {
+    "description": "Daily recommendation banner title"
+  },
+
+  "continueListening": "继续播放",
+  "@continueListening": {
+    "description": "Continue listening section title"
+  },
+
+  "commuteMix": "通勤活力",
+  "@commuteMix": {
+    "description": "Commute scene mix card title"
+  },
+
+  "studyMix": "专注学习",
+  "@studyMix": {
+    "description": "Study scene mix card title"
+  },
+
+  "sleepMix": "睡前放松",
+  "@sleepMix": {
+    "description": "Sleep scene mix card title"
+  },
+
+  "favoritesMix": "你的最爱",
+  "@favoritesMix": {
+    "description": "Favorites mix card title (top songs by behavior score)"
+  },
+
+  "discover": "探索发现",
+  "@discover": {
+    "description": "Discover section title"
+  },
+
+  "aiPlaylist": "AI 歌单",
+  "@aiPlaylist": {
+    "description": "AI playlist entry card title"
+  },
+
+  "aiPlaylistSubtitle": "描述你想听的歌",
+  "@aiPlaylistSubtitle": {
+    "description": "AI playlist entry card subtitle"
+  },
+
+  "generating": "生成中…",
+  "@generating": {
+    "description": "Placeholder text for a mix that has no content yet"
+  },
+
+  "addToCurrentQueue": "加入播放列表",
+  "@addToCurrentQueue": {
+    "description": "Add all songs to the current playback queue"
+  },
+
+  "addedToQueue": "已加入播放队列",
+  "@addedToQueue": {
+    "description": "Snackbar shown after songs are added to the queue"
+  },
+
+  "songCount": "{count} 首",
+  "@songCount": {
+    "description": "Song count shown in the detail page hero",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "dailySubtitle": "每日更新",
+  "@dailySubtitle": {
+    "description": "Daily recommendation detail page hero subtitle"
+  },
+
+  "commuteSubtitle": "高能节奏",
+  "@commuteSubtitle": {
+    "description": "Commute mix detail page hero subtitle"
+  },
+
+  "studySubtitle": "专注不扰",
+  "@studySubtitle": {
+    "description": "Study mix detail page hero subtitle"
+  },
+
+  "sleepSubtitle": "舒缓入眠",
+  "@sleepSubtitle": {
+    "description": "Sleep mix detail page hero subtitle"
+  },
+
+  "favoritesSubtitle": "收藏常听",
+  "@favoritesSubtitle": {
+    "description": "Favorites mix detail page hero subtitle"
+  },
+
+  "discoverSubtitle": "未听过的新歌",
+  "@discoverSubtitle": {
+    "description": "Discover section detail page hero subtitle"
+  },
+
+  "dailySlogan1": "让今天从一首好歌开始",
+  "dailySlogan2": "每天都有新惊喜",
+  "dailySlogan3": "今天想听点什么？",
+  "commuteSlogan1": "让通勤路上电量满格",
+  "commuteSlogan2": "出发之前，先加满油",
+  "commuteSlogan3": "把平凡的路走成自己的节奏",
+  "studySlogan1": "世界安静下来，只剩你和音乐",
+  "studySlogan2": "心无旁骛，音符相伴",
+  "studySlogan3": "让专注有它的 BGM",
+  "sleepSlogan1": "让今晚的梦轻柔一点",
+  "sleepSlogan2": "慢慢来，睡个好觉",
+  "sleepSlogan3": "夜色正好，适合一首慢歌",
+  "favoritesSlogan1": "收藏的都是心动",
+  "favoritesSlogan2": "常听的都在这里",
+  "favoritesSlogan3": "你爱过的歌都算数",
+  "discoverSlogan1": "下一首可能是你的新欢",
+  "discoverSlogan2": "去没去过的地方逛逛",
+  "discoverSlogan3": "换个口味，听点新鲜的",
+
   "topRated": "评分最高",
   "@topRated": {
     "description": "Top rated albums title"
@@ -2316,7 +2436,9 @@
   "streamWillTranscode": "当前网络将转码",
   "@streamWillTranscode": { "description": "当前网络下播放将转码的状态标签" },
   "transcodedTo": "转码为 {format} {bitrate}kbps（{network}）",
-  "@transcodedTo": { "description": "启用转码时的音质状态", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } }
+  "@transcodedTo": { "description": "启用转码时的音质状态", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } },
+  "transcodedToNoNetwork": "转码为 {format} {bitrate}kbps",
+  "@transcodedToNoNetwork": { "description": "启用转码时的音质状态（网络类型以图标展示，不显示文字）", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" } } }
 ,
   "edit": "编辑"
 }

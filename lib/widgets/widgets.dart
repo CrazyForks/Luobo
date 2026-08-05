@@ -15,3 +15,7 @@ export 'spotify_like_card.dart';
 export 'right_sidebar.dart';
 export 'quick_access_grid.dart';
 export 'gradient_header.dart';
+export 'home_v2_tokens.dart';
+export 'daily_recommendation_card.dart';
+export 'continue_playing_card.dart';
+export 'mix_grid_section.dart';

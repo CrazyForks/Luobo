@@ -268,6 +268,228 @@ abstract class AppLocalizations {
   /// **'Made For You'**
   String get madeForYou;
 
+  /// Daily recommendation banner title
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Picks'**
+  String get dailyRecommendation;
+
+  /// Continue listening section title
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Listening'**
+  String get continueListening;
+
+  /// Commute scene mix card title
+  ///
+  /// In en, this message translates to:
+  /// **'Commute Mix'**
+  String get commuteMix;
+
+  /// Study scene mix card title
+  ///
+  /// In en, this message translates to:
+  /// **'Study Mix'**
+  String get studyMix;
+
+  /// Sleep scene mix card title
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep Mix'**
+  String get sleepMix;
+
+  /// Favorites mix card title (top songs by behavior score)
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites Mix'**
+  String get favoritesMix;
+
+  /// Discover section title
+  ///
+  /// In en, this message translates to:
+  /// **'Discover'**
+  String get discover;
+
+  /// AI playlist entry card title
+  ///
+  /// In en, this message translates to:
+  /// **'AI Playlist'**
+  String get aiPlaylist;
+
+  /// AI playlist entry card subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what you want to hear'**
+  String get aiPlaylistSubtitle;
+
+  /// Placeholder text for a mix that has no content yet
+  ///
+  /// In en, this message translates to:
+  /// **'Generating…'**
+  String get generating;
+
+  /// Add all songs to the current playback queue
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Queue'**
+  String get addToCurrentQueue;
+
+  /// Snackbar shown after songs are added to the queue
+  ///
+  /// In en, this message translates to:
+  /// **'Added to queue'**
+  String get addedToQueue;
+
+  /// Song count shown in the detail page hero
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Songs'**
+  String songCount(int count);
+
+  /// Daily recommendation detail page hero subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Updated daily'**
+  String get dailySubtitle;
+
+  /// Commute mix detail page hero subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'High energy'**
+  String get commuteSubtitle;
+
+  /// Study mix detail page hero subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Stay focused'**
+  String get studySubtitle;
+
+  /// Sleep mix detail page hero subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Wind down'**
+  String get sleepSubtitle;
+
+  /// Favorites mix detail page hero subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Your favorites'**
+  String get favoritesSubtitle;
+
+  /// Discover section detail page hero subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Fresh to you'**
+  String get discoverSubtitle;
+
+  /// No description provided for @dailySlogan1.
+  ///
+  /// In en, this message translates to:
+  /// **'Start today with a great song'**
+  String get dailySlogan1;
+
+  /// No description provided for @dailySlogan2.
+  ///
+  /// In en, this message translates to:
+  /// **'Something new every day'**
+  String get dailySlogan2;
+
+  /// No description provided for @dailySlogan3.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you feel like today?'**
+  String get dailySlogan3;
+
+  /// No description provided for @commuteSlogan1.
+  ///
+  /// In en, this message translates to:
+  /// **'Power up your commute'**
+  String get commuteSlogan1;
+
+  /// No description provided for @commuteSlogan2.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel up before you go'**
+  String get commuteSlogan2;
+
+  /// No description provided for @commuteSlogan3.
+  ///
+  /// In en, this message translates to:
+  /// **'Make the ride your own rhythm'**
+  String get commuteSlogan3;
+
+  /// No description provided for @studySlogan1.
+  ///
+  /// In en, this message translates to:
+  /// **'A quiet world, just you and the music'**
+  String get studySlogan1;
+
+  /// No description provided for @studySlogan2.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay focused, notes in flow'**
+  String get studySlogan2;
+
+  /// No description provided for @studySlogan3.
+  ///
+  /// In en, this message translates to:
+  /// **'Let focus have its soundtrack'**
+  String get studySlogan3;
+
+  /// No description provided for @sleepSlogan1.
+  ///
+  /// In en, this message translates to:
+  /// **'Make tonight\'s dreams a little softer'**
+  String get sleepSlogan1;
+
+  /// No description provided for @sleepSlogan2.
+  ///
+  /// In en, this message translates to:
+  /// **'Take it slow, sleep well'**
+  String get sleepSlogan2;
+
+  /// No description provided for @sleepSlogan3.
+  ///
+  /// In en, this message translates to:
+  /// **'A slow song for the night'**
+  String get sleepSlogan3;
+
+  /// No description provided for @favoritesSlogan1.
+  ///
+  /// In en, this message translates to:
+  /// **'The ones you saved are the ones you love'**
+  String get favoritesSlogan1;
+
+  /// No description provided for @favoritesSlogan2.
+  ///
+  /// In en, this message translates to:
+  /// **'Your most-played, all here'**
+  String get favoritesSlogan2;
+
+  /// No description provided for @favoritesSlogan3.
+  ///
+  /// In en, this message translates to:
+  /// **'Every song you loved counts'**
+  String get favoritesSlogan3;
+
+  /// No description provided for @discoverSlogan1.
+  ///
+  /// In en, this message translates to:
+  /// **'The next one might be your new favorite'**
+  String get discoverSlogan1;
+
+  /// No description provided for @discoverSlogan2.
+  ///
+  /// In en, this message translates to:
+  /// **'Wander somewhere you haven\'t been'**
+  String get discoverSlogan2;
+
+  /// No description provided for @discoverSlogan3.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch it up, hear something fresh'**
+  String get discoverSlogan3;
+
   /// Top rated albums title
   ///
   /// In en, this message translates to:
@@ -5103,6 +5325,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcoded to {format} {bitrate}kbps ({network})'**
   String transcodedTo(String format, int bitrate, String network);
+
+  /// Audio quality status when transcoding is enabled (network type shown as an icon)
+  ///
+  /// In en, this message translates to:
+  /// **'Transcoded to {format} {bitrate}kbps'**
+  String transcodedToNoNetwork(String format, int bitrate);
 
   /// No description provided for @edit.
   ///

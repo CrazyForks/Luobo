@@ -14,6 +14,7 @@ import '../theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/screen_helper.dart';
 import '../services/subsonic_service.dart';
+import '../services/transcoding_service.dart';
 import 'album_artwork.dart';
 
 class MiniPlayer extends StatelessWidget {
@@ -212,20 +213,7 @@ class _MiniPlayerRow extends StatelessWidget {
             )
           else
             GestureDetector(
-              onLongPress: () {
-                final subsonic =
-                    Provider.of<SubsonicService>(context, listen: false);
-                final isLan = subsonic.isUsingLocalUrl;
-                final label = isLan ? '局域网' : '外网';
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(
-                      content: Text('$label：${subsonic.activeBaseUrl}'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-              },
+              onLongPress: () => _showTranscodeToast(context),
               child: Container(
                 width: 44,
                 height: 44,
@@ -463,4 +451,260 @@ Color _networkBorderColor(BuildContext context) {
       : (isDark
           ? const Color(0x80FB8C00)
           : const Color(0x4DFB8C00));
+}
+
+/// Currently visible transcode toast (replaced on re-trigger so repeated
+/// long-presses don't stack toasts).
+OverlayEntry? _transcodeToastEntry;
+
+/// Non-blocking toast shown when long-pressing the mini player artwork: the
+/// current song's original file info plus the actual transcode state of the
+/// stream being played (settings-implied when transcoding is enabled but the
+/// stream isn't transcoded yet). Fades in, stays ~2s, then fades out; taps
+/// outside the card fall through to the UI underneath (tapping the card
+/// itself dismisses it early).
+void _showTranscodeToast(BuildContext context) {
+  final player = Provider.of<PlayerProvider>(context, listen: false);
+  final song = player.currentSong;
+  if (song == null) return;
+
+  final transcoding = Provider.of<TranscodingService>(context, listen: false);
+  final theme = Theme.of(context);
+  final l10n = AppLocalizations.of(context)!;
+
+  // Original file info.
+  final fileParts = <String>[];
+  final format = song.suffix?.toUpperCase() ?? '';
+  if (format.isNotEmpty) fileParts.add(format);
+  if (song.bitRate != null && song.bitRate! > 0) {
+    fileParts.add('${song.bitRate} kbps');
+  }
+  if (song.formattedSize.isNotEmpty) fileParts.add(song.formattedSize);
+  final fileInfo = fileParts.join(' · ');
+  final sampleInfo = song.formattedSampleRate;
+  final depthInfo = song.bitDepth != null ? '${song.bitDepth} bit' : '';
+
+  // Transcode status — actual for the current stream, settings-implied
+  // otherwise. The network type is shown as the app's WiFi / cellular icon
+  // (green / orange, same as the settings badge) instead of text.
+  final isDark = theme.brightness == Brightness.dark;
+  final isWifi = transcoding.currentConnectionType == ConnectionType.wifi;
+  final String statusLabel;
+  final Color statusColor;
+  final IconData statusIcon;
+  IconData? networkIcon;
+  if (player.isActiveStreamTranscoded) {
+    statusLabel = l10n.transcodedToNoNetwork(
+      TranscodeFormat.getLabel(player.activeStreamFormat ?? ''),
+      player.activeStreamBitrate ?? 0,
+    );
+    statusColor = isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100);
+    statusIcon = Icons.speed_rounded;
+    networkIcon = isWifi ? Icons.wifi_rounded : Icons.signal_cellular_alt;
+  } else if (transcoding.getCurrentBitrate() != null) {
+    final wouldTranscode = l10n.transcodedToNoNetwork(
+      TranscodeFormat.getLabel(transcoding.getCurrentFormat() ?? ''),
+      transcoding.getCurrentBitrate() ?? 0,
+    );
+    statusLabel = '${l10n.streamWillTranscode}：$wouldTranscode';
+    statusColor = isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100);
+    statusIcon = Icons.speed_rounded;
+    networkIcon = isWifi ? Icons.wifi_rounded : Icons.signal_cellular_alt;
+  } else {
+    statusLabel = l10n.noTranscoding;
+    statusColor = theme.colorScheme.primary;
+    statusIcon = Icons.verified_rounded;
+  }
+
+  // Insert into the root overlay so the toast floats above every screen, and
+  // keep a reference to replace it on re-trigger instead of stacking.
+  _transcodeToastEntry?.remove();
+  late final OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (overlayContext) => Center(
+      child: _TranscodeToast(
+        title: song.title,
+        fileInfo: fileInfo,
+        sampleInfo: sampleInfo,
+        depthInfo: depthInfo,
+        statusLabel: statusLabel,
+        statusColor: statusColor,
+        statusIcon: statusIcon,
+        networkIcon: networkIcon,
+        networkColor: isWifi ? Colors.green : Colors.orange,
+        onDismiss: () {
+          if (_transcodeToastEntry == entry) _transcodeToastEntry = null;
+          if (entry.mounted) entry.remove();
+        },
+      ),
+    ),
+  );
+  _transcodeToastEntry = entry;
+  Overlay.of(context, rootOverlay: true).insert(entry);
+}
+
+/// Auto-dismissing toast card rendered in the screen center. Fades in on
+/// insertion and fades out before removal. The card itself is the only
+/// tappable area (tapping it dismisses early); everything around it passes
+/// through to the UI underneath.
+class _TranscodeToast extends StatefulWidget {
+  final String title;
+  final String fileInfo;
+  final String sampleInfo;
+  final String depthInfo;
+  final String statusLabel;
+  final Color statusColor;
+  final IconData statusIcon;
+  final IconData? networkIcon;
+  final Color? networkColor;
+  final VoidCallback onDismiss;
+
+  const _TranscodeToast({
+    required this.title,
+    required this.fileInfo,
+    required this.sampleInfo,
+    required this.depthInfo,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.statusIcon,
+    this.networkIcon,
+    this.networkColor,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_TranscodeToast> createState() => _TranscodeToastState();
+}
+
+class _TranscodeToastState extends State<_TranscodeToast>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 180),
+  );
+
+  bool _dismissed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.forward();
+    Future<void>.delayed(const Duration(seconds: 2), () async {
+      if (!mounted) return;
+      await _controller.reverse();
+      if (mounted) _dismiss();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _dismiss() {
+    if (_dismissed) return;
+    _dismissed = true;
+    widget.onDismiss();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sampleInfo = widget.sampleInfo;
+    final depthInfo = widget.depthInfo;
+    return FadeTransition(
+      opacity: _controller,
+      child: GestureDetector(
+        onTap: () {
+          _controller.reverse().whenComplete(() {
+            if (mounted) _dismiss();
+          });
+        },
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: Material(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              // A hairline border lifts the toast off similarly-toned
+              // backgrounds (pure black in dark mode, light gray in light).
+              side: BorderSide(
+                color: theme.brightness == Brightness.dark
+                    ? AppTheme.darkDivider
+                    : AppTheme.lightDivider,
+              ),
+            ),
+            // Use the app's elevated surface so the card reads clearly
+            // against the scaffold/card backgrounds it floats over.
+            color: theme.brightness == Brightness.dark
+                ? AppTheme.darkElevated
+                : Colors.white,
+            elevation: 8,
+            shadowColor: Colors.black.withValues(alpha: 0.3),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (widget.fileInfo.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(widget.fileInfo, style: theme.textTheme.bodyMedium),
+                  ],
+                  if (sampleInfo.isNotEmpty || depthInfo.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      [sampleInfo, depthInfo]
+                          .where((s) => s.isNotEmpty)
+                          .join(' · '),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.textTheme.bodySmall?.color?.withValues(
+                          alpha: 0.7,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(
+                        widget.statusIcon,
+                        size: 18,
+                        color: widget.statusColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          widget.statusLabel,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: widget.statusColor,
+                          ),
+                        ),
+                      ),
+                      if (widget.networkIcon != null) ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          widget.networkIcon,
+                          size: 16,
+                          color: widget.networkColor,
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/glass_surface.dart';
 import '../models/models.dart';
+import '../providers/providers.dart';
 import '../services/subsonic_service.dart';
+import '../services/playback_context_tracker.dart';
 import '../widgets/widgets.dart';
 import '../l10n/app_localizations.dart';
 
@@ -111,11 +113,44 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           playlist: _favoriteSongs,
           index: index,
           showAlbum: true,
+          // 逐首播放也记录「最近播放的收藏列表」。
+          onTap: () {
+            _recordPlayback();
+            Provider.of<PlayerProvider>(context, listen: false).playSong(
+              song,
+              playlist: _favoriteSongs,
+              startIndex: index,
+            );
+          },
           onLongPress: () =>
               _showRemoveFromFavoritesDialog(context, song, index),
         );
       },
     );
+  }
+
+  /// 记录「最近播放的收藏列表」（首页最近播放混合区，§5.1）。
+  void _recordPlayback() {
+    final l10n = AppLocalizations.of(context)!;
+    Provider.of<PlaybackContextTracker>(context, listen: false).record(
+      kind: 'starred',
+      id: 'starred',
+      name: l10n.favorites,
+      coverArts: _favoriteCovers(),
+    );
+  }
+
+  List<String> _favoriteCovers() {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final song in _favoriteSongs) {
+      final cover = song.coverArt;
+      if (cover != null && cover.isNotEmpty && seen.add(cover)) {
+        out.add(cover);
+        if (out.length == 4) break;
+      }
+    }
+    return out;
   }
 
   Future<void> _showRemoveFromFavoritesDialog(

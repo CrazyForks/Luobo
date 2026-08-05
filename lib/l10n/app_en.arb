@@ -102,6 +102,125 @@
     "description": "Made for you section title"
   },
 
+  "dailyRecommendation": "Today's Picks",
+  "@dailyRecommendation": {
+    "description": "Daily recommendation banner title"
+  },
+
+  "continueListening": "Continue Listening",
+  "@continueListening": {
+    "description": "Continue listening section title"
+  },
+
+  "commuteMix": "Commute Mix",
+  "@commuteMix": {
+    "description": "Commute scene mix card title"
+  },
+
+  "studyMix": "Study Mix",
+  "@studyMix": {
+    "description": "Study scene mix card title"
+  },
+
+  "sleepMix": "Sleep Mix",
+  "@sleepMix": {
+    "description": "Sleep scene mix card title"
+  },
+
+  "favoritesMix": "Favorites Mix",
+  "@favoritesMix": {
+    "description": "Favorites mix card title (top songs by behavior score)"
+  },
+
+  "discover": "Discover",
+  "@discover": {
+    "description": "Discover section title"
+  },
+
+  "aiPlaylist": "AI Playlist",
+  "@aiPlaylist": {
+    "description": "AI playlist entry card title"
+  },
+
+  "aiPlaylistSubtitle": "Describe what you want to hear",
+  "@aiPlaylistSubtitle": {
+    "description": "AI playlist entry card subtitle"
+  },
+
+  "generating": "Generating…",
+  "@generating": {
+    "description": "Placeholder text for a mix that has no content yet"
+  },
+
+  "addToCurrentQueue": "Add to Queue",
+  "@addToCurrentQueue": {
+    "description": "Add all songs to the current playback queue"
+  },
+
+  "addedToQueue": "Added to queue",
+  "@addedToQueue": {
+    "description": "Snackbar shown after songs are added to the queue"
+  },
+
+  "songCount": "{count} Songs",
+  "@songCount": {
+    "description": "Song count shown in the detail page hero",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "dailySubtitle": "Updated daily",
+  "@dailySubtitle": {
+    "description": "Daily recommendation detail page hero subtitle"
+  },
+
+  "commuteSubtitle": "High energy",
+  "@commuteSubtitle": {
+    "description": "Commute mix detail page hero subtitle"
+  },
+
+  "studySubtitle": "Stay focused",
+  "@studySubtitle": {
+    "description": "Study mix detail page hero subtitle"
+  },
+
+  "sleepSubtitle": "Wind down",
+  "@sleepSubtitle": {
+    "description": "Sleep mix detail page hero subtitle"
+  },
+
+  "favoritesSubtitle": "Your favorites",
+  "@favoritesSubtitle": {
+    "description": "Favorites mix detail page hero subtitle"
+  },
+
+  "discoverSubtitle": "Fresh to you",
+  "@discoverSubtitle": {
+    "description": "Discover section detail page hero subtitle"
+  },
+
+  "dailySlogan1": "Start today with a great song",
+  "dailySlogan2": "Something new every day",
+  "dailySlogan3": "What do you feel like today?",
+  "commuteSlogan1": "Power up your commute",
+  "commuteSlogan2": "Fuel up before you go",
+  "commuteSlogan3": "Make the ride your own rhythm",
+  "studySlogan1": "A quiet world, just you and the music",
+  "studySlogan2": "Stay focused, notes in flow",
+  "studySlogan3": "Let focus have its soundtrack",
+  "sleepSlogan1": "Make tonight's dreams a little softer",
+  "sleepSlogan2": "Take it slow, sleep well",
+  "sleepSlogan3": "A slow song for the night",
+  "favoritesSlogan1": "The ones you saved are the ones you love",
+  "favoritesSlogan2": "Your most-played, all here",
+  "favoritesSlogan3": "Every song you loved counts",
+  "discoverSlogan1": "The next one might be your new favorite",
+  "discoverSlogan2": "Wander somewhere you haven't been",
+  "discoverSlogan3": "Switch it up, hear something fresh",
+
   "topRated": "Top Rated",
   "@topRated": {
     "description": "Top rated albums title"
@@ -2585,7 +2704,9 @@
   "streamWillTranscode": "Will transcode on current network",
   "@streamWillTranscode": { "description": "Status label when playback will be transcoded on the current network" },
   "transcodedTo": "Transcoded to {format} {bitrate}kbps ({network})",
-  "@transcodedTo": { "description": "Audio quality status when transcoding is enabled", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } }
+  "@transcodedTo": { "description": "Audio quality status when transcoding is enabled", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } },
+  "transcodedToNoNetwork": "Transcoded to {format} {bitrate}kbps",
+  "@transcodedToNoNetwork": { "description": "Audio quality status when transcoding is enabled (network type shown as an icon)", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" } } }
 ,
   "edit": "Edit"
-}
+}

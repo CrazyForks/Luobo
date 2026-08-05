@@ -18,7 +18,7 @@ import '../utils/navigation_helper.dart';
 import '../widgets/widgets.dart';
 import '../widgets/support_dialog.dart';
 import '../l10n/app_localizations.dart';
-import 'home_screen.dart';
+import 'home_v2_screen.dart';
 import 'library_screen.dart';
 import 'search_screen.dart';
 import 'now_playing_screen.dart';
@@ -40,7 +40,7 @@ class _MainScreenState extends State<MainScreen> {
   bool _showRightSidebar = true;
 
   final List<Widget> _screens = const [
-    HomeScreen(),
+    HomeV2Screen(), // 首页重构：v2 新首页（旧 HomeScreen 保留未删，回退改回 HomeScreen()）
     LibraryScreen(),
     SearchScreen(),
   ];

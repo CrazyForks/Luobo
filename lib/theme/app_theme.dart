@@ -46,8 +46,20 @@ class AppTheme {
 
   static ThemeData get darkTheme => _buildDarkTheme(appleMusicRed);
 
+  /// iOS 风格侧滑转场（替换 Android 默认 Zoom 缩放转场；用户反馈缩放返回难受）。
+  static const PageTransitionsTheme _pageTransitions = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+    },
+  );
+
   static ThemeData _buildLightTheme(Color accent) => ThemeData(
         useMaterial3: true,
+        pageTransitionsTheme: _pageTransitions,
         brightness: Brightness.light,
         primaryColor: accent,
         scaffoldBackgroundColor: lightBackground,
@@ -141,6 +153,7 @@ class AppTheme {
 
   static ThemeData _buildDarkTheme(Color accent) => ThemeData(
         useMaterial3: true,
+        pageTransitionsTheme: _pageTransitions,
         brightness: Brightness.dark,
         primaryColor: accent,
         scaffoldBackgroundColor: darkBackground,
@@ -244,6 +257,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      pageTransitionsTheme: _pageTransitions,
       brightness: scheme.brightness,
       colorScheme: scheme,
       primaryColor: accent,

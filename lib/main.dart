@@ -18,6 +18,7 @@ import 'services/local_music_service.dart';
 import 'services/analytics_service.dart';
 import 'services/diagnostics/diagnostics.dart';
 import 'services/favorite_playlists_service.dart';
+import 'services/song_knowledge_cache.dart';
 import 'widgets/glass_surface.dart';
 import 'widgets/privacy_policy_dialog.dart';
 import 'providers/providers.dart';
@@ -196,6 +197,22 @@ void main() async {
   recommendationService.initialize().catchError((e) {
     debugPrint('Failed to initialize recommendation service: $e');
   });
+
+  // 新首页推荐编排服务（P3 图谱接入）：注入知识库缓存，行为监听自动接线。
+  final songKnowledgeCache = SongKnowledgeCache();
+  songKnowledgeCache.initialize().catchError((e) {
+    debugPrint('Failed to initialize song knowledge cache: $e');
+  });
+  final homeRecommendationService = HomeRecommendationService(
+    behavior: recommendationService,
+    knowledgeCache: songKnowledgeCache,
+  );
+
+  // 播放来源追踪：最近播放的歌单/收藏列表（首页「最近播放」混合区）。
+  final playbackContextTracker = PlaybackContextTracker();
+  playbackContextTracker.initialize().catchError((e) {
+    debugPrint('Failed to initialize playback context tracker: $e');
+  });
   localMusicService.initialize().catchError((e) {
     debugPrint('Failed to initialize local music service: $e');
   });
@@ -245,6 +262,12 @@ void main() async {
       Provider<SubsonicService>.value(value: subsonicService),
       ChangeNotifierProvider<RecommendationService>.value(
         value: recommendationService,
+      ),
+      ChangeNotifierProvider<HomeRecommendationService>.value(
+        value: homeRecommendationService,
+      ),
+      ChangeNotifierProvider<PlaybackContextTracker>.value(
+        value: playbackContextTracker,
       ),
       ChangeNotifierProvider<TranscodingService>.value(
         value: transcodingService,
