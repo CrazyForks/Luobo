@@ -514,6 +514,24 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get refresh;
 
+  /// Library refresh completed with counts
+  ///
+  /// In en, this message translates to:
+  /// **'{albumCount} albums, {songCount} songs'**
+  String refreshComplete(int albumCount, int songCount);
+
+  /// Snackbar when a library refresh fails
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh failed'**
+  String get refreshFailed;
+
+  /// Snackbar after reloading local library
+  ///
+  /// In en, this message translates to:
+  /// **'Library refreshed'**
+  String get refreshLocalComplete;
+
   /// Error state title when songs fail to load
   ///
   /// In en, this message translates to:
@@ -987,6 +1005,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{No albums} =1{1 album} other{{count} albums}}'**
   String albumsCount(int count);
+
+  /// No description provided for @topArtistsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top artists'**
+  String get topArtistsTitle;
+
+  /// No description provided for @playsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No plays} =1{1 play} other{{count} plays}}'**
+  String playsCount(num count);
 
   /// Logout button label
   ///
@@ -1527,6 +1557,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Diagnostics'**
   String get tabDiagnostics;
+
+  /// No description provided for @settingsGroupServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server & Account'**
+  String get settingsGroupServer;
+
+  /// No description provided for @settingsServerSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Settings'**
+  String get settingsServerSettings;
+
+  /// No description provided for @settingsGroupPlayback.
+  ///
+  /// In en, this message translates to:
+  /// **'Playback & Quality'**
+  String get settingsGroupPlayback;
+
+  /// No description provided for @settingsPlaybackSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Playback Settings'**
+  String get settingsPlaybackSettings;
+
+  /// No description provided for @settingsStreamingEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Streaming Quality'**
+  String get settingsStreamingEntry;
+
+  /// No description provided for @settingsGroupStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Download & Storage'**
+  String get settingsGroupStorage;
+
+  /// No description provided for @settingsStorageEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Download & Storage'**
+  String get settingsStorageEntry;
+
+  /// No description provided for @settingsGroupDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Display & Appearance'**
+  String get settingsGroupDisplay;
+
+  /// No description provided for @settingsDisplayEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Display & Appearance'**
+  String get settingsDisplayEntry;
+
+  /// No description provided for @settingsGroupAi.
+  ///
+  /// In en, this message translates to:
+  /// **'AI'**
+  String get settingsGroupAi;
+
+  /// No description provided for @settingsAiEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Playlists & Knowledge'**
+  String get settingsAiEntry;
+
+  /// No description provided for @settingsGroupSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Support & Help'**
+  String get settingsGroupSupport;
+
+  /// No description provided for @settingsMechanicsEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'How It Works'**
+  String get settingsMechanicsEntry;
+
+  /// No description provided for @mechanicsGroupRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Recommendations'**
+  String get mechanicsGroupRecommendation;
+
+  /// No description provided for @mechanicsGroupListeningReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening Report'**
+  String get mechanicsGroupListeningReport;
+
+  /// No description provided for @mechanicsGroupStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Download & Storage'**
+  String get mechanicsGroupStorage;
+
+  /// No description provided for @mechanicsGroupAi.
+  ///
+  /// In en, this message translates to:
+  /// **'AI'**
+  String get mechanicsGroupAi;
+
+  /// No description provided for @mechanicsGroupAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get mechanicsGroupAudio;
+
+  /// No description provided for @mechanicsGroupConnectivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect & Cast'**
+  String get mechanicsGroupConnectivity;
+
+  /// No description provided for @mechanicsGroupDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics & Privacy'**
+  String get mechanicsGroupDiagnostics;
+
+  /// No description provided for @mechanicsTechDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Details'**
+  String get mechanicsTechDetails;
 
   /// No description provided for @diagnosticsTitle.
   ///
@@ -5320,6 +5476,12 @@ abstract class AppLocalizations {
   /// **'Will transcode on current network'**
   String get streamWillTranscode;
 
+  /// Full-sentence status when playback will be transcoded on the current network (avoids duplicating the transcode result)
+  ///
+  /// In en, this message translates to:
+  /// **'Will transcode to {format} {bitrate}kbps on current network ({network})'**
+  String streamWillTranscodeTo(String format, int bitrate, String network);
+
   /// Audio quality status when transcoding is enabled
   ///
   /// In en, this message translates to:
@@ -5331,6 +5493,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcoded to {format} {bitrate}kbps'**
   String transcodedToNoNetwork(String format, int bitrate);
+
+  /// Status when playback is being/will be transcoded on the current network (network type shown by leading icon + text)
+  ///
+  /// In en, this message translates to:
+  /// **'Transcoding to {format} {bitrate}kbps'**
+  String transcodingInProgress(String format, int bitrate);
 
   /// No description provided for @edit.
   ///

@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +13,7 @@ import '../services/home_recommendation_service.dart';
 import '../services/playback_context_tracker.dart';
 import '../services/recommendation_service.dart';
 import '../utils/navigation_helper.dart';
+import '../utils/refresh_feedback.dart';
 import '../widgets/pressable_scale.dart';
 import '../widgets/widgets.dart';
 import 'ai_playlist_screen.dart';
@@ -21,7 +21,7 @@ import 'album_screen.dart';
 import 'favorites_screen.dart';
 import 'history_screen.dart';
 import 'playlist_screen.dart';
-import 'settings_screen.dart';
+import 'settings_root_screen.dart';
 import 'song_list_screen.dart';
 
 /// 新首页（§5.1，Apple Music「现在就听」风格，v2 独立实现）。
@@ -56,14 +56,6 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
   String _computeRandomKey(List<Song> songs) =>
       songs.isEmpty ? '' : songs.map((s) => s.id).join('|');
 
-  Future<void> _handleRefresh() async {
-    final libraryProvider = Provider.of<LibraryProvider>(
-      context,
-      listen: false,
-    );
-    await libraryProvider.refresh();
-  }
-
   void _play(
     BuildContext context,
     Song song,
@@ -86,159 +78,141 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
 
     return Scaffold(
       backgroundColor: tokens.background,
-      body: EasyRefresh.builder(
-        header: ClassicHeader(
-          dragText: '下拉刷新',
-          armedText: '释放刷新',
-          readyText: '正在刷新...',
-          processingText: '正在刷新...',
-          processedText: '刷新完成',
-          iconTheme: IconThemeData(
-            color: isDark ? Colors.white70 : Colors.black54,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            floating: true,
+            expandedHeight: _isDesktop ? 80 : 70,
+            backgroundColor: tokens.background,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: EdgeInsets.only(left: hPad, bottom: 14),
+              title: Text(
+                _getGreeting(),
+                style: TextStyle(
+                  fontSize: _isDesktop ? 28 : 24,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  Icons.auto_awesome_rounded,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                tooltip: AppLocalizations.of(context)!.aiPlaylist,
+                onPressed: () => NavigationHelper.push(
+                  context,
+                  const AiPlaylistScreen(),
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.settings_rounded,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                tooltip: AppLocalizations.of(context)!.settings,
+                onPressed: () => NavigationHelper.push(
+                  context,
+                  const SettingsRootScreen(),
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.history_rounded,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                onPressed: () =>
+                    NavigationHelper.push(context, const HistoryScreen()),
+              ),
+              if (_isDesktop) const SizedBox(width: 8),
+            ],
           ),
-          showMessage: false,
-          triggerOffset: 60,
-          position: IndicatorPosition.locator,
-        ),
-        onRefresh: _handleRefresh,
-        childBuilder: (context, physics) => CustomScrollView(
-          physics: physics,
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              floating: true,
-              expandedHeight: _isDesktop ? 80 : 70,
-              backgroundColor: tokens.background,
-              flexibleSpace: FlexibleSpaceBar(
-                titlePadding: EdgeInsets.only(left: hPad, bottom: 14),
-                title: Text(
-                  _getGreeting(),
-                  style: TextStyle(
-                    fontSize: _isDesktop ? 28 : 24,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                ),
-              ),
-              actions: [
-                IconButton(
-                  icon: Icon(
-                    Icons.auto_awesome_rounded,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                  tooltip: AppLocalizations.of(context)!.aiPlaylist,
-                  onPressed: () => NavigationHelper.push(
-                    context,
-                    const AiPlaylistScreen(),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.settings_rounded,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                  tooltip: AppLocalizations.of(context)!.settings,
-                  onPressed: () => NavigationHelper.push(
-                    context,
-                    const SettingsScreen(),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.history_rounded,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                  onPressed: () =>
-                      NavigationHelper.push(context, const HistoryScreen()),
-                ),
-                if (_isDesktop) const SizedBox(width: 8),
-              ],
-            ),
-            const HeaderLocator.sliver(),
-            SliverToBoxAdapter(
-              child: Consumer4<LibraryProvider, RecommendationService,
-                  HomeRecommendationService, PlaybackContextTracker>(
-                builder: (context, libraryProvider, recommendationService,
-                    homeRecommendation, playbackTracker, _) {
-                  if (libraryProvider.isLoading &&
-                      !libraryProvider.isInitialized) {
-                    return Padding(
-                      padding: EdgeInsets.only(top: 120),
-                      child: const Center(child: CircularProgressIndicator()),
-                    );
-                  }
-
-                  // P3：候选池用全量曲库（全量同步未完成时回退随机池）。
-                  final allSongs = libraryProvider.cachedAllSongs.isNotEmpty
-                      ? libraryProvider.cachedAllSongs
-                      : libraryProvider.randomSongs;
-                  final key = _computeRandomKey(allSongs);
-
-                  if (recommendationService.enabled && key.isNotEmpty) {
-                    if (key != _lastRandomKey) {
-                      _cachedFeed = homeRecommendation.generateFeed(
-                        allSongs: allSongs,
-                      );
-                      _lastRandomKey = key;
-                    }
-                  } else {
-                    _cachedFeed = null;
-                    _lastRandomKey = '';
-                  }
-
-                  final feed = _cachedFeed;
-                  final daily = feed?.daily ?? const <Song>[];
-
-                  if (allSongs.isEmpty && (feed == null || feed.isEmpty)) {
-                    return _buildEmptyState(hPad, isDark);
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      _buildDailyCard(context, daily, libraryProvider, hPad),
-                      _buildContinueListening(
-                        context,
-                        recommendationService,
-                        allSongs,
-                        libraryProvider,
-                        hPad,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildMadeForYou(
-                        context,
-                        feed,
-                        libraryProvider,
-                        hPad,
-                        columns,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildRecentlyPlayed(
-                        context,
-                        playbackTracker,
-                        libraryProvider,
-                        hPad,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPlaylists(context, libraryProvider, hPad),
-                      const SizedBox(height: 16),
-                      _buildDiscover(
-                        context,
-                        feed?.discover ?? const [],
-                        libraryProvider,
-                        hPad,
-                        columns,
-                      ),
-                      // 视口已排除迷你播放器与底部导航，尾部仅留少量呼吸空间。
-                      const SizedBox(height: 32),
-                    ],
+          SliverToBoxAdapter(
+            child: Consumer4<LibraryProvider, RecommendationService,
+                HomeRecommendationService, PlaybackContextTracker>(
+              builder: (context, libraryProvider, recommendationService,
+                  homeRecommendation, playbackTracker, _) {
+                // 未初始化（含首帧与 initialize 进行中）一律转圈，
+                // 避免首帧（isLoading 仍为 false）落进下方空态分支整页闪「暂无内容」。
+                if (!libraryProvider.isInitialized) {
+                  return Padding(
+                    padding: EdgeInsets.only(top: 120),
+                    child: const Center(child: CircularProgressIndicator()),
                   );
-                },
-              ),
+                }
+
+                // P3：候选池用全量曲库（全量同步未完成时回退随机池）。
+                final allSongs = libraryProvider.cachedAllSongs.isNotEmpty
+                    ? libraryProvider.cachedAllSongs
+                    : libraryProvider.randomSongs;
+                final key = _computeRandomKey(allSongs);
+
+                if (recommendationService.enabled && key.isNotEmpty) {
+                  if (key != _lastRandomKey) {
+                    _cachedFeed = homeRecommendation.generateFeed(
+                      allSongs: allSongs,
+                    );
+                    _lastRandomKey = key;
+                  }
+                } else {
+                  _cachedFeed = null;
+                  _lastRandomKey = '';
+                }
+
+                final feed = _cachedFeed;
+                final daily = feed?.daily ?? const <Song>[];
+
+                if (allSongs.isEmpty && (feed == null || feed.isEmpty)) {
+                  return _buildEmptyState(hPad, isDark);
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildDailyCard(context, daily, libraryProvider, hPad),
+                    _buildContinueListening(
+                      context,
+                      recommendationService,
+                      allSongs,
+                      libraryProvider,
+                      hPad,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildMadeForYou(
+                      context,
+                      feed,
+                      libraryProvider,
+                      hPad,
+                      columns,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildRecentlyPlayed(
+                      context,
+                      playbackTracker,
+                      libraryProvider,
+                      hPad,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildPlaylists(context, libraryProvider, hPad),
+                    const SizedBox(height: 16),
+                    _buildDiscover(
+                      context,
+                      feed?.discover ?? const [],
+                      libraryProvider,
+                      hPad,
+                    ),
+                    // 视口已排除迷你播放器与底部导航，尾部仅留少量呼吸空间。
+                    const SizedBox(height: 32),
+                  ],
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -273,9 +247,8 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
               l10n.dailySlogan2,
               l10n.dailySlogan3,
             ],
-            imageUrl: cover == null
-                ? null
-                : libraryProvider.getCoverArtUrl(cover),
+            imageUrl:
+                cover == null ? null : libraryProvider.getCoverArtUrl(cover),
           ),
         ),
         onPlayAll: () => _play(context, daily.first, daily, 0),
@@ -333,6 +306,9 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
         const SizedBox(height: 8),
         SizedBox(
           height: gridHeight,
+          // 横向 GridView 按「先列后行」填充（index0 左上、index1 左下、index2
+          // 右上…），且 recentlyPlayed 本身最新在前（insert(0)），因此视觉上
+          // 即：最新在左上角、整体 1 3 5 / 2 4 6 交错（用户 2026-08-05 确认）。
           child: GridView.builder(
             padding: EdgeInsets.symmetric(horizontal: hPad),
             scrollDirection: Axis.horizontal,
@@ -381,7 +357,8 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
       return MixCardData(
         title: title,
         // 2×2 拼贴封面（≤4 张不同封面），避免多个 Mix 撞同一封面。
-        coverArts: songs.isEmpty ? null : _collageCovers(libraryProvider, songs),
+        coverArts:
+            songs.isEmpty ? null : _collageCovers(libraryProvider, songs),
         disabled: songs.isEmpty,
         onTap: songs.isEmpty
             ? null
@@ -405,7 +382,11 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
         mixCard(
           l10n.commuteMix,
           commute,
-          slogans: [l10n.commuteSlogan1, l10n.commuteSlogan2, l10n.commuteSlogan3],
+          slogans: [
+            l10n.commuteSlogan1,
+            l10n.commuteSlogan2,
+            l10n.commuteSlogan3
+          ],
         ),
         mixCard(
           l10n.studyMix,
@@ -539,37 +520,72 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
     List<Song> discover,
     LibraryProvider libraryProvider,
     double hPad,
-    int columns,
   ) {
     if (discover.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
-    return MixGridSection(
-      title: l10n.discover,
-      hPad: hPad,
-      columns: columns,
-      onSeeAllTap: () => NavigationHelper.push(
-        context,
-        SongListScreen(
-          title: l10n.discover,
-          songs: discover,
-          slogans: [
-            l10n.discoverSlogan1,
-            l10n.discoverSlogan2,
-            l10n.discoverSlogan3,
-          ],
-          imageUrl: _firstCoverUrl(libraryProvider, discover),
+    // 单曲横滑网格（§8-9）：探索发现是「歌曲」不是合集，用横卡与方块网格
+    // （Mix/歌单/最近播放）区分；4 行 × 每行 5 首 = 20 首（探索发现全量），
+    // 加宽卡片、隐藏播放按钮、歌名允许两行——未听过的歌认歌名比按钮重要。
+    // 横向 GridView 按「先列后行」填充（index0 左上、index1 左下…）。
+    const rows = 4;
+    const perRow = 5;
+    final songs = discover.take(rows * perRow).toList();
+    const cardWidth = 240.0;
+    const cardHeight = 72.0;
+    const rowSpacing = 10.0;
+    const colSpacing = 12.0;
+    final gridHeight = rows * cardHeight + (rows - 1) * rowSpacing;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: hPad),
+          child: SectionHeader(
+            title: l10n.discover,
+            actionText: l10n.seeAll,
+            onActionTap: () => NavigationHelper.push(
+              context,
+              SongListScreen(
+                title: l10n.discover,
+                songs: discover,
+                slogans: [
+                  l10n.discoverSlogan1,
+                  l10n.discoverSlogan2,
+                  l10n.discoverSlogan3,
+                ],
+                imageUrl: _firstCoverUrl(libraryProvider, discover),
+              ),
+            ),
+          ),
         ),
-      ),
-      cards: discover.take(8).map((song) {
-        final index = discover.indexOf(song);
-        return MixCardData(
-          title: song.title,
-          subtitle: song.artist,
-          coverArt: libraryProvider.effectiveCoverArt(song),
-          round: false,
-          onTap: () => _play(context, song, discover, index),
-        );
-      }).toList(),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: gridHeight,
+          child: GridView.builder(
+            padding: EdgeInsets.symmetric(horizontal: hPad),
+            scrollDirection: Axis.horizontal,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: rows,
+              crossAxisSpacing: rowSpacing,
+              mainAxisSpacing: colSpacing,
+              childAspectRatio: cardHeight / cardWidth,
+            ),
+            itemCount: songs.length,
+            itemBuilder: (context, index) {
+              final song = songs[index];
+              return ContinuePlayingCard(
+                song: song,
+                coverArt: libraryProvider.effectiveCoverArt(song),
+                width: cardWidth,
+                showPlayButton: false,
+                titleMaxLines: 2,
+                onTap: () => _play(context, song, discover, index),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -603,10 +619,10 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => Provider.of<LibraryProvider>(
+            onPressed: () => refreshLibraryWithFeedback(
               context,
-              listen: false,
-            ).refresh(),
+              Provider.of<LibraryProvider>(context, listen: false),
+            ),
             icon: const Icon(Icons.refresh),
             label: Text(l10n.refresh),
           ),
@@ -638,7 +654,8 @@ class _PlaylistCardV2 extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AlbumArtwork(coverArt: playlist.coverArt, size: size, borderRadius: 8),
+            AlbumArtwork(
+                coverArt: playlist.coverArt, size: size, borderRadius: 8),
             const SizedBox(height: 8),
             Text(
               playlist.name,

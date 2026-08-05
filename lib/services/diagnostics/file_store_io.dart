@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:path_provider/path_provider.dart';
 
@@ -51,6 +52,12 @@ class DiagFileStore {
   Future<void> _writeChain = Future.value(); // 串行化写入队列
   File? _lockFile;
   DateTime? _lockRefreshedAt;
+  String _lockToken = '';
+  bool _lockLost = false;
+
+  /// 写锁是否已失去所有权（被其他实例接管）：失去后本实例停止落盘，
+  /// 事件仅保留在内存 ring，由 DiagnosticsService 转入接管重试。
+  bool get lockLost => _lockLost;
 
   Future<Directory> _ensureDir() async {
     if (_dir != null) return _dir!;
@@ -96,6 +103,7 @@ class DiagFileStore {
   int _utf8Bytes(String s) => utf8.encode(s).length;
 
   Future<void> appendEvent(String line) {
+    if (_lockLost) return Future.value(); // 已失去写权：事件留在内存 ring
     final op =
         _writeChain.catchError((_) {}).then((_) => _appendEventInner(line));
     // 链保持存活：错误仅由本次调用方感知，不毒化后续任务
@@ -114,6 +122,7 @@ class DiagFileStore {
   }
 
   Future<void> appendMetrics(String line) {
+    if (_lockLost) return Future.value(); // 已失去写权：快照不落盘
     final op =
         _writeChain.catchError((_) {}).then((_) => _appendMetricsInner(line));
     _writeChain = op.catchError((_) {});
@@ -184,6 +193,8 @@ class DiagFileStore {
     final dir = await _ensureDir();
     final lockFile = File('${dir.path}/$_lockFileName');
     _lockFile = lockFile;
+    _lockToken = 'tok-${Random().nextInt(1 << 31).toRadixString(16)}';
+    _lockLost = false;
     try {
       await lockFile.create(exclusive: true);
       await _touchLock();
@@ -191,7 +202,8 @@ class DiagFileStore {
     } on FileSystemException {
       // 已存在：内容缺失或心跳超时视为陈旧（前序实例崩溃未释放）
       try {
-        final createdMs = int.tryParse((await lockFile.readAsString()).trim());
+        final content = (await lockFile.readAsString()).trim();
+        final createdMs = int.tryParse(content.split(' ').first);
         final isStale = createdMs == null ||
             DateTime.now().difference(
                     DateTime.fromMillisecondsSinceEpoch(createdMs)) >
@@ -207,10 +219,24 @@ class DiagFileStore {
   }
 
   /// 心跳刷新锁时间戳（由周期 flush 调用，内部按 [lockHeartbeat] 节流）。
-  /// 仅锁持有者调用；未持有锁（_lockFile 为空）时为空操作。
+  ///
+  /// 每次调用先做**所有权校验**：锁文件里的 token 已被其他实例改写
+  /// （本实例被接管）→ 置 [lockLost]，本实例停止落盘，防止两个实例
+  /// 同时写事件文件（曾见接管轮转后旧实例继续写旧分卷）。
   Future<void> refreshWriterLock() async {
     final lock = _lockFile;
     if (lock == null) return;
+    // 所有权校验：内容非 `ts token` 两段或 token 不符 → 已被接管
+    try {
+      final parts = (await lock.readAsString()).trim().split(' ');
+      if (parts.length != 2 || parts[1] != _lockToken) {
+        _markLockLost();
+        return;
+      }
+    } catch (_) {
+      _markLockLost();
+      return;
+    }
     final now = DateTime.now();
     if (_lockRefreshedAt != null &&
         now.difference(_lockRefreshedAt!) < lockHeartbeat) {
@@ -218,13 +244,22 @@ class DiagFileStore {
     }
     try {
       await _touchLock();
-    } catch (_) {}
+    } catch (_) {
+      _markLockLost();
+    }
+  }
+
+  void _markLockLost() {
+    _lockLost = true;
+    _lockFile = null;
+    _lockRefreshedAt = null;
   }
 
   Future<void> _touchLock() async {
     final lock = _lockFile;
     if (lock == null) return;
-    await lock.writeAsString('${DateTime.now().millisecondsSinceEpoch}');
+    await lock.writeAsString(
+        '${DateTime.now().millisecondsSinceEpoch} $_lockToken');
     _lockRefreshedAt = DateTime.now();
   }
 
@@ -237,6 +272,20 @@ class DiagFileStore {
     try {
       await lock.delete();
     } catch (_) {}
+  }
+
+  /// 读取指标快照文件尾部（fps/jankRate/网络聚合），供移动端单文件导出。
+  Future<String> readMetricsTail({int maxLines = 120}) async {
+    final dir = await _ensureDir();
+    final f = File('${dir.path}/metrics.jsonl');
+    try {
+      final lines = await f.readAsLines();
+      return lines.length > maxLines
+          ? lines.sublist(lines.length - maxLines).join('\n')
+          : lines.join('\n');
+    } catch (_) {
+      return '';
+    }
   }
 
   /// 从事件文件尾恢复 {seq, appSessionId}：跨启动状态对账，修复双实例
@@ -335,6 +384,7 @@ class DiagFileStore {
     if (await lock.exists()) await lock.delete();
     _lockFile = null;
     _lockRefreshedAt = null;
+    _lockLost = false;
     await for (final entry in dir.list()) {
       if (entry is Directory &&
           entry.uri.pathSegments.isNotEmpty &&

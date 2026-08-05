@@ -7,9 +7,55 @@ import '../utils/image_cache.dart';
 import '../services/services.dart';
 import '../services/local_music_service.dart';
 
+/// 刷新状态机：驱动音乐库/首页刷新按钮的 loading 态。
+enum RefreshStatus { idle, running }
+
+/// 一次刷新（显式点击或后台调度）的结果，供 UI 展示完成数字/失败原因。
+class RefreshResult {
+  const RefreshResult({
+    required this.success,
+    this.merged = false,
+    this.isLocal = false,
+    this.albumCount = 0,
+    this.songCount = 0,
+    this.error,
+  });
+
+  final bool success;
+
+  /// 本次刷新与已在进行的刷新合并（点击不重复启动）。
+  final bool merged;
+
+  /// 本地模式：仅重读本地扫描结果，未走服务端全量同步。
+  final bool isLocal;
+  final int albumCount;
+  final int songCount;
+  final String? error;
+}
+
 class LibraryProvider extends ChangeNotifier {
   final SubsonicService _subsonicService;
   final AndroidAutoService _androidAutoService = AndroidAutoService();
+
+  /// 行为画像（常听歌手 TopN 数据源），由 main.dart 注入。
+  /// 可空：未注入时「常听」shelf 返回空列表，页面自然隐藏该区。
+  RecommendationService? _recommendationService;
+  RecommendationService? get recommendationService => _recommendationService;
+  set recommendationService(RecommendationService? service) {
+    _recommendationService?.removeListener(_onRecommendationChanged);
+    _recommendationService = service;
+    service?.addListener(_onRecommendationChanged);
+    _topArtistsCache = null;
+    notifyListeners();
+  }
+
+  /// 行为画像更新（播放/打分/收藏）时失效常听缓存，保证下次进艺术家
+  /// tab 即展示最新 TopN，无需等曲库刷新（曲库刷新时 notifyListeners
+  /// 同样会清缓存，见 :222-229）。
+  void _onRecommendationChanged() {
+    _topArtistsCache = null;
+    notifyListeners();
+  }
 
   bool _localOnlyMode = false;
   bool _serverOfflineMode = false;
@@ -33,13 +79,25 @@ class LibraryProvider extends ChangeNotifier {
   List<Playlist> _cachedPlaylists = [];
   DateTime? _lastCacheUpdate;
 
+  /// 常听歌手 TopN（artistId + 播放次数），行为画像或曲库变化时失效。
+  List<TopArtist>? _topArtistsCache;
+
   bool _isLoading = false;
   bool _isInitialized = false;
   String? _error;
 
+  /// 刷新状态机：idle / running，UI 据此渲染按钮 loading 与结果提示。
+  RefreshStatus _refreshStatus = RefreshStatus.idle;
+  RefreshStatus get refreshStatus => _refreshStatus;
+  Completer<RefreshResult>? _activeRefreshCompleter;
+
   static const String _playlistsCacheKey = 'cached_playlists';
   static const String _artistsCacheKey = 'cached_artists';
   static const String _lastUpdateKey = 'last_cache_update';
+
+  /// 常听歌手置顶数量（可调 3~8，两排横滑最多展示 8 个，见
+  /// docs/音乐库艺术家页改版技术方案.md §4.1）。
+  static const int kTopArtistsCount = 8;
 
   LibraryProvider(this._subsonicService) {
     // Register callback to push library data when Android Auto service requests it
@@ -166,6 +224,123 @@ class LibraryProvider extends ChangeNotifier {
     return null;
   }
 
+  /// 艺术家封面统一解析入口（5 级优先级，见 docs/音乐库艺术家页改版技术方案.md §4.2）：
+  /// 1. `artistImageUrl` 直链（Navidrome last.fm/deezer 大图）→ 2. `coverArt` id →
+  /// 3. 专辑封面单图 → 4. 2×2 专辑封面拼贴 → 5. 渐变首字母占位。
+  /// 组件按 `ArtistCover` 的字段择一渲染，保证无任何图源时页面也不素。
+  ArtistCover resolveArtistCover(Artist artist) {
+    // 级 1/2：外部直链（artistImageUrl，last.fm/deezer）或服务端 coverArt id。
+    String? primaryUrl;
+    final directUrl = artist.artistImageUrl;
+    if (directUrl != null && directUrl.isNotEmpty) {
+      primaryUrl = directUrl;
+    } else {
+      final coverArt = artist.coverArt;
+      if (coverArt != null && coverArt.isNotEmpty) {
+        primaryUrl = getCoverArtUrl(coverArt);
+      }
+    }
+    // 级 3：专辑封面单图 —— 直链常有防盗链/网络失败，作为降级目标
+    // （fallback）；没有 primary 时直接作为主图。
+    String? fallbackUrl;
+    final albumCover = getArtistCoverArt(artist);
+    if (albumCover != null && albumCover.isNotEmpty) {
+      final url = getCoverArtUrl(albumCover);
+      if (primaryUrl == null || primaryUrl.isEmpty) {
+        primaryUrl = url;
+      } else if (url != primaryUrl) {
+        fallbackUrl = url;
+      }
+    }
+    // 级 4：2×2 拼贴（最终兜底，本地零网络）。
+    final collage = _artistCollageCoverArt(artist);
+    if ((primaryUrl == null || primaryUrl.isEmpty) && collage.isEmpty) {
+      _logCoverFallback(artist);
+    }
+    return ArtistCover(
+      imageUrl: primaryUrl,
+      fallbackImageUrl: fallbackUrl,
+      collageCovers: collage,
+      name: artist.name,
+    );
+  }
+
+  /// 一次性诊断：封面解析全落空时输出库内匹配样本，用于定位
+  /// cachedAllAlbums 的 artistId/artist 是否与 artist 匹配得上。
+  /// 只打印前 3 位落空艺术家，避免刷屏（配合全局 print 节流）。
+  static int _coverFallbackLogCount = 0;
+  void _logCoverFallback(Artist artist) {
+    if (_coverFallbackLogCount >= 3) return;
+    _coverFallbackLogCount++;
+    final sample = cachedAllAlbums
+        .take(3)
+        .map(
+          (a) => '${a.artistId ?? '∅'}|${a.artist ?? '∅'}|${a.coverArt ?? '∅'}',
+        )
+        .join(', ');
+    debugPrint(
+      '[ArtistCover] 全落空: id=${artist.id} name=${artist.name} '
+      'albums=${cachedAllAlbums.length} sample=[$sample]',
+    );
+  }
+
+  /// 该艺人最多 4 张专辑封面的 coverArt id（2×2 拼贴用）。全本地缓存，
+  /// 零网络。先按 artistId 匹配，再按名字匹配（兼容服务端省略 artistId）。
+  List<String> _artistCollageCoverArt(Artist artist) {
+    return artistAlbumCoverArt(cachedAllAlbums, artist);
+  }
+
+  /// 常听歌手 TopN（本地播放加权亲和度降序，见方案文档 §4.1）。
+  /// 无播放历史 / 未注入行为画像时返回空列表 → UI 不渲染「常听」shelf。
+  List<TopArtist> get topArtists {
+    final cached = _topArtistsCache;
+    if (cached != null) return cached;
+    final result = _computeTopArtists();
+    _topArtistsCache = result;
+    return result;
+  }
+
+  List<TopArtist> _computeTopArtists() {
+    final service = _recommendationService;
+    if (service == null) return const [];
+    // 多取 3 倍名字以吸收「affinity 键是名字、库内同名合并」造成的过滤损耗。
+    final names = service.topArtistsView(kTopArtistsCount * 3);
+    if (names.isEmpty) return const [];
+    // name → Artist 归一映射，防同名艺人合并（affinity 键是名字，非 artistId）。
+    final byName = <String, Artist>{};
+    for (final a in artists) {
+      byName.putIfAbsent(a.name, () => a);
+    }
+    final result = <TopArtist>[];
+    final seen = <String>{};
+    for (final name in names) {
+      final artist = byName[name];
+      if (artist == null || !seen.add(artist.id)) continue;
+      result.add(TopArtist(artist: artist, playCount: _artistPlayCount(artist)));
+      if (result.length >= kTopArtistsCount) break;
+    }
+    return result;
+  }
+
+  /// 该艺人在本地的累计播放次数（SongProfile.playCount 按 artistId 聚合，
+  /// 兜底按名字匹配）。用于「常听」卡下的小字。
+  int _artistPlayCount(Artist artist) {
+    final service = _recommendationService;
+    if (service == null) return 0;
+    var count = 0;
+    for (final p in service.profiles.values) {
+      if (p.artistId != null && p.artistId == artist.id) {
+        count += p.playCount;
+      }
+    }
+    if (count > 0) return count;
+    final name = artist.name;
+    for (final p in service.profiles.values) {
+      if (p.artist == name) count += p.playCount;
+    }
+    return count;
+  }
+
   /// Resolves the cover art id to use for a song. A song's cover is almost
   /// always its album's cover, so when the server omits `song.coverArt` we
   /// fall back to the album's cover (by albumId from the local library) —
@@ -225,6 +400,7 @@ class LibraryProvider extends ChangeNotifier {
     // return stale data.
     _albumCoverByIdCache = null;
     _artistSongCountsCache = null;
+    _topArtistsCache = null;
     super.notifyListeners();
   }
 
@@ -295,7 +471,7 @@ class LibraryProvider extends ChangeNotifier {
     return merged;
   }
 
-  Future<void> initialize({bool force = false}) async {
+  Future<void> initialize({bool force = false, bool scheduleBackground = true}) async {
     if (_isInitialized && !force) return;
 
     _isLoading = true;
@@ -364,7 +540,11 @@ class LibraryProvider extends ChangeNotifier {
 
       _isInitialized = true;
       _preloadCoverArt();
-      _scheduleBackgroundRefresh();
+      // 显式刷新（refresh()）已自行管理全量同步，不再排 5s 延迟任务，
+      // 避免与立即启动的全量同步重复（见 refresh()）。
+      if (scheduleBackground) {
+        _scheduleBackgroundRefresh();
+      }
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -442,7 +622,7 @@ class LibraryProvider extends ChangeNotifier {
         DateTime.now().difference(_lastCacheUpdate!) > const Duration(hours: 6);
 
     if (shouldRefresh) {
-      Future.delayed(const Duration(seconds: 5), () {
+      Future.delayed(const Duration(seconds: 2), () {
         _refreshAllDataInBackground();
       });
     }
@@ -450,8 +630,11 @@ class LibraryProvider extends ChangeNotifier {
 
   bool _isRefreshing = false;
 
-  Future<void> _refreshAllDataInBackground() async {
-    if (_isRefreshing) return;
+  Future<RefreshResult> _refreshAllDataInBackground() async {
+    // 防重入：显式刷新与后台调度共用同一把锁；被跳过时返回 merged 结果。
+    if (_isRefreshing) {
+      return const RefreshResult(success: false, merged: true);
+    }
     _isRefreshing = true;
     try {
       const pageSize = 500;
@@ -536,13 +719,23 @@ class LibraryProvider extends ChangeNotifier {
 
       await _saveCachedData();
       notifyListeners();
+      // 全量专辑拉到后必须补一次封面预热：initialize() 里的预热（:542）
+      // 只覆盖 DB 恢复的少量数据，冷启后磁盘里大部分专辑封面还是空的，
+      // 此时不预热会导致艺术家拼图/列表逐个下载（含服务端首次转码）很慢。
+      _preloadCoverArt();
       debugPrint(
         'Background refresh complete: ${allAlbums.length} albums, '
         '${_cachedAllSongs.length} songs '
         '(${failedAlbumLoads > 0 ? "$failedAlbumLoads album(s) failed, " : ""}kept what succeeded).',
       );
+      return RefreshResult(
+        success: true,
+        albumCount: allAlbums.length,
+        songCount: _cachedAllSongs.length,
+      );
     } catch (e) {
       debugPrint('Error refreshing all data: $e');
+      return RefreshResult(success: false, error: e.toString());
     } finally {
       _isRefreshing = false;
     }
@@ -722,16 +915,40 @@ class LibraryProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> refresh() async {
+  Future<RefreshResult> refresh() async {
+    // 已在刷新中：合并到进行中的任务，不重复启动全量同步。
+    if (_isRefreshing) {
+      final active = _activeRefreshCompleter;
+      if (active != null) return active.future;
+      // 后台调度触发的同步在跑（无 completer）：不重复启动，返回 merged。
+      return const RefreshResult(success: false, merged: true);
+    }
+
     _lastCacheUpdate = null; // force full re-sync
     // Keep _isInitialized true so the UI does not flash a skeleton screen
     // when the user pulls to refresh while data is already shown.
-    await initialize(force: true);
+    final completer = Completer<RefreshResult>();
+    _activeRefreshCompleter = completer;
+    _refreshStatus = RefreshStatus.running;
+    notifyListeners();
 
-    // Force immediate full background refresh if server is reachable.
-    if (!_serverOfflineMode && !_localOnlyMode) {
-      _refreshAllDataInBackground();
+    try {
+      await initialize(force: true, scheduleBackground: false);
+
+      if (_serverOfflineMode || _localOnlyMode) {
+        // 本地/离线：仅重读缓存/本地扫描结果，不触发服务端全量同步。
+        completer.complete(RefreshResult(success: true, isLocal: _localOnlyMode));
+      } else {
+        completer.complete(await _refreshAllDataInBackground());
+      }
+    } catch (e) {
+      completer.complete(RefreshResult(success: false, error: e.toString()));
+    } finally {
+      _refreshStatus = RefreshStatus.idle;
+      _activeRefreshCompleter = null;
+      notifyListeners();
     }
+    return completer.future;
   }
 
   Future<void> loadArtists() async {
@@ -1102,4 +1319,65 @@ class LibraryProvider extends ChangeNotifier {
     _localMusicService?.removeListener(_onLocalMusicServiceChanged);
     super.dispose();
   }
+}
+
+/// 艺术家封面解析结果（`LibraryProvider.resolveArtistCover`）。
+/// 渲染规则：`imageUrl` 非空 → 网络图（加载失败时依次尝试
+/// `fallbackImageUrl` → 2×2 拼贴 → `name` 首字母渐变占位）；
+/// `collageCovers` 非空 → 2×2 拼贴；两者皆空 → 渐变占位。
+/// 外部直链（artistImageUrl）常有防盗链/网络失败，故 fallback 保证
+/// 直链挂了也能落到本服务专辑封面，而不是直接变渐变。
+class ArtistCover {
+  final String? imageUrl;
+  final String? fallbackImageUrl;
+  final List<String> collageCovers;
+  final String name;
+
+  const ArtistCover({
+    this.imageUrl,
+    this.fallbackImageUrl,
+    this.collageCovers = const [],
+    required this.name,
+  });
+
+  bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
+  bool get hasFallback =>
+      fallbackImageUrl != null &&
+      fallbackImageUrl!.isNotEmpty &&
+      fallbackImageUrl != imageUrl;
+  bool get hasCollage => collageCovers.isNotEmpty;
+}
+
+/// 常听歌手条目：艺人 + 本地累计播放次数（shelf 卡下小字用）。
+class TopArtist {
+  final Artist artist;
+  final int playCount;
+
+  const TopArtist({required this.artist, required this.playCount});
+}
+
+/// 该艺人最多 4 张专辑封面的 coverArt id（2×2 拼贴数据源）。
+/// 先按 artistId 匹配，再按名字匹配（兼容服务端省略 artistId）。
+/// 纯逻辑顶层函数，便于单测（见 test/services/artist_top_test.dart）。
+List<String> artistAlbumCoverArt(List<Album> albums, Artist artist) {
+  final result = <String>[];
+  for (final album in albums) {
+    final cover = album.coverArt;
+    if (album.artistId == artist.id && cover != null && cover.isNotEmpty) {
+      result.add(cover);
+      if (result.length >= 4) break;
+    }
+  }
+  if (result.isNotEmpty) return result;
+  final name = artist.name.toLowerCase();
+  for (final album in albums) {
+    final cover = album.coverArt;
+    if ((album.artist ?? '').toLowerCase() == name &&
+        cover != null &&
+        cover.isNotEmpty) {
+      result.add(cover);
+      if (result.length >= 4) break;
+    }
+  }
+  return result;
 }

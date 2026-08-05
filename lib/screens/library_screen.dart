@@ -13,15 +13,17 @@ import '../services/local_music_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/pressable_scale.dart';
+import '../widgets/artist_grid_card.dart';
 import '../utils/navigation_helper.dart';
 import '../utils/image_cache.dart';
+import '../utils/refresh_feedback.dart';
 import 'album_screen.dart';
 import 'package:luobo/screens/playlist_screen.dart';
 import 'favorites_screen.dart';
 import 'liked_albums_screen.dart';
 import 'playlists_screen.dart';
 import 'ai_playlist_screen.dart';
-import 'settings_screen.dart';
+import 'settings_root_screen.dart';
 import 'library_search_delegate.dart';
 import 'artist_screen.dart';
 import 'radio_screen.dart';
@@ -44,6 +46,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
   final ScrollController _artistsScrollController = ScrollController();
   String? _selectedLetter;
   Map<String, int> _letterIndexMap = {};
+
+  /// 上一帧是否处于 Artists tab：从别的 tab 切回 Artists 时预热当前屏
+  /// 封面（磁盘命中→解码进内存），避免首屏逐格异步读盘"一张张冒出来"。
+  bool _wasArtistsTab = false;
 
   @override
   void dispose() {
@@ -136,17 +142,26 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ),
               ),
               actions: [
-                IconButton(
-                  icon: Icon(
-                    CupertinoIcons.refresh,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                  onPressed: () {
-                    final libraryProvider = Provider.of<LibraryProvider>(
-                      context,
-                      listen: false,
+                Consumer<LibraryProvider>(
+                  builder: (context, lp, _) {
+                    final running =
+                        lp.refreshStatus == RefreshStatus.running;
+                    return IconButton(
+                      icon: running
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Icon(
+                              CupertinoIcons.refresh,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                      tooltip: AppLocalizations.of(context)!.refresh,
+                      onPressed: () => _handleRefresh(context),
                     );
-                    libraryProvider.refresh();
                   },
                 ),
                 IconButton(
@@ -300,9 +315,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   );
                 }
 
-                // Artists tab: chip waterfall grouped by pinyin first letter,
+                // Artists tab: square cover grid grouped by pinyin first
+                // letter, topped by a "常听" shelf of most-played artists,
                 // with a right-edge scrubber for quick navigation.
                 if (_selectedFilter == 'Artists') {
+                  _maybePreloadArtistCovers(libraryProvider);
                   final artists = libraryProvider.artists.toList()
                     ..sort((a, b) => a.name.compareTo(b.name));
                   if (artists.isEmpty) {
@@ -315,9 +332,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   }
                   final isDark =
                       Theme.of(context).brightness == Brightness.dark;
-                  // Song counts per artist come from LibraryProvider (computed
-                  // once per library change, not per rebuild).
-                  final artistSongCounts = libraryProvider.artistSongCounts;
+                  // 常听 TopN（本地播放统计，无历史则为空 → 不渲染 shelf）。
+                  final topArtists = libraryProvider.topArtists;
                   final groups = <String, List<Artist>>{};
                   for (final a in artists) {
                     final letter = _firstLetter(a.name);
@@ -325,15 +341,26 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   }
                   final letters = groups.keys.toList()..sort();
                   final l10n = AppLocalizations.of(context)!;
-                  _letterIndexMap = {};
-                  double offset = 0;
+                  // Grid metrics: 列数由视口宽度推导，行高 = 卡宽 + 封面下
+                  // 8 + 固定 44px 文本区（ArtistGridCard 内文本区固定高度，
+                  // 与字体行高无关）。同时用于布局和右侧字母索引的偏移估算。
+                  final availWidth =
+                      MediaQuery.sizeOf(context).width - 16 * 2 - 28;
+                  final colCount =
+                      (availWidth / 140).floor().clamp(2, 6).toInt();
+                  final cardWidth =
+                      (availWidth - (colCount - 1) * 12) / colCount;
+                  final rowHeight = cardWidth + 52;
                   const headerH = 30.0;
-                  const chipRowH = 36.0;
+                  // shelf 实际高：分组头(12+20+8) + 两排网格 168 + 尾间距 12 ≈ 220。
+                  const shelfH = 184.0;
+                  _letterIndexMap = {};
+                  double offset = topArtists.isEmpty ? 0 : shelfH + 36;
                   for (final letter in letters) {
                     _letterIndexMap[letter] = offset.round();
                     offset += headerH;
-                    final rows = (groups[letter]!.length / 3).ceil();
-                    offset += rows * chipRowH + 8;
+                    final rows = (groups[letter]!.length / colCount).ceil();
+                    offset += rows * rowHeight + 12;
                   }
                   return SliverFillRemaining(
                     hasScrollBody: true,
@@ -341,12 +368,57 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       children: [
                         ListView(
                           controller: _artistsScrollController,
-                          padding: const EdgeInsets.only(bottom: 80),
+                          // 右侧留 44 给字母索引条；左 16 对齐网格 padding。
+                          padding: const EdgeInsets.only(
+                            left: 16,
+                            right: 44,
+                            bottom: 80,
+                          ),
                           children: [
+                            if (topArtists.isNotEmpty) ...[
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(0, 12, 0, 8),
+                                child: Text(
+                                  l10n.topArtistsTitle,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? AppTheme.darkSecondaryText
+                                        : AppTheme.lightSecondaryText,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                // 两排横滑：每排高 (168-8)/2 = 80，卡宽 170。
+                                height: 168,
+                                child: GridView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 12,
+                                    crossAxisSpacing: 8,
+                                    mainAxisExtent: 170,
+                                  ),
+                                  itemCount: topArtists.length,
+                                  itemBuilder: (context, index) {
+                                    final top = topArtists[index];
+                                    return ArtistShelfCard(
+                                      artist: top.artist,
+                                      playCount: top.playCount,
+                                      onTap: () => _openArtist(top.artist),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
                             for (final letter in letters) ...[
                               Padding(
                                 padding:
-                                    const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                                    const EdgeInsets.fromLTRB(0, 12, 0, 8),
                                 child: Text(
                                   letter,
                                   style: TextStyle(
@@ -358,73 +430,25 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                   ),
                                 ),
                               ),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(12, 0, 28, 8),
-                                child: Wrap(
-                                  spacing: 6,
-                                  runSpacing: 6,
-                                  children: groups[letter]!.map((a) {
-                                    return GestureDetector(
-                                      onTap: () => _openItem(
-                                        context,
-                                        _LibraryItem(
-                                          type: 'Artist',
-                                          id: a.id,
-                                          name: a.name,
-                                          subtitle: '',
-                                        ),
-                                      ),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? Colors.white10
-                                              : Colors.black
-                                                  .withValues(alpha: 0.06),
-                                          borderRadius:
-                                              BorderRadius.circular(6),
-                                        ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              a.name,
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: isDark
-                                                    ? Colors.white
-                                                    : Colors.black87,
-                                              ),
-                                            ),
-                                            Builder(builder: (ctx) {
-                                              final songCount =
-                                                  artistSongCounts[a.id];
-                                              if (songCount == null ||
-                                                  songCount == 0) {
-                                                return const SizedBox.shrink();
-                                              }
-                                              return Text(
-                                                l10n.songsCount(songCount),
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: isDark
-                                                      ? Colors.white60
-                                                      : Colors.black45,
-                                                ),
-                                              );
-                                            }),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: colCount,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: cardWidth / rowHeight,
                                 ),
+                                itemCount: groups[letter]!.length,
+                                itemBuilder: (context, index) {
+                                  final a = groups[letter]![index];
+                                  return ArtistGridCard(
+                                    artist: a,
+                                    onTap: () => _openArtist(a),
+                                    onPlayPressed: () => _playArtist(a),
+                                  );
+                                },
                               ),
                             ],
                           ],
@@ -912,6 +936,56 @@ class _LibraryScreenState extends State<LibraryScreen> {
     NavigationHelper.push(context, screen);
   }
 
+  /// 打开歌手详情页（网格卡 / 常听 shelf 共用）。
+  void _openArtist(Artist artist) {
+    NavigationHelper.push(context, ArtistScreen(artistId: artist.id));
+  }
+
+  /// 从别的 tab 切回 Artists 时，后台预热当前屏封面：磁盘命中 → 解码进
+  /// 内存 ImageCache。专辑封面已全量在磁盘（<1000 张不会 LRU 淘汰），
+  /// 首屏慢的原因是冷内存批量读盘，预热后秒开。
+  void _maybePreloadArtistCovers(LibraryProvider provider) {
+    final isArtists = _selectedFilter == 'Artists';
+    if (isArtists == _wasArtistsTab) return;
+    _wasArtistsTab = isArtists;
+    if (!isArtists) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final urls = <String>[];
+      final seen = <String>{};
+      void addUrl(String? url) {
+        if (url != null && url.isNotEmpty && seen.add(url)) urls.add(url);
+      }
+      // 前 24 位艺术家（首屏）：主图 + fallback + 拼贴各专辑封面。
+      for (final artist in provider.artists.take(24)) {
+        final cover = provider.resolveArtistCover(artist);
+        addUrl(cover.imageUrl);
+        addUrl(cover.fallbackImageUrl);
+        for (final c in cover.collageCovers) {
+          addUrl(provider.getCoverArtUrl(c));
+        }
+      }
+      if (urls.isEmpty) return;
+      ImagePreloader.preloadImages(context, urls);
+    });
+  }
+
+  /// 播放该艺人的全部歌曲（本地缓存按 artistId 过滤，无则忽略）。
+  void _playArtist(Artist artist) {
+    final libraryProvider = Provider.of<LibraryProvider>(
+      context,
+      listen: false,
+    );
+    final playerProvider = Provider.of<PlayerProvider>(
+      context,
+      listen: false,
+    );
+    final songs = libraryProvider.cachedAllSongs
+        .where((s) => s.artistId == artist.id)
+        .toList();
+    if (songs.isEmpty) return;
+    playerProvider.playSong(songs.first, playlist: songs, startIndex: 0);
+  }
+
   void _showDeletePlaylistDialog(BuildContext context, _LibraryItem item) {
     showDialog(
       context: context,
@@ -965,6 +1039,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 刷新音乐库：等待结果后按成功/失败/本地模式弹提示。
+  Future<void> _handleRefresh(BuildContext context) {
+    return refreshLibraryWithFeedback(
+      context,
+      Provider.of<LibraryProvider>(context, listen: false),
     );
   }
 
@@ -1133,7 +1215,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   void _showSettings(BuildContext context) {
-    NavigationHelper.push(context, const SettingsScreen());
+    NavigationHelper.push(context, const SettingsRootScreen());
   }
 }
 

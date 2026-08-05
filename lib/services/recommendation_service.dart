@@ -82,6 +82,11 @@ class RecommendationService extends ChangeNotifier {
   Map<String, double> get artistAffinityView =>
       Map.unmodifiable(_artistAffinity);
 
+  /// 最常听歌手名字列表（按播放加权亲和度降序，取前 [limit]）。
+  /// 键为歌手名字（本服务键语义，见 `_artistAffinity` 赋值处），消费侧
+  /// （LibraryProvider 常听 shelf）需映射回 artistId 防同名艺人合并。
+  List<String> topArtistsView(int limit) => _getTopArtists(limit);
+
   /// 风格亲和度（播放加权）只读视图。
   Map<String, double> get genreAffinityView => Map.unmodifiable(_genreAffinity);
 

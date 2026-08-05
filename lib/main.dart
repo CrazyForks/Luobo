@@ -31,7 +31,7 @@ import 'utils/image_cache.dart';
 
 /// 运行时上报的应用版本，写入诊断导出 meta.json；
 /// 与 pubspec.yaml `version` 保持一致，发版时同步更新。
-const String kAppVersion = '1.1.6+1';
+const String kAppVersion = '1.1.7+2';
 
 /// Shows the privacy policy dialog on first launch
 Future<void> _showPrivacyPolicyIfNeeded() async {
@@ -300,7 +300,11 @@ void main() async {
           transcodingService,
         ),
       ),
-      ChangeNotifierProvider(create: (_) => LibraryProvider(subsonicService)),
+      ChangeNotifierProvider(
+        create: (_) =>
+            LibraryProvider(subsonicService)
+              ..recommendationService = recommendationService,
+      ),
     ],
     child: const MuslyApp(),
   );

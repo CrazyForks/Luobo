@@ -310,6 +310,8 @@ class _MainScreenState extends State<MainScreen> {
 
   void _openNowPlaying() {
     final transitionSw = Stopwatch()..start();
+    final transitionMsSw = Stopwatch()..start();
+    var transitionRecorded = false;
     Navigator.of(context)
         .push(
       PageRouteBuilder(
@@ -319,6 +321,21 @@ class _MainScreenState extends State<MainScreen> {
           return const NowPlayingScreen();
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // 转场动画完成时记录实际耗时：掉帧会拖长动画完成时间（配置 400ms，
+          // 卡顿则显著 >400ms），直接量化"进全屏页是否卡"。
+          if (!transitionRecorded) {
+            animation.addStatusListener((status) {
+              if (status == AnimationStatus.completed) {
+                transitionRecorded = true;
+                transitionMsSw.stop();
+                DiagnosticsRouteObserver.transition(
+                  from: 'MainScreen',
+                  to: 'NowPlayingScreen',
+                  transitionMs: transitionMsSw.elapsedMilliseconds,
+                );
+              }
+            });
+          }
           const begin = Offset(0.0, 1.0);
           const end = Offset.zero;
           const curve = Curves.easeOutCubic;

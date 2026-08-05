@@ -22,6 +22,7 @@ class MetricsCollector {
   static final MetricsCollector instance = MetricsCollector._();
 
   static const int _jankThresholdMs = 50;
+  static const int _slowFrameMs = 25; // 慢帧阈值：转场动画期间的轻微掉帧
   static const int _slowBuildMs = 16;
   static const Duration _frameWindow = Duration(seconds: 10);
   static const Duration _sampleInterval = Duration(seconds: 60);
@@ -30,6 +31,7 @@ class MetricsCollector {
   Timer? _sampleTimer;
   int _frameSeq = 0;
   DateTime? _lastJankRecordedAt;
+  DateTime? _lastSlowRecordedAt;
 
   bool _started = false;
 
@@ -143,7 +145,26 @@ class MetricsCollector {
             LogLevel.warn,
             {
               'frame': _frameSeq,
-              'totalMs': totalMs.round(), // 保留管线总耗时供上下文参考
+              'totalMs': totalMs.round(),
+              'buildMs': buildMs.round(),
+              'rasterMs': rasterMs.round(),
+              'route': DiagnosticsService.instance.currentRoute,
+            },
+          );
+        }
+      } else if (uiMs > _slowFrameMs) {
+        // 慢帧（25~50ms）：转场动画等场景的轻微掉帧，jank 阈值抓不到，
+        // 逐帧上报会刷屏，同样秒级聚合（info 级）。
+        final last = _lastSlowRecordedAt;
+        if (last == null ||
+            now.difference(last) >= const Duration(seconds: 1)) {
+          _lastSlowRecordedAt = now;
+          DiagnosticsService.instance.record(
+            EventType.frameSlow,
+            LogLevel.info,
+            {
+              'frame': _frameSeq,
+              'totalMs': totalMs.round(),
               'buildMs': buildMs.round(),
               'rasterMs': rasterMs.round(),
               'route': DiagnosticsService.instance.currentRoute,

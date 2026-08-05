@@ -129,6 +129,14 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
 
     final velocity = details.primaryVelocity ?? 0;
     if (_dragOffset > _dismissThreshold || velocity > 800) {
+      // 下拉隐藏返回主屏：此前该路径完全无埋点（查不到下拉卡顿），
+      // pop 前记录转场并带手势参数。
+      DiagnosticsRouteObserver.transition(
+        from: 'NowPlayingScreen',
+        to: 'MainScreen',
+        dragOffset: _dragOffset,
+        velocity: velocity,
+      );
       Navigator.pop(context);
     } else {
       setState(() {

@@ -108,4 +108,27 @@ void main() {
     expect(tail.seq, 3);
     expect(tail.appSessionId, 'as-test');
   });
+
+  test('写锁被接管后原持有者停止落盘（所有权校验）', () async {
+    final a = DiagFileStore();
+    await a.acquireWriterLock();
+    await a.appendEvent(eventLine(1, 'as-test'));
+    await a.flush();
+    expect(a.lockLost, isFalse);
+
+    // 模拟被接管：锁文件 token 被其他实例改写
+    final dir = Directory('$docsPath/diagnostics');
+    final lock = File('${dir.path}/.writer.lock');
+    await lock.writeAsString(
+        '${DateTime.now().millisecondsSinceEpoch} tok-other');
+
+    await a.flush(); // 心跳校验发现 token 不符 → lockLost
+    expect(a.lockLost, isTrue);
+
+    // 失去写权后事件不再落盘
+    await a.appendEvent(eventLine(2, 'as-test'));
+    await a.flush();
+    final tail = await a.readTailState();
+    expect(tail.seq, 1); // 只有接管前的事件 1
+  });
 }

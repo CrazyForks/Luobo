@@ -7,7 +7,7 @@ import '../models/playlist.dart';
 import '../screens/playlist_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/radio_screen.dart';
-import '../screens/settings_screen.dart';
+import '../screens/settings_root_screen.dart';
 import '../utils/image_cache.dart';
 
 class DesktopNavigationSidebar extends StatefulWidget {
@@ -50,7 +50,7 @@ class _DesktopNavigationSidebarState extends State<DesktopNavigationSidebar> {
   }
 
   void _navigateToSettings() {
-    _push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+    _push(MaterialPageRoute(builder: (_) => const SettingsRootScreen()));
   }
 
   void _push(Route<dynamic> route) {

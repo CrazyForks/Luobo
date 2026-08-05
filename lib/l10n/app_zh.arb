@@ -189,6 +189,26 @@
   "@refresh": {
     "description": "Refresh button label"
   },
+  "refreshComplete": "刷新完成：{albumCount} 张专辑 · {songCount} 首歌曲",
+  "@refreshComplete": {
+    "description": "Snackbar after a library refresh succeeds",
+    "placeholders": {
+      "albumCount": {
+        "type": "int"
+      },
+      "songCount": {
+        "type": "int"
+      }
+    }
+  },
+  "refreshFailed": "刷新失败，请检查服务器连接",
+  "@refreshFailed": {
+    "description": "Snackbar when a library refresh fails"
+  },
+  "refreshLocalComplete": "已重新加载本地音乐库",
+  "@refreshLocalComplete": {
+    "description": "Snackbar after reloading local library"
+  },
   "errorLoadingSongs": "加载歌曲出错",
   "@errorLoadingSongs": {
     "description": "Error message when songs fail to load"
@@ -513,6 +533,22 @@
     }
   },
   "albumsCount": "{count, plural, =0{无专辑} =1{1 张专辑} other{{count} 张专辑}}",
+  "topArtistsTitle": "常听",
+  "playsCount": "{count, plural, =0{未播放} =1{1 次} other{{count} 次}}",
+  "refreshLocalComplete": "本地曲库已刷新",
+  "refreshComplete": "{albumCount} 张专辑，{songCount} 首歌曲",
+  "@refreshComplete": {
+    "description": "Library refresh completed with counts",
+    "placeholders": {
+      "albumCount": {
+        "type": "int"
+      },
+      "songCount": {
+        "type": "int"
+      }
+    }
+  },
+  "refreshFailed": "刷新失败",
   "@albumsCount": {
     "description": "Albums count with plural support",
     "placeholders": {
@@ -717,6 +753,29 @@
   "tabAiPlaylist": "AI 歌单",
   "tabAbout": "关于",
   "tabDiagnostics": "诊断",
+
+  "settingsGroupServer": "账号与服务器",
+  "settingsServerSettings": "服务器设置",
+  "settingsGroupPlayback": "播放与音质",
+  "settingsPlaybackSettings": "播放设置",
+  "settingsStreamingEntry": "音质与流媒体",
+  "settingsGroupStorage": "下载与存储",
+  "settingsStorageEntry": "下载与存储",
+  "settingsGroupDisplay": "显示与外观",
+  "settingsDisplayEntry": "显示与外观",
+  "settingsGroupAi": "AI 智能",
+  "settingsAiEntry": "AI 歌单与知识库",
+  "settingsGroupSupport": "支持与帮助",
+
+  "settingsMechanicsEntry": "机制说明",
+  "mechanicsGroupRecommendation": "首页推荐",
+  "mechanicsGroupListeningReport": "听歌报告",
+  "mechanicsGroupStorage": "下载与存储",
+  "mechanicsGroupAi": "AI 智能",
+  "mechanicsGroupAudio": "音频",
+  "mechanicsGroupConnectivity": "连接与投送",
+  "mechanicsGroupDiagnostics": "诊断与隐私",
+  "mechanicsTechDetails": "技术细节",
 
   "diagnosticsTitle": "诊断",
   "diagnosticsSearchHint": "搜索事件类型/内容",
@@ -2435,10 +2494,13 @@
   "@actualStream": { "description": "当前正在播放的流的状态标签" },
   "streamWillTranscode": "当前网络将转码",
   "@streamWillTranscode": { "description": "当前网络下播放将转码的状态标签" },
+  "streamWillTranscodeTo": "当前网络将转码为 {format} {bitrate}kbps（{network}）",
+  "@streamWillTranscodeTo": { "description": "当前网络下播放将转码为指定格式的状态文案（完整句，避免与转码结果拼接重复）", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } },
   "transcodedTo": "转码为 {format} {bitrate}kbps（{network}）",
   "@transcodedTo": { "description": "启用转码时的音质状态", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } },
   "transcodedToNoNetwork": "转码为 {format} {bitrate}kbps",
-  "@transcodedToNoNetwork": { "description": "启用转码时的音质状态（网络类型以图标展示，不显示文字）", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" } } }
-,
+  "@transcodedToNoNetwork": { "description": "启用转码时的音质状态（网络类型以图标展示，不显示文字）", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" } } },
+  "transcodingInProgress": "转码中：{format} {bitrate}kbps",
+  "@transcodingInProgress": { "description": "当前网络下正在/即将转码为指定格式的状态文案（网络类型由前置图标+文字展示）", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" } } },
   "edit": "编辑"
 }

@@ -1194,12 +1194,11 @@ class _QualityInfo extends StatelessWidget {
       statusColor = isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100);
       statusIcon = Icons.speed_rounded;
     } else if (!isCurrent && transcoding.getCurrentBitrate() != null) {
-      final wouldTranscode = l10n.transcodedTo(
+      statusLabel = l10n.streamWillTranscodeTo(
         TranscodeFormat.getLabel(transcoding.getCurrentFormat() ?? ''),
         transcoding.getCurrentBitrate() ?? 0,
         network,
       );
-      statusLabel = '${l10n.streamWillTranscode}：$wouldTranscode';
       statusIcon = Icons.speed_rounded;
     } else {
       statusLabel = l10n.noTranscoding;

@@ -9,6 +9,7 @@ import '../services/subsonic_service.dart';
 import '../services/recommendation_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
+import '../utils/refresh_feedback.dart';
 import '../utils/image_cache.dart';
 import '../widgets/pressable_scale.dart';
 import '../widgets/widgets.dart';
@@ -657,7 +658,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(height: 24),
                                 ElevatedButton.icon(
-                                  onPressed: () => libraryProvider.refresh(),
+                                  onPressed: () =>
+                                      refreshLibraryWithFeedback(
+                                    context,
+                                    libraryProvider,
+                                  ),
                                   icon: const Icon(Icons.refresh),
                                   label: Text(
                                     AppLocalizations.of(context)!.refresh,

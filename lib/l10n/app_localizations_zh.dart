@@ -194,6 +194,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get refresh => '刷新';
 
   @override
+  String refreshComplete(int albumCount, int songCount) {
+    return '$albumCount 张专辑，$songCount 首歌曲';
+  }
+
+  @override
+  String get refreshFailed => '刷新失败';
+
+  @override
+  String get refreshLocalComplete => '本地曲库已刷新';
+
+  @override
   String get errorLoadingSongs => '加载歌曲出错';
 
   @override
@@ -448,6 +459,21 @@ class AppLocalizationsZh extends AppLocalizations {
       other: '$count 张专辑',
       one: '1 张专辑',
       zero: '无专辑',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get topArtistsTitle => '常听';
+
+  @override
+  String playsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 次',
+      one: '1 次',
+      zero: '未播放',
     );
     return '$_temp0';
   }
@@ -733,6 +759,69 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tabDiagnostics => '诊断';
+
+  @override
+  String get settingsGroupServer => '账号与服务器';
+
+  @override
+  String get settingsServerSettings => '服务器设置';
+
+  @override
+  String get settingsGroupPlayback => '播放与音质';
+
+  @override
+  String get settingsPlaybackSettings => '播放设置';
+
+  @override
+  String get settingsStreamingEntry => '音质与流媒体';
+
+  @override
+  String get settingsGroupStorage => '下载与存储';
+
+  @override
+  String get settingsStorageEntry => '下载与存储';
+
+  @override
+  String get settingsGroupDisplay => '显示与外观';
+
+  @override
+  String get settingsDisplayEntry => '显示与外观';
+
+  @override
+  String get settingsGroupAi => 'AI 智能';
+
+  @override
+  String get settingsAiEntry => 'AI 歌单与知识库';
+
+  @override
+  String get settingsGroupSupport => '支持与帮助';
+
+  @override
+  String get settingsMechanicsEntry => '机制说明';
+
+  @override
+  String get mechanicsGroupRecommendation => '首页推荐';
+
+  @override
+  String get mechanicsGroupListeningReport => '听歌报告';
+
+  @override
+  String get mechanicsGroupStorage => '下载与存储';
+
+  @override
+  String get mechanicsGroupAi => 'AI 智能';
+
+  @override
+  String get mechanicsGroupAudio => '音频';
+
+  @override
+  String get mechanicsGroupConnectivity => '连接与投送';
+
+  @override
+  String get mechanicsGroupDiagnostics => '诊断与隐私';
+
+  @override
+  String get mechanicsTechDetails => '技术细节';
 
   @override
   String get diagnosticsTitle => '诊断';
@@ -2796,6 +2885,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get streamWillTranscode => '当前网络将转码';
 
   @override
+  String streamWillTranscodeTo(String format, int bitrate, String network) {
+    return '当前网络将转码为 $format ${bitrate}kbps（$network）';
+  }
+
+  @override
   String transcodedTo(String format, int bitrate, String network) {
     return '转码为 $format ${bitrate}kbps（$network）';
   }
@@ -2803,6 +2897,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String transcodedToNoNetwork(String format, int bitrate) {
     return '转码为 $format ${bitrate}kbps';
+  }
+
+  @override
+  String transcodingInProgress(String format, int bitrate) {
+    return '转码中：$format ${bitrate}kbps';
   }
 
   @override

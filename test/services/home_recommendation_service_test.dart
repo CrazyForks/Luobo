@@ -53,8 +53,10 @@ void main() {
     });
 
     test('分层：每日推荐熟悉优先 + 未听过补足，探索发现只推未听过的', () async {
-      final heard = List.generate(15, (i) => _song('h$i', artist: 'A${i % 3}', albumId: 'al$i'));
-      final unheard = List.generate(10, (i) => _song('u$i', artist: 'B$i', albumId: 'bl$i'));
+      final heard = List.generate(
+          15, (i) => _song('h$i', artist: 'A${i % 3}', albumId: 'al$i'));
+      final unheard = List.generate(
+          10, (i) => _song('u$i', artist: 'B$i', albumId: 'bl$i'));
       for (final s in heard) {
         await play(s);
       }
@@ -98,7 +100,8 @@ void main() {
     });
 
     test('跨模块全局去重：generateFeed 各模块两两不重叠', () async {
-      final songs = List.generate(40, (i) => _song('h$i', artist: 'A${i % 5}', albumId: 'al$i'));
+      final songs = List.generate(
+          40, (i) => _song('h$i', artist: 'A${i % 5}', albumId: 'al$i'));
       for (final s in songs) {
         await play(s);
       }
@@ -117,9 +120,12 @@ void main() {
     });
 
     test('场景 Mix：只含匹配场景标签的歌', () async {
-      final commute = List.generate(8, (i) => _song('c$i', artist: 'A', albumId: 'al$i'));
-      final sleep = List.generate(8, (i) => _song('s$i', artist: 'B', albumId: 'bl$i'));
-      final other = List.generate(8, (i) => _song('o$i', artist: 'C', albumId: 'cl$i'));
+      final commute =
+          List.generate(8, (i) => _song('c$i', artist: 'A', albumId: 'al$i'));
+      final sleep =
+          List.generate(8, (i) => _song('s$i', artist: 'B', albumId: 'bl$i'));
+      final other =
+          List.generate(8, (i) => _song('o$i', artist: 'C', albumId: 'cl$i'));
       for (final s in [...commute, ...sleep, ...other]) {
         await play(s);
       }
@@ -130,8 +136,10 @@ void main() {
       });
       service.refreshUserPref();
 
-      final commuteMix = service.sceneMix(SceneMix.commute, allSongs: [...commute, ...sleep, ...other]);
-      final sleepMix = service.sceneMix(SceneMix.sleep, allSongs: [...commute, ...sleep, ...other]);
+      final commuteMix = service.sceneMix(SceneMix.commute,
+          allSongs: [...commute, ...sleep, ...other]);
+      final sleepMix = service
+          .sceneMix(SceneMix.sleep, allSongs: [...commute, ...sleep, ...other]);
 
       expect(commuteMix, isNotEmpty);
       expect(commuteMix.every((s) => s.id.startsWith('c')), isTrue);
@@ -140,7 +148,8 @@ void main() {
     });
 
     test('每日推荐当日固定：同日返回同一批，次日重新生成', () async {
-      final songs = List.generate(15, (i) => _song('h$i', artist: 'A', albumId: 'al$i'));
+      final songs =
+          List.generate(15, (i) => _song('h$i', artist: 'A', albumId: 'al$i'));
       for (final s in songs) {
         await play(s);
       }
@@ -159,9 +168,11 @@ void main() {
       expect(nextDay, isNot(same(first)));
     });
 
-    test('探索发现按周固定：同周返回同一批', () async {
-      final heard = List.generate(12, (i) => _song('h$i', artist: 'A${i % 3}', albumId: 'al$i'));
-      final unheard = List.generate(10, (i) => _song('u$i', artist: 'B$i', albumId: 'bl$i'));
+    test('探索发现按日固定：同日返回同一批，次日重新生成', () async {
+      final heard = List.generate(
+          12, (i) => _song('h$i', artist: 'A${i % 3}', albumId: 'al$i'));
+      final unheard = List.generate(
+          10, (i) => _song('u$i', artist: 'B$i', albumId: 'bl$i'));
       for (final s in heard) {
         await play(s);
       }
@@ -171,19 +182,21 @@ void main() {
       final all = [...heard, ...unheard];
       final now = DateTime(2026, 8, 4, 10); // 周二
       final first = service.discoverSongs(allSongs: all, now: now);
-      final second = service.discoverSongs(allSongs: all, now: now.add(const Duration(hours: 3)));
+      final second = service.discoverSongs(
+          allSongs: all, now: now.add(const Duration(hours: 3)));
       expect(second, same(first));
 
-      // 周一(8/10)属于下一周 → 重新生成
-      final nextWeek = service.discoverSongs(
+      // 次日重新生成
+      final nextDay = service.discoverSongs(
         allSongs: all,
-        now: DateTime(2026, 8, 10, 10),
+        now: now.add(const Duration(days: 1)),
       );
-      expect(nextWeek, isNot(same(first)));
+      expect(nextDay, isNot(same(first)));
     });
 
     test('favoritesMix：你的最爱 = 熟悉层按行为分降序', () async {
-      final songs = List.generate(15, (i) => _song('h$i', artist: 'A${i % 3}', albumId: 'al$i'));
+      final songs = List.generate(
+          15, (i) => _song('h$i', artist: 'A${i % 3}', albumId: 'al$i'));
       // 只给前 5 首完整播放（完成度满分），后 10 首跳过一次。
       for (final s in songs.take(5)) {
         await play(s, completed: true);
@@ -204,7 +217,8 @@ void main() {
     });
 
     test('退化：无图谱时 α=1，纯行为排序', () async {
-      final songs = List.generate(15, (i) => _song('h$i', artist: 'A${i % 3}', albumId: 'al$i'));
+      final songs = List.generate(
+          15, (i) => _song('h$i', artist: 'A${i % 3}', albumId: 'al$i'));
       for (final s in songs) {
         await play(s);
       }
@@ -218,7 +232,8 @@ void main() {
     });
 
     test('退化：无行为时 α=0，内容分主导且不崩溃', () async {
-      final songs = List.generate(20, (i) => _song('u$i', artist: 'B$i', albumId: 'bl$i'));
+      final songs = List.generate(
+          20, (i) => _song('u$i', artist: 'B$i', albumId: 'bl$i'));
       service.rebuildKnowledge(_tagsFor(songs, '摇滚,深夜'));
       service.refreshUserPref();
 
@@ -230,7 +245,8 @@ void main() {
     });
 
     test('完全冷启动：无行为且无图谱时仍返回非空、不崩溃', () {
-      final songs = List.generate(30, (i) => _song('u$i', artist: 'B$i', albumId: 'bl$i'));
+      final songs = List.generate(
+          30, (i) => _song('u$i', artist: 'B$i', albumId: 'bl$i'));
       final daily = service.dailyRecommendation(allSongs: songs);
       expect(daily.length, 30);
       final feed = service.generateFeed(allSongs: songs);
@@ -238,7 +254,8 @@ void main() {
     });
 
     test('知识库重建后使每日缓存失效', () async {
-      final songs = List.generate(15, (i) => _song('h$i', artist: 'A', albumId: 'al$i'));
+      final songs =
+          List.generate(15, (i) => _song('h$i', artist: 'A', albumId: 'al$i'));
       for (final s in songs) {
         await play(s);
       }

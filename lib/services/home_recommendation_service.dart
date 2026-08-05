@@ -46,7 +46,7 @@ class HomeFeed {
 /// - 熟悉/探索分层：每日推荐按融合分从全库取（熟悉优先、未听过补足），场景 Mix
 ///   仍以熟悉层为主，探索发现只推未听过的（§4.5）
 /// - 跨模块全局去重 + 同歌手≤2 首 / 同专辑≤1 首（§4.6）
-/// - 每日推荐当日固定、探索发现按周固定（§4.8）
+/// - 每日推荐 / 探索发现均按日固定（key=日期，§4.8 / §8-10）
 /// - 无图谱 / 无行为自动退化（§4.4）
 class HomeRecommendationService extends ChangeNotifier {
   HomeRecommendationService({
@@ -148,7 +148,9 @@ class HomeRecommendationService extends ChangeNotifier {
     if (tags != null && tags.isNotEmpty) return _engine.contentScore(tags);
     if (genreFallback) {
       final genre = song.genre;
-      if (genre != null && genre.isNotEmpty) return _engine.contentScore({genre});
+      if (genre != null && genre.isNotEmpty) {
+        return _engine.contentScore({genre});
+      }
     }
     return 0;
   }
@@ -289,15 +291,15 @@ class HomeRecommendationService extends ChangeNotifier {
   }
 
   /// 探索发现：未听过的歌，取行为分最高的听过歌为种子做一跳邻居（§4.5），
-  /// 不足时用偏好标签代表歌兜底；按周固定（key=周序号）。
+  /// 不足时用偏好标签代表歌兜底；按日固定（key=日期，§8-10）。
   List<Song> discoverSongs({
     required List<Song> allSongs,
     int limit = discoverLimit,
     DateTime? now,
     Set<String>? exclude,
   }) {
-    final week = _weekKey(now ?? DateTime.now());
-    final cached = _discoverCache[week];
+    final day = _dayKey(now ?? DateTime.now());
+    final cached = _discoverCache[day];
     if (cached != null && cached.version == _knowledgeVersion) {
       return cached.songs;
     }
@@ -365,7 +367,7 @@ class HomeRecommendationService extends ChangeNotifier {
       }
     }
 
-    _discoverCache[week] = _CacheEntry(_knowledgeVersion, result);
+    _discoverCache[day] = _CacheEntry(_knowledgeVersion, result);
     return result;
   }
 
@@ -376,8 +378,10 @@ class HomeRecommendationService extends ChangeNotifier {
   }) {
     refreshKnowledgeFromCache();
     final used = <String>{};
-    final daily = dailyRecommendation(allSongs: allSongs, now: now, exclude: used);
-    final commute = sceneMix(SceneMix.commute, allSongs: allSongs, exclude: used);
+    final daily =
+        dailyRecommendation(allSongs: allSongs, now: now, exclude: used);
+    final commute =
+        sceneMix(SceneMix.commute, allSongs: allSongs, exclude: used);
     final study = sceneMix(SceneMix.study, allSongs: allSongs, exclude: used);
     final sleep = sceneMix(SceneMix.sleep, allSongs: allSongs, exclude: used);
     final favorites = favoritesMix(allSongs: allSongs, exclude: used);
@@ -427,12 +431,6 @@ class HomeRecommendationService extends ChangeNotifier {
 
   static String _dayKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
-  /// ISO 周 key：以周一日期为标识。
-  static String _weekKey(DateTime d) {
-    final monday = d.subtract(Duration(days: d.weekday - 1));
-    return '${monday.year}-${monday.month.toString().padLeft(2, '0')}-${monday.day.toString().padLeft(2, '0')}';
-  }
 }
 
 /// 缓存条目：记录生成时的知识库版本，仅在版本一致时命中。

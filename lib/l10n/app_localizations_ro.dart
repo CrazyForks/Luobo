@@ -196,6 +196,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get refresh => 'Reîncarcă';
 
   @override
+  String refreshComplete(int albumCount, int songCount) {
+    return '$albumCount albums, $songCount songs';
+  }
+
+  @override
+  String get refreshFailed => 'Refresh failed';
+
+  @override
+  String get refreshLocalComplete => 'Library refreshed';
+
+  @override
   String get errorLoadingSongs => 'Eroare la încărcarea melodiilor';
 
   @override
@@ -451,6 +462,21 @@ class AppLocalizationsRo extends AppLocalizations {
       other: '$count albums',
       one: '1 album',
       zero: 'No albums',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get topArtistsTitle => 'Top artists';
+
+  @override
+  String playsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plays',
+      one: '1 play',
+      zero: 'No plays',
     );
     return '$_temp0';
   }
@@ -743,6 +769,69 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get tabDiagnostics => 'Diagnostics';
+
+  @override
+  String get settingsGroupServer => 'Server & Account';
+
+  @override
+  String get settingsServerSettings => 'Server Settings';
+
+  @override
+  String get settingsGroupPlayback => 'Playback & Quality';
+
+  @override
+  String get settingsPlaybackSettings => 'Playback Settings';
+
+  @override
+  String get settingsStreamingEntry => 'Streaming Quality';
+
+  @override
+  String get settingsGroupStorage => 'Download & Storage';
+
+  @override
+  String get settingsStorageEntry => 'Download & Storage';
+
+  @override
+  String get settingsGroupDisplay => 'Display & Appearance';
+
+  @override
+  String get settingsDisplayEntry => 'Display & Appearance';
+
+  @override
+  String get settingsGroupAi => 'AI';
+
+  @override
+  String get settingsAiEntry => 'AI Playlists & Knowledge';
+
+  @override
+  String get settingsGroupSupport => 'Support & Help';
+
+  @override
+  String get settingsMechanicsEntry => 'How It Works';
+
+  @override
+  String get mechanicsGroupRecommendation => 'Home Recommendations';
+
+  @override
+  String get mechanicsGroupListeningReport => 'Listening Report';
+
+  @override
+  String get mechanicsGroupStorage => 'Download & Storage';
+
+  @override
+  String get mechanicsGroupAi => 'AI';
+
+  @override
+  String get mechanicsGroupAudio => 'Audio';
+
+  @override
+  String get mechanicsGroupConnectivity => 'Connect & Cast';
+
+  @override
+  String get mechanicsGroupDiagnostics => 'Diagnostics & Privacy';
+
+  @override
+  String get mechanicsTechDetails => 'Technical Details';
 
   @override
   String get diagnosticsTitle => 'Diagnostics';
@@ -2899,6 +2988,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get streamWillTranscode => 'Will transcode on current network';
 
   @override
+  String streamWillTranscodeTo(String format, int bitrate, String network) {
+    return 'Will transcode to $format ${bitrate}kbps on current network ($network)';
+  }
+
+  @override
   String transcodedTo(String format, int bitrate, String network) {
     return 'Transcoded to $format ${bitrate}kbps ($network)';
   }
@@ -2906,6 +3000,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String transcodedToNoNetwork(String format, int bitrate) {
     return 'Transcoded to $format ${bitrate}kbps';
+  }
+
+  @override
+  String transcodingInProgress(String format, int bitrate) {
+    return 'Transcoding to $format ${bitrate}kbps';
   }
 
   @override

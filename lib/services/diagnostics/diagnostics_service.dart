@@ -135,7 +135,15 @@ class DiagnosticsService extends ChangeNotifier {
     });
   }
 
-  Future<void> flush() => _store.flush();
+  Future<void> flush() async {
+    await _store.flush();
+    // 写锁被其他实例接管（后台心跳暂停致锁过期被接管）：本实例失去写权，
+    // 转入 secondary——事件保留在内存 ring，由快照定时器周期尝试重新接管，
+    // 避免两个实例继续并发落盘（曾见接管后旧实例继续写旧分卷）。
+    if (_store.lockLost && !_secondaryInstance) {
+      _secondaryInstance = true;
+    }
+  }
 
   /// 供 App 生命周期（detached）调用：flush + 关闭 sink，保证进程退出前
   /// 缓冲落盘。不 cancel 定时器、不置不可逆状态——detach 是瞬态场景
@@ -394,6 +402,9 @@ class DiagnosticsService extends ChangeNotifier {
     // 原始 JSONL 尾部：供核对 seq/appSessionId/写穿——可读文本是解析产物，
     // 损坏行会被静默丢弃，无法验证数据完整性。
     final raw = await _store.readEventLines(maxLines: 400);
+    // 指标快照尾部：fps/jankRate/网络聚合只写 metrics.jsonl，不进事件流，
+    // 不加这段单文件导出里永远搜不到 fps。
+    final metrics = await _store.readMetricsTail(maxLines: 120);
     final buffer = StringBuffer()
       ..writeln('# Luobo diagnostics export')
       ..writeln('appVersion: ${meta['appVersion']}')
@@ -407,6 +418,12 @@ class DiagnosticsService extends ChangeNotifier {
         ..writeln('')
         ..writeln('--- raw events (tail, JSONL) ---')
         ..write(raw);
+    }
+    if (metrics.trim().isNotEmpty) {
+      buffer
+        ..writeln('')
+        ..writeln('--- metrics (fps/jankRate/net, 60s snapshots) ---')
+        ..write(metrics);
     }
     return buffer.toString();
   }

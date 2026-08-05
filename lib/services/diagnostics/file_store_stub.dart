@@ -27,6 +27,9 @@ class DiagFileStore {
   /// Web 无文件：返回空。
   Future<String> readEventLines({int maxLines = 500}) async => '';
 
+  /// Web 无文件：返回空。
+  Future<String> readMetricsTail({int maxLines = 120}) async => '';
+
   // ── 写锁 / 尾部对账（Web 无文件系统：恒成功/空）────────────────────────
 
   Future<WriterLockResult> acquireWriterLock() async =>
@@ -37,6 +40,9 @@ class DiagFileStore {
   Future<void> releaseWriterLock() async {}
 
   Future<void> rotateEvents() async {}
+
+  /// Web 无文件系统：恒未失去写权。
+  bool get lockLost => false;
 
   /// Web 无文件：无历史状态可恢复。
   Future<({int? seq, String? appSessionId})> readTailState() async =>

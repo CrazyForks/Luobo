@@ -28,16 +28,30 @@ class DiagnosticsRouteObserver extends NavigatorObserver {
   }
 
   /// 记录一次页面切换（由业务侧在 push/pop 前后调用）。
-  /// [dwellMs] 为页面驻留时长（pop 后实测），非转场动画耗时。
+  ///
+  /// [dwellMs]：页面驻留时长（pop 后实测）；
+  /// [transitionMs]：转场动画实际耗时（动画完成时实测，掉帧会拖长，
+  ///   如进入全屏页配置 400ms 动画，卡顿时 >400ms）；
+  /// [dragOffset]/[velocity]：手势触发式返回（如下拉隐藏）的滑动参数。
   static void transition({
     required String from,
     required String to,
-    required int dwellMs,
+    int? dwellMs,
+    int? transitionMs,
+    double? dragOffset,
+    double? velocity,
   }) {
     DiagnosticsService.instance.record(
       EventType.navTransition,
       LogLevel.info,
-      {'from': from, 'to': to, 'dwellMs': dwellMs},
+      {
+        'from': from,
+        'to': to,
+        if (dwellMs != null) 'dwellMs': dwellMs,
+        if (transitionMs != null) 'transitionMs': transitionMs,
+        if (dragOffset != null) 'dragOffset': dragOffset.round(),
+        if (velocity != null) 'velocity': velocity.round(),
+      },
       sessionId: 'app',
     );
   }

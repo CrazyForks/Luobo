@@ -241,6 +241,27 @@
     "description": "Refresh button label"
   },
 
+  "refreshComplete": "Refresh complete: {albumCount} albums, {songCount} songs",
+  "@refreshComplete": {
+    "description": "Snackbar after a library refresh succeeds",
+    "placeholders": {
+      "albumCount": {
+        "type": "int"
+      },
+      "songCount": {
+        "type": "int"
+      }
+    }
+  },
+  "refreshFailed": "Refresh failed, check your server connection",
+  "@refreshFailed": {
+    "description": "Snackbar when a library refresh fails"
+  },
+  "refreshLocalComplete": "Local library reloaded",
+  "@refreshLocalComplete": {
+    "description": "Snackbar after reloading local library"
+  },
+
   "errorLoadingSongs": "Error loading songs",
   "@errorLoadingSongs": {
     "description": "Error message when songs fail to load"
@@ -646,6 +667,22 @@
   },
 
   "albumsCount": "{count, plural, =0{No albums} =1{1 album} other{{count} albums}}",
+  "topArtistsTitle": "Top artists",
+  "playsCount": "{count, plural, =0{No plays} =1{1 play} other{{count} plays}}",
+  "refreshLocalComplete": "Library refreshed",
+  "refreshComplete": "{albumCount} albums, {songCount} songs",
+  "@refreshComplete": {
+    "description": "Library refresh completed with counts",
+    "placeholders": {
+      "albumCount": {
+        "type": "int"
+      },
+      "songCount": {
+        "type": "int"
+      }
+    }
+  },
+  "refreshFailed": "Refresh failed",
   "@albumsCount": {
     "description": "Albums count with plural support",
     "placeholders": {
@@ -930,6 +967,30 @@
   "tabSupport": "Support",
   "tabAbout": "About",
   "tabDiagnostics": "Diagnostics",
+
+  "settingsGroupServer": "Server & Account",
+  "settingsServerSettings": "Server Settings",
+  "settingsGroupPlayback": "Playback & Quality",
+  "settingsPlaybackSettings": "Playback Settings",
+  "settingsStreamingEntry": "Streaming Quality",
+  "settingsGroupStorage": "Download & Storage",
+  "settingsStorageEntry": "Download & Storage",
+  "settingsGroupDisplay": "Display & Appearance",
+  "settingsDisplayEntry": "Display & Appearance",
+  "settingsGroupAi": "AI",
+  "settingsAiEntry": "AI Playlists & Knowledge",
+  "settingsGroupSupport": "Support & Help",
+
+  "settingsMechanicsEntry": "How It Works",
+  "mechanicsGroupRecommendation": "Home Recommendations",
+  "mechanicsGroupListeningReport": "Listening Report",
+  "mechanicsGroupStorage": "Download & Storage",
+  "mechanicsGroupAi": "AI",
+  "mechanicsGroupAudio": "Audio",
+  "mechanicsGroupConnectivity": "Connect & Cast",
+  "mechanicsGroupDiagnostics": "Diagnostics & Privacy",
+  "mechanicsTechDetails": "Technical Details",
+
 
   "diagnosticsTitle": "Diagnostics",
   "diagnosticsSearchHint": "Search event type / content",
@@ -2703,10 +2764,13 @@
   "@noTranscoding": { "description": "Audio quality status when transcoding is off" },
   "streamWillTranscode": "Will transcode on current network",
   "@streamWillTranscode": { "description": "Status label when playback will be transcoded on the current network" },
+  "streamWillTranscodeTo": "Will transcode to {format} {bitrate}kbps on current network ({network})",
+  "@streamWillTranscodeTo": { "description": "Full-sentence status when playback will be transcoded on the current network (avoids duplicating the transcode result)", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } },
   "transcodedTo": "Transcoded to {format} {bitrate}kbps ({network})",
   "@transcodedTo": { "description": "Audio quality status when transcoding is enabled", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" }, "network": { "type": "String" } } },
   "transcodedToNoNetwork": "Transcoded to {format} {bitrate}kbps",
-  "@transcodedToNoNetwork": { "description": "Audio quality status when transcoding is enabled (network type shown as an icon)", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" } } }
-,
+  "@transcodedToNoNetwork": { "description": "Audio quality status when transcoding is enabled (network type shown as an icon)", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" } } },
+  "transcodingInProgress": "Transcoding to {format} {bitrate}kbps",
+  "@transcodingInProgress": { "description": "Status when playback is being/will be transcoded on the current network (network type shown by leading icon + text)", "placeholders": { "format": { "type": "String" }, "bitrate": { "type": "int" } } },
   "edit": "Edit"
-}
+}

@@ -6,12 +6,16 @@ import '../widgets/album_artwork.dart';
 import '../widgets/pressable_scale.dart';
 import 'home_v2_tokens.dart';
 
-/// 继续播放小卡（§5.1 模块 2）：封面 + 歌名/歌手 + 圆形播放按钮，点击续播。
+/// 歌曲横卡（§5.1 模块 2）：封面 + 歌名/歌手 + 圆形播放按钮，点击播放。
+/// 播放按钮与歌名行数可配：探索发现（§8-9）隐藏按钮、歌名允许两行——未听过的
+/// 歌重点是认歌名，按钮意义不大。
 class ContinuePlayingCard extends StatelessWidget {
   final Song song;
   final String? coverArt;
   final VoidCallback onTap;
   final double width;
+  final bool showPlayButton;
+  final int titleMaxLines;
 
   const ContinuePlayingCard({
     super.key,
@@ -19,6 +23,8 @@ class ContinuePlayingCard extends StatelessWidget {
     this.coverArt,
     required this.onTap,
     this.width = 200,
+    this.showPlayButton = true,
+    this.titleMaxLines = 1,
   });
 
   @override
@@ -50,7 +56,7 @@ class ContinuePlayingCard extends StatelessWidget {
                   children: [
                     Text(
                       song.title,
-                      maxLines: 1,
+                      maxLines: titleMaxLines,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
@@ -71,20 +77,22 @@ class ContinuePlayingCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 6),
-              Container(
-                width: 30,
-                height: 30,
-                decoration: const BoxDecoration(
-                  color: AppTheme.appleMusicRed,
-                  shape: BoxShape.circle,
+              if (showPlayButton) ...[
+                const SizedBox(width: 6),
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.appleMusicRed,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
+              ],
             ],
           ),
         ),

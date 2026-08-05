@@ -42,6 +42,9 @@ class EventType {
   static const String carDrag = 'car.drag';
   static const String frameJank = 'frame.jank';
 
+  /// 慢帧（UI 线程 build+raster 25~50ms，转场等动画期间的轻微掉帧）。
+  static const String frameSlow = 'frame.slow';
+
   // net.* / stream.* —— 场景 C：网络切换与转码
   static const String netSwitch = 'net.switch';
   static const String netUrlResolved = 'net.urlResolved';

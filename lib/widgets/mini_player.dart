@@ -485,36 +485,29 @@ void _showTranscodeToast(BuildContext context) {
   final depthInfo = song.bitDepth != null ? '${song.bitDepth} bit' : '';
 
   // Transcode status — actual for the current stream, settings-implied
-  // otherwise. The network type is shown as the app's WiFi / cellular icon
-  // (green / orange, same as the settings badge) instead of text.
-  final isDark = theme.brightness == Brightness.dark;
-  final isWifi = transcoding.currentConnectionType == ConnectionType.wifi;
-  final String statusLabel;
-  final Color statusColor;
-  final IconData statusIcon;
-  IconData? networkIcon;
-  if (player.isActiveStreamTranscoded) {
-    statusLabel = l10n.transcodedToNoNetwork(
-      TranscodeFormat.getLabel(player.activeStreamFormat ?? ''),
-      player.activeStreamBitrate ?? 0,
-    );
-    statusColor = isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100);
-    statusIcon = Icons.speed_rounded;
-    networkIcon = isWifi ? Icons.wifi_rounded : Icons.signal_cellular_alt;
-  } else if (transcoding.getCurrentBitrate() != null) {
-    final wouldTranscode = l10n.transcodedToNoNetwork(
-      TranscodeFormat.getLabel(transcoding.getCurrentFormat() ?? ''),
-      transcoding.getCurrentBitrate() ?? 0,
-    );
-    statusLabel = '${l10n.streamWillTranscode}：$wouldTranscode';
-    statusColor = isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100);
-    statusIcon = Icons.speed_rounded;
-    networkIcon = isWifi ? Icons.wifi_rounded : Icons.signal_cellular_alt;
-  } else {
-    statusLabel = l10n.noTranscoding;
-    statusColor = theme.colorScheme.primary;
-    statusIcon = Icons.verified_rounded;
-  }
+  // otherwise. Network type is shown as a leading icon + label group.
+    final isDark = theme.brightness == Brightness.dark;
+    // 网络信息前置成组（图标 + 文字），状态描述在后，避免行尾孤立图标。
+    final isWifi = transcoding.currentConnectionType == ConnectionType.wifi;
+    final network = isWifi ? l10n.networkWifi : l10n.networkMobile;
+    final String statusLabel;
+    final Color statusColor;
+    if (player.isActiveStreamTranscoded) {
+      statusLabel = l10n.transcodedToNoNetwork(
+        TranscodeFormat.getLabel(player.activeStreamFormat ?? ''),
+        player.activeStreamBitrate ?? 0,
+      );
+      statusColor = isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100);
+    } else if (transcoding.getCurrentBitrate() != null) {
+      statusLabel = l10n.transcodingInProgress(
+        TranscodeFormat.getLabel(transcoding.getCurrentFormat() ?? ''),
+        transcoding.getCurrentBitrate() ?? 0,
+      );
+      statusColor = isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100);
+    } else {
+      statusLabel = l10n.noTranscoding;
+      statusColor = theme.colorScheme.primary;
+    }
 
   // Insert into the root overlay so the toast floats above every screen, and
   // keep a reference to replace it on re-trigger instead of stacking.
@@ -529,8 +522,8 @@ void _showTranscodeToast(BuildContext context) {
         depthInfo: depthInfo,
         statusLabel: statusLabel,
         statusColor: statusColor,
-        statusIcon: statusIcon,
-        networkIcon: networkIcon,
+        network: network,
+        networkIcon: isWifi ? Icons.wifi_rounded : Icons.signal_cellular_alt,
         networkColor: isWifi ? Colors.green : Colors.orange,
         onDismiss: () {
           if (_transcodeToastEntry == entry) _transcodeToastEntry = null;
@@ -543,7 +536,8 @@ void _showTranscodeToast(BuildContext context) {
   Overlay.of(context, rootOverlay: true).insert(entry);
 }
 
-/// Auto-dismissing toast card rendered in the screen center. Fades in on
+/// Auto-dismissing toast card rendered in the screen center, styled like the
+/// app's centered SnackBar toasts (inverseSurface + rounded bar). Fades in on
 /// insertion and fades out before removal. The card itself is the only
 /// tappable area (tapping it dismisses early); everything around it passes
 /// through to the UI underneath.
@@ -554,9 +548,9 @@ class _TranscodeToast extends StatefulWidget {
   final String depthInfo;
   final String statusLabel;
   final Color statusColor;
-  final IconData statusIcon;
-  final IconData? networkIcon;
-  final Color? networkColor;
+  final String network;
+  final IconData networkIcon;
+  final Color networkColor;
   final VoidCallback onDismiss;
 
   const _TranscodeToast({
@@ -566,9 +560,9 @@ class _TranscodeToast extends StatefulWidget {
     required this.depthInfo,
     required this.statusLabel,
     required this.statusColor,
-    required this.statusIcon,
-    this.networkIcon,
-    this.networkColor,
+    required this.network,
+    required this.networkIcon,
+    required this.networkColor,
     required this.onDismiss,
   });
 
@@ -624,22 +618,13 @@ class _TranscodeToastState extends State<_TranscodeToast>
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 320),
           child: Material(
+            // SnackBar 观感：inverseSurface 深色圆角条，与刷新提示
+            // （refresh_feedback.dart 的居中 SnackBar）视觉统一。
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              // A hairline border lifts the toast off similarly-toned
-              // backgrounds (pure black in dark mode, light gray in light).
-              side: BorderSide(
-                color: theme.brightness == Brightness.dark
-                    ? AppTheme.darkDivider
-                    : AppTheme.lightDivider,
-              ),
+              borderRadius: BorderRadius.circular(4),
             ),
-            // Use the app's elevated surface so the card reads clearly
-            // against the scaffold/card backgrounds it floats over.
-            color: theme.brightness == Brightness.dark
-                ? AppTheme.darkElevated
-                : Colors.white,
-            elevation: 8,
+            color: theme.colorScheme.inverseSurface,
+            elevation: 6,
             shadowColor: Colors.black.withValues(alpha: 0.3),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
@@ -650,6 +635,7 @@ class _TranscodeToastState extends State<_TranscodeToast>
                   Text(
                     widget.title,
                     style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onInverseSurface,
                       fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
@@ -657,7 +643,12 @@ class _TranscodeToastState extends State<_TranscodeToast>
                   ),
                   if (widget.fileInfo.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(widget.fileInfo, style: theme.textTheme.bodyMedium),
+                    Text(
+                      widget.fileInfo,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onInverseSurface,
+                      ),
+                    ),
                   ],
                   if (sampleInfo.isNotEmpty || depthInfo.isNotEmpty) ...[
                     const SizedBox(height: 2),
@@ -666,7 +657,7 @@ class _TranscodeToastState extends State<_TranscodeToast>
                           .where((s) => s.isNotEmpty)
                           .join(' · '),
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.textTheme.bodySmall?.color?.withValues(
+                        color: theme.colorScheme.onInverseSurface.withValues(
                           alpha: 0.7,
                         ),
                       ),
@@ -676,11 +667,20 @@ class _TranscodeToastState extends State<_TranscodeToast>
                   Row(
                     children: [
                       Icon(
-                        widget.statusIcon,
-                        size: 18,
-                        color: widget.statusColor,
+                        widget.networkIcon,
+                        size: 16,
+                        color: widget.networkColor,
                       ),
                       const SizedBox(width: 6),
+                      Text(
+                        widget.network,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onInverseSurface.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           widget.statusLabel,
@@ -689,14 +689,6 @@ class _TranscodeToastState extends State<_TranscodeToast>
                           ),
                         ),
                       ),
-                      if (widget.networkIcon != null) ...[
-                        const SizedBox(width: 8),
-                        Icon(
-                          widget.networkIcon,
-                          size: 16,
-                          color: widget.networkColor,
-                        ),
-                      ],
                     ],
                   ),
                 ],
