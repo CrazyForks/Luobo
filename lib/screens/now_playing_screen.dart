@@ -43,7 +43,7 @@ class NowPlayingScreen extends StatefulWidget {
 }
 
 class _NowPlayingScreenState extends State<NowPlayingScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   String? _cachedImageUrl;
   String? _cachedThumbnailUrl;
   String? _cachedCoverArtId;
@@ -88,6 +88,13 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
   static const double _swipeThreshold = 80.0;
   static const double _swipeVelocityThreshold = 600.0;
 
+  // ── 播放页停留 30s 自动进入车载页 ─────────────────────────────────────────
+  // 仅播放中计时；任何触摸重置倒计时；进入车载页/离开本页/应用退后台时取消。
+  static const Duration _autoCarModeDelay = Duration(seconds: 30);
+  Timer? _autoCarModeTimer;
+  late final PlayerProvider _playerProvider;
+  bool _appBackgrounded = false;
+
   double get _swipeProgress =>
       (_horizontalDragOffset.abs() / _swipeThreshold).clamp(0.0, 1.0);
 
@@ -98,15 +105,110 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+    _playerProvider = context.read<PlayerProvider>();
+    _playerProvider.addListener(_onPlayerChanged);
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.pointerRouter.addGlobalRoute(_onGlobalPointerDown);
+    // 已处于播放中时立即开始倒计时（不依赖下一次 provider 通知）。
+    _syncAutoCarModeTimer(
+      isPlaying: _playerProvider.isPlaying &&
+          !_playerProvider.isPlayingRadio,
+    );
   }
 
   @override
   void dispose() {
+    _autoCarModeTimer?.cancel();
+    WidgetsBinding.instance.pointerRouter
+        .removeGlobalRoute(_onGlobalPointerDown);
+    WidgetsBinding.instance.removeObserver(this);
+    _playerProvider.removeListener(_onPlayerChanged);
     _swipeAnimationController.dispose();
     if (_showLyricsInternal && !kIsWeb) {
       unawaited(WakelockPlus.disable());
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final backgrounded = state != AppLifecycleState.resumed;
+    if (backgrounded == _appBackgrounded) return;
+    _appBackgrounded = backgrounded;
+    if (backgrounded) {
+      // 退后台暂停计时，回到前台若仍满足条件则重新开始。
+      _autoCarModeTimer?.cancel();
+      _autoCarModeTimer = null;
+    } else {
+      _syncAutoCarModeTimer(isPlaying: _playerProvider.isPlaying);
+    }
+  }
+
+  void _onPlayerChanged() {
+    _syncAutoCarModeTimer(
+      isPlaying: _playerProvider.isPlaying && !_playerProvider.isPlayingRadio,
+    );
+  }
+
+  void _onGlobalPointerDown(PointerEvent event) {
+    // 任意触摸重置倒计时（全局 pointer 路由，仅在有计时器运行时生效）。
+    _resetAutoCarModeTimer();
+  }
+
+  void _syncAutoCarModeTimer({required bool isPlaying}) {
+    if (!mounted || _appBackgrounded) return;
+    if (isPlaying) {
+      if (_autoCarModeTimer == null) _startAutoCarModeTimer();
+    } else {
+      _autoCarModeTimer?.cancel();
+      _autoCarModeTimer = null;
+    }
+  }
+
+  void _startAutoCarModeTimer() {
+    _autoCarModeTimer?.cancel();
+    _autoCarModeTimer = Timer(_autoCarModeDelay, _enterCarModeAutomatically);
+  }
+
+  void _resetAutoCarModeTimer() {
+    if (_autoCarModeTimer != null) _startAutoCarModeTimer();
+  }
+
+  void _enterCarModeAutomatically() {
+    _autoCarModeTimer = null;
+    if (!mounted || _appBackgrounded) return;
+    _openCarMode();
+  }
+
+  Future<void> _openCarMode() {
+    _autoCarModeTimer?.cancel();
+    _autoCarModeTimer = null;
+    final transitionSw = Stopwatch()..start();
+    return Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (_, __, ___) => const CarModeScreen(),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 200),
+        reverseTransitionDuration: Duration.zero,
+      ),
+    ).then((_) {
+      DiagnosticsRouteObserver.transition(
+        from: 'NowPlayingScreen',
+        to: 'CarModeScreen',
+        dwellMs: transitionSw.elapsedMilliseconds,
+      );
+      // 从车载页返回后重新开始倒计时，行为可重复。
+      if (mounted && !_appBackgrounded) {
+        _syncAutoCarModeTimer(
+          isPlaying: _playerProvider.isPlaying &&
+              !_playerProvider.isPlayingRadio,
+        );
+      }
+    });
   }
 
   void _onVerticalDragStart(DragStartDetails details) {
@@ -470,6 +572,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                                 _showLyrics = !_showLyrics;
                               });
                             },
+                            onCarPressed: _openCarMode,
                             isLyricsActive: _showLyrics,
                           ),
                         ),
@@ -770,6 +873,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                                                             !_showLyrics;
                                                       });
                                                     },
+                                                    onCarPressed: _openCarMode,
                                                     isLyricsActive: _showLyrics,
                                                   ),
                                                 ),
@@ -2337,10 +2441,12 @@ class _PlayerControls extends StatefulWidget {
   final String Function(Duration) formatDuration;
   final VoidCallback? onLyricsPressed;
   final bool isLyricsActive;
+  final VoidCallback? onCarPressed;
 
   const _PlayerControls({
     required this.formatDuration,
     this.onLyricsPressed,
+    this.onCarPressed,
     this.isLyricsActive = false,
   });
 
@@ -2380,6 +2486,7 @@ class _PlayerControlsState extends State<_PlayerControls> {
             builder: (context, song, _) => _SongInfo(
               song: song,
               onLyricsPressed: widget.onLyricsPressed,
+              onCarPressed: widget.onCarPressed,
               isLyricsActive: widget.isLyricsActive,
             ),
           ),
@@ -2447,11 +2554,13 @@ class _PlayerControlsState extends State<_PlayerControls> {
 class _SongInfo extends StatefulWidget {
   final Song? song;
   final VoidCallback? onLyricsPressed;
+  final VoidCallback? onCarPressed;
   final bool isLyricsActive;
 
   const _SongInfo({
     required this.song,
     this.onLyricsPressed,
+    this.onCarPressed,
     this.isLyricsActive = false,
   });
 
@@ -2536,27 +2645,7 @@ class _SongInfoState extends State<_SongInfo> {
           ),
         ),
         IconButton(
-          onPressed: () {
-            final transitionSw = Stopwatch()..start();
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                opaque: false,
-                pageBuilder: (_, __, ___) => const CarModeScreen(),
-                transitionsBuilder: (_, animation, __, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                transitionDuration: const Duration(milliseconds: 200),
-                reverseTransitionDuration: Duration.zero,
-              ),
-            ).then((_) {
-              DiagnosticsRouteObserver.transition(
-                from: 'NowPlayingScreen',
-                to: 'CarModeScreen',
-                dwellMs: transitionSw.elapsedMilliseconds,
-              );
-            });
-          },
+          onPressed: widget.onCarPressed,
           icon: const Icon(
             Icons.directions_car,
             color: Colors.white,

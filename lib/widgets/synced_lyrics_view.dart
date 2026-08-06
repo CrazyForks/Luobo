@@ -20,6 +20,7 @@ import '../services/lrclib_service.dart';
 import '../services/netease_lyrics_service.dart';
 import '../services/storage_service.dart';
 import 'album_artwork.dart' show isLocalFilePath;
+import 'lyrics_visual_curve.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/image_cache.dart';
 
@@ -798,7 +799,7 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
             onUserScroll: () {
               setState(() => _showReturnButton = true);
             },
-            fontSize: isFullscreen ? 32.0 : (_isDesktop ? 26.0 : 24.0),
+            fontSize: isFullscreen ? 38.0 : (_isDesktop ? 32.0 : 30.0),
             lineGap: isFullscreen ? 32.0 : 24.0,
             enableBlur: true,
             alignPosition: isFullscreen ? 0.40 : 0.42,
@@ -1184,42 +1185,6 @@ class _AMLLLyricsWidgetState extends State<AMLLLyricsWidget>
     });
   }
 
-  double _calculateBlur(int itemIndex, int activeIndex) {
-    if (activeIndex < 0) return 0.0;
-    final distance = (itemIndex - activeIndex).abs();
-    if (distance == 0) return 0.0;
-    if (distance == 1) return 1.2;
-    if (distance == 2) return 2.8;
-    if (distance == 3) return 4.5;
-    return 6.0;
-  }
-
-  double _calculateScale(int itemIndex, int activeIndex) {
-    if (activeIndex < 0) return 0.97;
-    if (itemIndex == activeIndex) return 1.0;
-    final distance = (itemIndex - activeIndex).abs();
-    if (distance == 1) return 0.97;
-    if (distance == 2) return 0.95;
-    return 0.93;
-  }
-
-  double _calculateOpacity(int itemIndex, int activeIndex) {
-    if (activeIndex < 0) return 0.55;
-    if (itemIndex == activeIndex) return 1.0;
-    // Past lines (already read)
-    if (itemIndex < activeIndex) {
-      final distance = activeIndex - itemIndex;
-      if (distance == 1) return 0.38;
-      if (distance <= 3) return 0.22;
-      return 0.12;
-    }
-    // Future lines (not yet read) — Apple Music dims these aggressively
-    final distance = itemIndex - activeIndex;
-    if (distance == 1) return 0.28;
-    if (distance <= 3) return 0.16;
-    return 0.08;
-  }
-
   @override
   Widget build(BuildContext context) {
     final lines = widget.controller.lines;
@@ -1253,7 +1218,7 @@ class _AMLLLyricsWidgetState extends State<AMLLLyricsWidget>
                 Colors.white,
                 Colors.transparent,
               ],
-              stops: const [0.0, 0.10, 0.90, 1.0],
+              stops: const [0.0, 0.18, 0.82, 1.0],
             ).createShader(rect),
             blendMode: BlendMode.dstIn,
             child: ListView.builder(
@@ -1270,9 +1235,9 @@ class _AMLLLyricsWidgetState extends State<AMLLLyricsWidget>
               itemBuilder: (context, index) {
                 final isActive = index == activeIndex;
                 final isSelected = index == widget.controller.selectedIndex;
-                final opacity = _calculateOpacity(index, activeIndex);
-                final scale = _calculateScale(index, activeIndex);
-                final blur = _calculateBlur(index, activeIndex);
+                final opacity = lyricOpacity(index, activeIndex);
+                final scale = lyricScale(index, activeIndex);
+                final blur = lyricBlur(index, activeIndex);
 
                 return _AMLLLineWidget(
                   key: _lineKeys[index],
@@ -1304,7 +1269,7 @@ class _AMLLLyricsWidgetState extends State<AMLLLyricsWidget>
 // Individual lyric line with AMLL effects:
 //  - spring scale/opacity animations
 //  - gradient fill (played ← bright | dim → unplayed)
-//  - blur for distant lines
+//  - no blur — distant lines fade via alpha only (Apple Music style)
 //  - subtle float up when active
 //  - improved multi-line gradient progress
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1441,9 +1406,9 @@ class _AMLLLineWidgetState extends State<_AMLLLineWidget>
           textAlign: TextAlign.left,
           style: TextStyle(
             fontSize: widget.fontSize,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             color: Colors.white.withValues(alpha: 0.7),
-            height: 1.35,
+            height: 1.4,
             letterSpacing: -0.3,
           ),
         ),
@@ -1503,9 +1468,9 @@ class _AMLLLineWidgetState extends State<_AMLLLineWidget>
       fontSize: widget.fontSize,
       fontWeight: (widget.isActive || widget.isSelected)
           ? FontWeight.w800
-          : FontWeight.w700,
+          : FontWeight.w600,
       color: Colors.white,
-      height: 1.35,
+      height: 1.4,
       letterSpacing: -0.5,
     );
 
@@ -1529,16 +1494,7 @@ class _AMLLLineWidgetState extends State<_AMLLLineWidget>
             return Text(
               widget.line.text,
               textAlign: TextAlign.left,
-              style: textStyle.copyWith(
-                shadows: [
-                  Shadow(
-                      color: Colors.white.withValues(alpha: 0.55),
-                      blurRadius: 28),
-                  Shadow(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      blurRadius: 48),
-                ],
-              ),
+              style: textStyle,
             );
           }
 
@@ -1563,16 +1519,6 @@ class _AMLLLineWidgetState extends State<_AMLLLineWidget>
                         : isCurrent
                             ? 1.0
                             : 0.28),
-                shadows: isCurrent
-                    ? [
-                        Shadow(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            blurRadius: 28),
-                        Shadow(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            blurRadius: 48),
-                      ]
-                    : null,
               ),
             ));
           }
@@ -1591,34 +1537,16 @@ class _AMLLLineWidgetState extends State<_AMLLLineWidget>
             return Text(
               widget.line.text,
               textAlign: TextAlign.left,
-              style: textStyle.copyWith(
-                shadows: [
-                  Shadow(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      blurRadius: 16)
-                ],
-              ),
+              style: textStyle,
             );
           }
-          final fadeProgress = (progress / 0.15).clamp(0.0, 1.0);
-          final alpha = 0.28 + (0.72 * fadeProgress);
+          final fadeProgress = (progress / 0.10).clamp(0.0, 1.0);
+          final alpha = 0.5 + (0.5 * fadeProgress);
           return Text(
             widget.line.text,
             textAlign: TextAlign.left,
             style: textStyle.copyWith(
               color: Colors.white.withValues(alpha: alpha),
-              shadows: fadeProgress > 0.5
-                  ? [
-                      Shadow(
-                          color: Colors.white.withValues(
-                              alpha: 0.55 * (fadeProgress - 0.5) * 2),
-                          blurRadius: 28),
-                      Shadow(
-                          color: Colors.white.withValues(
-                              alpha: 0.25 * (fadeProgress - 0.5) * 2),
-                          blurRadius: 48),
-                    ]
-                  : null,
             ),
           );
         },
@@ -1630,26 +1558,17 @@ class _AMLLLineWidgetState extends State<_AMLLLineWidget>
       return Text(
         widget.line.text,
         textAlign: TextAlign.left,
-        style: textStyle.copyWith(
-          shadows: (widget.isActive || widget.isSelected)
-              ? [
-                  Shadow(
-                      color: Colors.white.withValues(alpha: 0.55),
-                      blurRadius: 28),
-                  Shadow(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      blurRadius: 48),
-                ]
-              : null,
-        ),
+        style: textStyle,
       );
     }
 
     // ── Dim future line ───────────────────────────────────────────────────────
+    // Inner text stays fully white (alpha 1.0); the outer Opacity handles the
+    // symmetric dimming so past/future lines at the same distance match.
     return Text(
       widget.line.text,
       textAlign: TextAlign.left,
-      style: textStyle.copyWith(color: Colors.white.withValues(alpha: 0.28)),
+      style: textStyle,
     );
   }
 }
