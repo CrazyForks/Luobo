@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -890,20 +889,23 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     final coverArtId = song.coverArt!;
 
-    // Search for cached artwork from highest to lowest quality for iOS Now Playing
+    // Search for cached artwork from highest to lowest quality for iOS Now
+    // Playing / Control Center. Lookups use the semantic cover-cache key
+    // (coverArt-<serverId>-<id>-<size>) so they hit whatever variant a previous
+    // session downloaded (previously keyed by URL, these lookups always missed
+    // and forced a fresh 600px download on every track change).
     for (final sz in [1200, 800, 600, 400, 300, 200]) {
-      for (final key in ['${coverArtId}_natural_$sz', '${coverArtId}_$sz']) {
-        try {
-          final fileInfo = await coverCacheManager.getFileFromCache(key);
-          if (fileInfo != null && fileInfo.file.existsSync()) {
-            if (_currentSong?.id == song.id) {
-              _resolvedArtworkUrl = Uri.file(fileInfo.file.path).toString();
-              _updateAllServices();
-            }
-            return;
+      final key = coverArtCacheKey(coverArtId, size: sz);
+      try {
+        final fileInfo = await coverCacheManager.getFileFromCache(key);
+        if (fileInfo != null && fileInfo.file.existsSync()) {
+          if (_currentSong?.id == song.id) {
+            _resolvedArtworkUrl = Uri.file(fileInfo.file.path).toString();
+            _updateAllServices();
           }
-        } catch (_) {}
-      }
+          return;
+        }
+      } catch (_) {}
     }
     // Request high quality for iOS Now Playing bar / Control Center (1200px)
     final serverUrl = _subsonicService.getCoverArtUrl(coverArtId);

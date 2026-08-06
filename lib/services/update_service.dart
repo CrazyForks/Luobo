@@ -45,7 +45,7 @@ class ReleaseInfo {
 }
 
 class UpdateService {
-  static const String currentVersion = '1.1.8';
+  static const String currentVersion = '1.1.9';
 
   static const String _apiUrl =
       'https://api.github.com/repos/dddevid/Musly/releases/latest';

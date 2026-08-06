@@ -537,6 +537,17 @@ class SubsonicService {
     return '$activeBaseUrl/rest/getCoverArt?$queryString';
   }
 
+  /// Stable per-(server, account) scope for the semantic cover-cache key
+  /// (`coverArt-<serverId>-<id>-<size>`). Excludes the password so changing
+  /// it doesn't invalidate cached covers; LAN/remote host switching is absorbed
+  /// because the id stays the same across hosts of the same server.
+  String get coverCacheServerId {
+    final base = _activeBaseUrl ?? _config?.normalizedUrl ?? '';
+    final user = _config?.username ?? '';
+    if (base.isEmpty || user.isEmpty) return '';
+    return md5.convert(utf8.encode('$base|$user')).toString();
+  }
+
   String getStreamUrl(String songId, {int? maxBitRate, String? format}) {
     if (_jellyfin != null)
       return _jellyfin!

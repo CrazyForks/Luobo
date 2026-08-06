@@ -684,7 +684,7 @@ class _ArtworkImage extends StatelessWidget {
     return CachedNetworkImage(
                               cacheManager: coverCacheManager,
                               imageUrl: url!,
-      cacheKey: url,
+      cacheKey: coverArtCacheKeyFromUrl(url!),
       fit: BoxFit.cover,
       memCacheHeight: 200,
       memCacheWidth: 200,

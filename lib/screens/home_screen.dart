@@ -925,6 +925,7 @@ class _QuickAccessTileState extends State<_QuickAccessTile> {
                               : CachedNetworkImage(
                                   cacheManager: coverCacheManager,
                                   imageUrl: widget.imageUrl!,
+                                  cacheKey: coverArtCacheKeyFromUrl(widget.imageUrl!),
                                   fit: BoxFit.cover,
                                   placeholder: (ctx, e) =>
                                       Container(color: Colors.grey[800]),
@@ -1017,6 +1018,7 @@ class _PlaylistCard extends StatelessWidget {
                     ? CachedNetworkImage(
                         cacheManager: coverCacheManager,
                         imageUrl: coverArtUrl,
+                        cacheKey: coverArtCacheKeyFromUrl(coverArtUrl),
                         fit: BoxFit.cover,
                         placeholder: (ctx, url) => Container(
                           color: isDark
@@ -1263,6 +1265,7 @@ class _DesktopSongRowState extends State<_DesktopSongRow> {
                             song.coverArt!,
                             size: kCoverArtRequestSize,
                           ),
+                          cacheKey: coverArtCacheKey(song.coverArt!),
                           fit: BoxFit.cover,
                           placeholder: (ctx, url) =>
                               Container(color: Colors.grey[800]),

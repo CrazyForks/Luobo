@@ -839,6 +839,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                 : CachedNetworkImage(
                     cacheManager: coverCacheManager,
                     imageUrl: coverArtUrl,
+                    cacheKey: coverArtCacheKeyFromUrl(coverArtUrl),
                     fit: BoxFit.cover,
                     placeholder: (ctx, url) =>
                         Container(color: Colors.grey[800]),

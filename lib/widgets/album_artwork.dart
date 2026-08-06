@@ -193,9 +193,9 @@ class AlbumArtwork extends StatelessWidget {
         return CachedNetworkImage(
           cacheManager: coverCacheManager,
           imageUrl: imageUrl,
-          // No explicit cacheKey: the disk cache is keyed by the URL itself
-          // (fixed size=300 + stable salt), so preloaders and every screen
-          // automatically share the same entry.
+          // Semantic key (coverArt-<serverId>-<id>-300): stable across password
+          // changes, per-server isolated, queryable by id. See image_cache.dart.
+          cacheKey: coverArtCacheKey(coverArt!),
           fit: BoxFit.contain,
           memCacheWidth: kCoverArtRequestSize,
           memCacheHeight: kCoverArtRequestSize,
@@ -239,6 +239,7 @@ class AlbumArtwork extends StatelessWidget {
         return CachedNetworkImage(
           cacheManager: coverCacheManager,
           imageUrl: imageUrl,
+          cacheKey: coverArtCacheKey(coverArt!),
           fit: BoxFit.cover,
           memCacheWidth: kCoverArtRequestSize,
           memCacheHeight: kCoverArtRequestSize,

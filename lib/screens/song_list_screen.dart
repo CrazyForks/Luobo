@@ -85,7 +85,9 @@ class _SongListScreenState extends State<SongListScreen> {
       final palette = await PaletteGenerator.fromImageProvider(
         // 与展示图同一 300 URL + coverCacheManager，命中共享磁盘缓存
         // （图片缓存文档 §4.2/§4.3：取色不重复下载）。
-        CachedNetworkImageProvider(url, cacheManager: coverCacheManager),
+        CachedNetworkImageProvider(url,
+            cacheManager: coverCacheManager,
+            cacheKey: coverArtCacheKeyFromUrl(url)),
         maximumColorCount: 12,
       );
       final color = palette.vibrantColor?.color ??

@@ -18,6 +18,7 @@ import 'services/local_music_service.dart';
 import 'services/analytics_service.dart';
 import 'services/diagnostics/diagnostics.dart';
 import 'services/favorite_playlists_service.dart';
+import 'services/cover_cache_cleaner.dart';
 import 'services/song_knowledge_cache.dart';
 import 'widgets/glass_surface.dart';
 import 'widgets/privacy_policy_dialog.dart';
@@ -31,7 +32,7 @@ import 'utils/image_cache.dart';
 
 /// 运行时上报的应用版本，写入诊断导出 meta.json；
 /// 与 pubspec.yaml `version` 保持一致，发版时同步更新。
-const String kAppVersion = '1.1.8+3';
+const String kAppVersion = '1.1.9+4';
 
 /// Shows the privacy policy dialog on first launch
 Future<void> _showPrivacyPolicyIfNeeded() async {
@@ -168,6 +169,9 @@ void main() async {
   }
 
   ImageCacheConfig.configure();
+
+  // 封面磁盘缓存字节守护：启动时清理超限的最旧封面（512MB 阈值，见方案 P5）。
+  unawaited(CoverCacheCleaner().prune());
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

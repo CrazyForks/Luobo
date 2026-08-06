@@ -70,7 +70,9 @@ class _DailyRecommendationCardState extends State<DailyRecommendationCard> {
       final palette = await PaletteGenerator.fromImageProvider(
         // 与展示图同一 300 URL + coverCacheManager，命中共享磁盘缓存
         // （图片缓存文档 §4.2/§4.3：取色不重复下载）。
-        CachedNetworkImageProvider(url, cacheManager: coverCacheManager),
+        CachedNetworkImageProvider(url,
+            cacheManager: coverCacheManager,
+            cacheKey: coverArtCacheKeyFromUrl(url)),
         maximumColorCount: 12,
       );
       // 取色标准：优先 vibrant（最鲜艳、最有辨识度），再回落 dominant。

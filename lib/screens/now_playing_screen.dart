@@ -2084,7 +2084,9 @@ class _AlbumArtworkSectionState extends State<_AlbumArtworkSection>
                             )
                           : CachedNetworkImage(
                               key: ValueKey(widget.imageUrl),
+                              cacheManager: coverCacheManager,
                               imageUrl: widget.imageUrl,
+                              cacheKey: coverArtCacheKeyFromUrl(widget.imageUrl),
                               fit: BoxFit.contain,
                               memCacheWidth: 1200,
                               maxWidthDiskCache: 1200,
@@ -2098,6 +2100,7 @@ class _AlbumArtworkSectionState extends State<_AlbumArtworkSection>
                                       ? CachedNetworkImage(
                                           cacheManager: coverCacheManager,
                                           imageUrl: widget.thumbnailUrl!,
+                                          cacheKey: coverArtCacheKeyFromUrl(widget.thumbnailUrl!),
                                           fit: BoxFit.contain,
                                           memCacheWidth: 200,
                                           fadeInDuration: Duration.zero,
@@ -2280,7 +2283,9 @@ class _SwipeableAlbumArtwork extends StatelessWidget {
                   )
                 : CachedNetworkImage(
                     key: ValueKey(previewImageUrl),
+                    cacheManager: coverCacheManager,
                     imageUrl: previewImageUrl!,
+                    cacheKey: coverArtCacheKeyFromUrl(previewImageUrl!),
                     fit: BoxFit.contain,
                     memCacheWidth: 1200,
                     maxWidthDiskCache: 1200,
@@ -2739,6 +2744,7 @@ class _SongInfoState extends State<_SongInfo> {
                                 child: CachedNetworkImage(
                                   cacheManager: coverCacheManager,
                                   imageUrl: coverArtUrl,
+                                  cacheKey: coverArtCacheKeyFromUrl(coverArtUrl),
                                   width: 50,
                                   height: 50,
                                   fit: BoxFit.cover,

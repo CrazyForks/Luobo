@@ -87,10 +87,12 @@ class _SettingsStorageTabState extends State<SettingsStorageTab> {
   }
 
   /// Sums the byte length of every cached cover file under
-  /// `<appCacheDir>/coverCache` (the cacheKey used by coverCacheManager).
+  /// `<tempDir>/coverCache` (the cacheKey used by coverCacheManager —
+  /// flutter_cache_manager's default IOFileSystem lives in the temp dir, not
+  /// the app-cache dir).
   Future<int> _coverCacheSize() async {
     try {
-      final base = await getApplicationCacheDirectory();
+      final base = await getTemporaryDirectory();
       final dir = Directory('${base.path}/coverCache');
       if (!await dir.exists()) return 0;
       var total = 0;

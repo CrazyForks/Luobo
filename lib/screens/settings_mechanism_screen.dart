@@ -226,9 +226,9 @@ const List<MechanismItem> _storageItems = [
   MechanismItem(
     title: '封面图片缓存',
     summary:
-        '封面统一按 300px 请求；磁盘缓存约 1000 张（按最少使用淘汰、60 天过期），内存再缓存 300 张加速滚动。同一封面全 App 共享同一条缓存，不重复下载。',
+        '封面统一按 300px 请求；磁盘缓存约 10000 张（基本不淘汰），超 512MB 自动清理最旧封面，内存再缓存 300 张加速滚动。同一封面全 App 共享同一条缓存，不重复下载；换密码不影响已缓存封面。',
     details:
-        'coverCacheManager（flutter_cache_manager Config：stalePeriod 60 天、maxNrOfCacheObjects 1000）；ImageCache 上限 300 张/150MB；封面统一 kCoverArtRequestSize=300、以 URL 为 key。\n依据：image_cache.dart:10-30、album_artwork.dart:196-203',
+        'coverCacheManager（flutter_cache_manager Config：stalePeriod 60 天、maxNrOfCacheObjects 10000、共享 http.Client 复用连接）；CoverCacheCleaner 启动时按 512MB 阈值清理；语义化 key=coverArt-<serverId>-<id>-<size>（serverId=md5(baseUrl+用户名)）；ImageCache 上限 300 张/150MB；封面统一 kCoverArtRequestSize=300。\n依据：image_cache.dart:10-70、services/cover_cache_cleaner.dart',
   ),
   MechanismItem(
     title: '本地数据库与同步',

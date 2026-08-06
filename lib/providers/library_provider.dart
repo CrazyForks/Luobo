@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../utils/image_cache.dart';
@@ -882,6 +884,8 @@ class LibraryProvider extends ChangeNotifier {
 
       final cacheManager = coverCacheManager;
       const batchSize = 6;
+      // 首批封面除落盘外同步预热内存：首屏滚动不再实时解码（方案 P2）。
+      const memoryWarmCount = 24;
       var ok = 0;
       var failed = 0;
       for (var i = 0; i < urls.length; i += batchSize) {
@@ -889,7 +893,13 @@ class LibraryProvider extends ChangeNotifier {
         await Future.wait(
           urls.sublist(i, end).map((url) async {
             try {
-              await cacheManager.downloadFile(url);
+              await cacheManager.downloadFile(
+                url,
+                key: coverArtCacheKeyFromUrl(url),
+              );
+              if (i < memoryWarmCount) {
+                await _warmCoverMemoryCache(url);
+              }
               ok++;
             } catch (e) {
               failed++;
@@ -913,6 +923,34 @@ class LibraryProvider extends ChangeNotifier {
         );
       }
     });
+  }
+
+  /// Decodes one cover into the memory ImageCache (same semantic cacheKey the
+  /// UI uses) so the first screen of a cold start renders without a decode
+  /// hitch on scroll. Background resolve — no BuildContext needed.
+  Future<void> _warmCoverMemoryCache(String url) async {
+    try {
+      final provider = CachedNetworkImageProvider(
+        url,
+        cacheManager: coverCacheManager,
+        cacheKey: coverArtCacheKeyFromUrl(url),
+      );
+      final stream = provider.resolve(const ImageConfiguration());
+      final completer = Completer<void>();
+      late final ImageStreamListener listener;
+      listener = ImageStreamListener(
+        (_, __) {
+          stream.removeListener(listener);
+          if (!completer.isCompleted) completer.complete();
+        },
+        onError: (Object e, StackTrace? s) {
+          stream.removeListener(listener);
+          if (!completer.isCompleted) completer.complete();
+        },
+      );
+      stream.addListener(listener);
+      await completer.future.timeout(const Duration(seconds: 8));
+    } catch (_) {}
   }
 
   Future<RefreshResult> refresh() async {

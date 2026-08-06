@@ -302,6 +302,7 @@ class _CoverImage extends StatelessWidget {
     return CachedNetworkImage(
       imageUrl: url,
       cacheManager: coverCacheManager,
+      cacheKey: coverArtCacheKeyFromUrl(url),
       fit: BoxFit.cover,
       memCacheWidth: kCoverArtRequestSize,
       memCacheHeight: kCoverArtRequestSize,

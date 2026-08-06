@@ -635,6 +635,7 @@ class _CarModeScreenState extends State<CarModeScreen>
                                       child: CachedNetworkImage(
                                         cacheManager: coverCacheManager,
                                         imageUrl: coverUrl,
+                                        cacheKey: coverArtCacheKeyFromUrl(coverUrl),
                                         width: 120,
                                         height: 120,
                                         fit: BoxFit.cover,

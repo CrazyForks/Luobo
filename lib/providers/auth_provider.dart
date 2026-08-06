@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/server_config.dart';
 import '../utils/image_cache.dart';
@@ -123,6 +122,8 @@ class AuthProvider extends ChangeNotifier {
       }
       debugPrint('[Auth] State: authenticating → authenticated');
       _state = AuthState.authenticated;
+      // 语义化封面缓存 key 的 (服务器, 账号) 命名空间：换密码不失效、多服务器不串图。
+      registerCoverCacheServerId(_subsonicService.coverCacheServerId);
 
       final offlineService = OfflineService();
       await offlineService.initialize();
@@ -293,6 +294,10 @@ class AuthProvider extends ChangeNotifier {
         _config = updatedConfig;
         await _storageService.saveServerConfig(updatedConfig);
         _state = AuthState.authenticated;
+        // login() 不走 _verifyConnection，必须在此注册封面缓存 key 的
+        // (服务器, 账号) 命名空间，否则首次登录会话内 serverId 为空，
+        // 重启后 key 变化导致已缓存封面全部失效重下。
+        registerCoverCacheServerId(_subsonicService.coverCacheServerId);
         notifyListeners();
 
         _storageService.saveProfile(updatedConfig).catchError(
@@ -409,9 +414,10 @@ class AuthProvider extends ChangeNotifier {
       offlineService.cancelBackgroundDownload();
     }
 
-    try {
-      await coverCacheManager.emptyCache();
-    } catch (_) {}
+    // 保留磁盘封面缓存：同账号登出再登回直接命中；换账号/换服务器由语义化
+    // key（含 serverId）或 URL 天然隔离，不会串图。仅清内存解码结果，避免
+    // 旧账号封面残留。用户仍可在设置页手动清空封面缓存。
+    PaintingBinding.instance.imageCache.clear();
     try {
       await BpmAnalyzerService().clearCache();
     } catch (_) {}
@@ -432,6 +438,10 @@ class AuthProvider extends ChangeNotifier {
     } catch (_) {}
 
     await _storageService.clearAll();
+
+    // 登出后重置封面缓存 key 命名空间，避免旧账号 serverId 残留（切账号时
+    // 新账号 _verifyConnection 成功前不应继续用旧 serverId 拼 key）。
+    registerCoverCacheServerId('');
 
     _config = null;
     _state = AuthState.unauthenticated;

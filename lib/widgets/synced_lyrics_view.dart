@@ -671,6 +671,7 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
                             : CachedNetworkImage(
                               cacheManager: coverCacheManager,
                               imageUrl: imageUrl,
+                              cacheKey: coverArtCacheKeyFromUrl(imageUrl),
                                 fit: BoxFit.cover,
                                 memCacheWidth: 1200,
                                 memCacheHeight: 1200,
@@ -881,6 +882,7 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
             : CachedNetworkImage(
                               cacheManager: coverCacheManager,
                               imageUrl: imageUrl,
+                              cacheKey: coverArtCacheKeyFromUrl(imageUrl),
                 fit: BoxFit.cover,
                 memCacheWidth: 1200,
                 memCacheHeight: 1200,

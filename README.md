@@ -2,7 +2,7 @@
 
 **Luobo**（萝卜）是基于 [Musly](https://github.com/dddevid/Musly) 二次开发的 Navidrome / Subsonic 音乐播放客户端，使用 Flutter 构建，支持 Android 和 iOS。**相比原版 Musly 增加了 Apple Music 风格首页、车载模式、听歌报告、AI 歌单等特色功能，并对设置页、音乐库艺术家页做了重构，以及大规模国际化适配。**
 
-> **当前版本：v1.1.8**（在 Musly v1.0.13 基础上独立迭代）
+> **当前版本：v1.1.9**（在 Musly v1.0.13 基础上独立迭代）
 
 ---
 
@@ -203,7 +203,18 @@
 
 ## 🛠️ 版本历史
 
-**v1.1.8（当前）** — 音乐库四 Tab 平级横滑、登录连接兜底与首页探索副标题：
+**v1.1.9（当前）** — 封面缓存全面优化（连接复用 / 语义化 key / 内存预热 / 登出不清缓存）：
+
+**🖼️ 封面缓存优化（P0-P5 全量落地）**
+- ✅ **封面下载复用连接池（P0）** — 封面下载从每次新 TCP+TLS 握手改为共享 `http.Client`（懒加载以继承登录时配置的自签证书），连续加载未缓存封面 TCP 连接数从 ~50 收敛到 1~2
+- ✅ **切歌不再冷下载高清图（P1）** — 修复 `_refreshArtworkUrl` 死代码：iOS Now Playing / Control Center 封面查找改用语义化 key 命中已下载变体（1200→200 逐档），同一首歌再次播放零新增 getCoverArt 请求
+- ✅ **首屏内存预热（P2）** — 全量预热首批 24 张封面同步解码进内存 ImageCache，冷启动首屏滚动不再逐张"实时解码卡一拍"
+- ✅ **语义化缓存 key（P3）** — 磁盘 key 由 URL 改为 `coverArt-<serverId>-<id>-<size>`（serverId = md5(服务器地址 + 用户名)，不含密码）：换密码不再全量失效、可按 id 反查、多服务器/多账号不串图；全 App CachedNetworkImage 调用点（~18 处）统一收口
+- ✅ **登出不清封面缓存（P4）** — 登出仅清内存解码结果，磁盘封面保留：同账号登出再登回秒开；换账号/换服务器由语义化 key 天然隔离，设置页手动清空兜底
+- ✅ **缓存上限与字节守护（P5）** — 对象上限 1000→10000（大库不再频繁驱逐重下）；新增 `CoverCacheCleaner` 启动时按 512MB 字节阈值清理最旧封面（走 removeFile 同步删索引记录，带诊断打点）
+- ✅ **设置页占用统计修正** — 封面缓存目录统计从 appCacheDir 改到 tempDir（flutter_cache_manager 实际存储位置），机制说明文案同步更新
+
+**v1.1.8** — 音乐库四 Tab 平级横滑、登录连接兜底与首页探索副标题：
 
 **🎵 音乐库四 Tab 平级横滑**
 - ✅ **顶部 TabBar + 页面跟手横滑** — 艺术家/专辑/歌曲/收藏（本地模式自动扩展 6 Tab）从 FilterChip 原地跳变改为网易新闻/百度 App 首页式：文字 TabBar + 下划线指示器 + TabBarView 左右跟手滑动、惯性落页，点 Tab 与横滑双向联动（删除原 `_swipeDelta` / GestureDetector / AnimatedSwitcher 跳变逻辑）
