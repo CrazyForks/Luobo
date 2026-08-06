@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:luobo/models/server_config.dart';
 import 'package:luobo/services/storage_service.dart';
@@ -152,6 +154,34 @@ void main() {
 
         expect(svc.activeBaseUrl, remoteUrl);
         expect(await storage.getLastActiveBaseUrl(), remoteUrl);
+      });
+
+      test('forceProbe ignores last-active skip and probes LAN synchronously',
+          () async {
+        // 本地 HTTP 服务模拟可达的局域网端点。
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        server.listen((req) => req.response
+          ..statusCode = 200
+          ..close());
+        addTearDown(() => server.close(force: true));
+        final lanUrl = 'http://127.0.0.1:${server.port}';
+
+        SharedPreferences.setMockInitialValues({});
+        final storage = StorageService();
+        // 上次会话在远端 → 普通调用会 skip 探测；forceProbe 必须无视它。
+        await storage.saveLastActiveBaseUrl(remoteUrl);
+        final svc = SubsonicService(storageService: storage);
+        svc.configure(ServerConfig(
+          serverUrl: remoteUrl,
+          localUrl: lanUrl,
+          username: 'demo',
+          password: 'demo',
+        ));
+
+        await svc.resolveActiveUrl(forceProbe: true);
+
+        expect(svc.activeBaseUrl, lanUrl);
+        expect(await storage.getLastActiveBaseUrl(), lanUrl);
       });
     });
   });

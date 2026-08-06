@@ -38,22 +38,96 @@ class LibraryScreen extends StatefulWidget {
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen> {
-  String _selectedFilter = 'Artists';
-  double _swipeDelta = 0;
+class _LibraryScreenState extends State<LibraryScreen>
+    with SingleTickerProviderStateMixin {
+  /// 顶部 TabBar 控制器：与 TabBarView 共享；可空 + `_tabInited` 首帧防护，
+  /// 本地模式 4⇄6 tab 时由 `_ensureTabController` 重建。
+  TabController? _tabController;
+  bool _tabInited = false;
+
+  /// 显式监听 LibraryProvider 以感知本地/服务端模式切换（State 层全用
+  /// listen: false，didChangeDependencies 不会被 notify 触发）。
+  LibraryProvider? _libraryProvider;
+
+  // 每页一个常驻 ScrollController：TabBarView 会回收视口外页面，
+  // controller 挂在 State 上常驻，滚动位置不随页面重建丢失。
+  final ScrollController _artistsScrollController = ScrollController();
+  final ScrollController _albumsScrollController = ScrollController();
+  final ScrollController _songsScrollController = ScrollController();
+  final ScrollController _favesScrollController = ScrollController();
+  final ScrollController _genresScrollController = ScrollController();
+  final ScrollController _yearsScrollController = ScrollController();
 
   // Artists tab scrubber
-  final ScrollController _artistsScrollController = ScrollController();
   String? _selectedLetter;
   Map<String, int> _letterIndexMap = {};
 
-  /// 上一帧是否处于 Artists tab：从别的 tab 切回 Artists 时预热当前屏
+  /// 是否处于 Artists tab：从别的 tab 切回 Artists 时预热当前屏
   /// 封面（磁盘命中→解码进内存），避免首屏逐格异步读盘"一张张冒出来"。
   bool _wasArtistsTab = false;
 
   @override
+  void initState() {
+    super.initState();
+    _libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+    _libraryProvider!.addListener(_onLibraryChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureTabController();
+  }
+
+  void _ensureTabController() {
+    final filters = _getFilters(context);
+    if (!_tabInited || _tabController!.length != filters.length) {
+      final oldIndex = _tabController?.index ?? 0;
+      final index = oldIndex.clamp(0, filters.length - 1);
+      _tabController?.dispose();
+      _tabController = TabController(
+        length: filters.length,
+        vsync: this,
+        initialIndex: index,
+      )..addListener(_onTabIndexChanged);
+      _tabInited = true;
+    }
+  }
+
+  /// LibraryProvider 通知：本地模式 4⇄6 切换后重建 TabController。
+  void _onLibraryChanged() {
+    final filters = _getFilters(context);
+    if (_tabController == null || _tabController!.length != filters.length) {
+      setState(_ensureTabController);
+    }
+  }
+
+  /// Tab 落定后同步预热逻辑：切回 Artists 时预载当前屏封面。
+  void _onTabIndexChanged() {
+    if (_tabController!.indexIsChanging) return;
+    final filters = _getFilters(context);
+    final isArtists = filters[_tabController!.index] == 'Artists';
+    if (!isArtists) {
+      _wasArtistsTab = false;
+      return;
+    }
+    if (_wasArtistsTab) return;
+    _wasArtistsTab = true;
+    _maybePreloadArtistCovers(
+      Provider.of<LibraryProvider>(context, listen: false),
+    );
+  }
+
+  @override
   void dispose() {
+    _tabController?.dispose();
+    _libraryProvider?.removeListener(_onLibraryChanged);
     _artistsScrollController.dispose();
+    _albumsScrollController.dispose();
+    _songsScrollController.dispose();
+    _favesScrollController.dispose();
+    _genresScrollController.dispose();
+    _yearsScrollController.dispose();
     super.dispose();
   }
 
@@ -107,415 +181,432 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final filters = _getFilters(context);
+    final l10n = AppLocalizations.of(context)!;
+    final filterLabels = {
+      'Faves': l10n.faves,
+      'Albums': l10n.filterAlbums,
+      'Artists': l10n.filterArtists,
+      'Songs': l10n.songs,
+      'Genres': l10n.genres,
+      'Years': l10n.years,
+    };
 
     return Scaffold(
-      body: GestureDetector(
-        onHorizontalDragUpdate: (details) {
-          _swipeDelta += details.delta.dx;
-        },
-        onHorizontalDragEnd: (details) {
-          final filters = _getFilters(context);
-          final idx = filters.indexOf(_selectedFilter);
-          final velocity = details.primaryVelocity ?? 0;
-          final distance = _swipeDelta.abs();
-          _swipeDelta = 0;
-          // Require both enough distance AND speed to avoid accidental triggers
-          if (distance < 30 || velocity.abs() < 300) return;
-          if (velocity < 0 && idx < filters.length - 1) {
-            setState(() => _selectedFilter = filters[idx + 1]);
-          } else if (velocity > 0 && idx > 0) {
-            setState(() => _selectedFilter = filters[idx - 1]);
-          }
-        },
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              floating: true,
-              expandedHeight: 60,
-              title: Text(
-                AppLocalizations.of(context)!.yourLibrary,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
+      body: Column(
+        children: [
+          // ── 共享固定头部：标题栏（原 SliverAppBar pinned+floating 实为常驻）──
+          AppBar(
+            toolbarHeight: 56,
+            centerTitle: false,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            surfaceTintColor: Colors.transparent,
+            backgroundColor: theme.scaffoldBackgroundColor,
+            title: Text(
+              l10n.yourLibrary,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
               ),
-              actions: [
-                Consumer<LibraryProvider>(
-                  builder: (context, lp, _) {
-                    final running =
-                        lp.refreshStatus == RefreshStatus.running;
-                    return IconButton(
-                      icon: running
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Icon(
-                              CupertinoIcons.refresh,
-                              color: isDark ? Colors.white : Colors.black,
-                            ),
-                      tooltip: AppLocalizations.of(context)!.refresh,
-                      onPressed: () => _handleRefresh(context),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: Icon(
-                    CupertinoIcons.search,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                  onPressed: () => _showLibrarySearch(context),
-                ),
-                IconButton(
-                  icon: Icon(
-                    CupertinoIcons.plus,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                  onPressed: () => _showAddPlaylistMenu(context),
-                ),
-                IconButton(
-                  icon: Icon(
-                    CupertinoIcons.gear,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                  onPressed: () => _showSettings(context),
-                ),
-              ],
             ),
-            SliverToBoxAdapter(
-              child: Builder(
-                builder: (context) {
-                  final l10n = AppLocalizations.of(context)!;
-                  final filters = _getFilters(context);
-                  final filterLabels = {
-                    'Faves': l10n.faves,
-                    'Albums': l10n.filterAlbums,
-                    'Artists': l10n.filterArtists,
-                    'Songs': l10n.songs,
-                    'Genres': l10n.genres,
-                    'Years': l10n.years,
-                  };
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      children: filters.map((filter) {
-                        final isSelected = _selectedFilter == filter;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: FilterChip(
-                            label: Text(filterLabels[filter]!),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setState(() {
-                                _selectedFilter = selected ? filter : 'Faves';
-                              });
-                            },
-                            backgroundColor: isDark
-                                ? const Color(0xFF282828)
-                                : Colors.grey[200],
-                            selectedColor: isDark ? Colors.white : Colors.black,
-                            labelStyle: TextStyle(
-                              color: isSelected
-                                  ? (isDark ? Colors.black : Colors.white)
-                                  : (isDark ? Colors.white : Colors.black),
-                              fontWeight: FontWeight.w500,
+            actions: [
+              Consumer<LibraryProvider>(
+                builder: (context, lp, _) {
+                  final running =
+                      lp.refreshStatus == RefreshStatus.running;
+                  return IconButton(
+                    icon: running
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            side: BorderSide.none,
-                            showCheckmark: false,
+                          )
+                        : Icon(
+                            CupertinoIcons.refresh,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
-                        );
-                      }).toList(),
-                    ),
+                    tooltip: AppLocalizations.of(context)!.refresh,
+                    onPressed: () => _handleRefresh(context),
                   );
                 },
               ),
+              IconButton(
+                icon: Icon(
+                  CupertinoIcons.search,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                onPressed: () => _showLibrarySearch(context),
+              ),
+              IconButton(
+                icon: Icon(
+                  CupertinoIcons.plus,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                onPressed: () => _showAddPlaylistMenu(context),
+              ),
+              IconButton(
+                icon: Icon(
+                  CupertinoIcons.gear,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                onPressed: () => _showSettings(context),
+              ),
+            ],
+          ),
+          // ── 共享固定头部：顶部 TabBar（网易新闻式：文字标签 + 下划线指示器）──
+          TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            labelColor: theme.colorScheme.primary,
+            unselectedLabelColor: isDark ? Colors.white54 : Colors.black38,
+            labelStyle: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
             ),
-            SliverToBoxAdapter(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Column(
-                  key: ValueKey(_selectedFilter),
-                  children: [
-                    if (_selectedFilter == 'Faves') ...[
-                      // Playlists folder
-                      _SpotifyLibraryTile(
-                        icon: CupertinoIcons.list_bullet,
-                        iconColor: const Color(0xFF3B82F6),
-                        title: AppLocalizations.of(context)!.playlists,
-                        subtitle: AppLocalizations.of(context)!.yourPlaylists,
-                        isGradient: false,
-                        onTap: () =>
-                            _navigate(context, const PlaylistsScreen()),
-                      ),
-                      // Liked Songs folder
-                      _SpotifyLibraryTile(
-                        icon: CupertinoIcons.heart_fill,
-                        iconColor: const Color(0xFF8B5CF6),
-                        title: AppLocalizations.of(context)!.likedSongs,
-                        subtitle: AppLocalizations.of(context)!.playlist,
-                        isGradient: true,
-                        onTap: () =>
-                            _navigate(context, const FavoritesScreen()),
-                      ),
-                      // All Songs folder
-                      _SpotifyLibraryTile(
-                        icon: CupertinoIcons.music_note_list,
-                        iconColor: const Color(0xFF34C759),
-                        title: AppLocalizations.of(context)!.songs,
-                        subtitle: AppLocalizations.of(context)!.songs,
-                        isGradient: false,
-                        onTap: () => _navigate(context, const AllSongsScreen()),
-                      ),
-                      // Liked Albums folder
-                      _SpotifyLibraryTile(
-                        icon: CupertinoIcons.star_fill,
-                        iconColor: const Color(0xFFFF9500),
-                        title: AppLocalizations.of(context)!.likedAlbums,
-                        subtitle: AppLocalizations.of(context)!.albums,
-                        isGradient: false,
-                        onTap: () =>
-                            _navigate(context, const LikedAlbumsScreen()),
-                      ),
-                      // Radio Stations folder
-                      _SpotifyLibraryTile(
-                        icon: CupertinoIcons.antenna_radiowaves_left_right,
-                        iconColor: const Color(0xFF34C759),
-                        title: AppLocalizations.of(context)!.radioStations,
-                        subtitle: AppLocalizations.of(context)!.internetRadio,
-                        isGradient: false,
-                        onTap: () => _navigate(context, const RadioScreen()),
-                      ),
-                    ],
-                  ],
-                ), // Column (AnimatedSwitcher child)
-              ), // AnimatedSwitcher
-            ), // SliverToBoxAdapter
-            Consumer<LibraryProvider>(
-              builder: (context, libraryProvider, _) {
-                final items = _getFilteredItems(context, libraryProvider);
+            unselectedLabelStyle: const TextStyle(fontSize: 15),
+            indicator: UnderlineTabIndicator(
+              borderSide: BorderSide(
+                color: theme.colorScheme.primary,
+                width: 2.5,
+              ),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            dividerColor: isDark
+                ? const Color(0xFF38383A)
+                : const Color(0xFFE5E5EA),
+            tabs: [for (final f in filters) Tab(text: filterLabels[f])],
+          ),
+          // ── 内容：左右滑动切换的页面（每页独立滚动，ValueKey 防错位复用）──
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                for (final f in filters)
+                  KeyedSubtree(key: ValueKey(f), child: _buildPage(f)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                if (items.isEmpty && _selectedFilter != 'Artists') {
-                  return SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _LibraryEmptyState(
-                      isLocalMode: libraryProvider.isLocalOnlyMode,
+  Widget _buildPage(String filter) {
+    switch (filter) {
+      case 'Artists':
+        return _buildArtistsPage();
+      case 'Faves':
+        return _buildFavesPage();
+      default:
+        return _buildItemsPage(filter);
+    }
+  }
+
+  ScrollController _controllerFor(String filter) {
+    switch (filter) {
+      case 'Albums':
+        return _albumsScrollController;
+      case 'Songs':
+        return _songsScrollController;
+      case 'Faves':
+        return _favesScrollController;
+      case 'Genres':
+        return _genresScrollController;
+      case 'Years':
+        return _yearsScrollController;
+      default:
+        return _artistsScrollController;
+    }
+  }
+
+  /// Artists 页：常听 shelf + 字母分组方形网格 + 右缘字母索引。
+  /// 数据来自 LibraryProvider（Consumer 监听），滚动位置由常驻的
+  /// `_artistsScrollController` 保留；切换回本页的封面预热在
+  /// `_onTabIndexChanged` 中触发。
+  Widget _buildArtistsPage() {
+    return Consumer<LibraryProvider>(
+      builder: (context, libraryProvider, _) {
+        final artists = libraryProvider.artists.toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
+        if (artists.isEmpty) {
+          return _LibraryEmptyState(
+            isLocalMode: libraryProvider.isLocalOnlyMode,
+          );
+        }
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        // 常听 TopN（本地播放统计，无历史则为空 → 不渲染 shelf）。
+        final topArtists = libraryProvider.topArtists;
+        final groups = <String, List<Artist>>{};
+        for (final a in artists) {
+          final letter = _firstLetter(a.name);
+          groups.putIfAbsent(letter, () => []).add(a);
+        }
+        final letters = groups.keys.toList()..sort();
+        final l10n = AppLocalizations.of(context)!;
+        // Grid metrics: 列数由视口宽度推导，行高 = 卡宽 + 封面下
+        // 8 + 固定 44px 文本区（ArtistGridCard 内文本区固定高度，
+        // 与字体行高无关）。同时用于布局和右侧字母索引的偏移估算。
+        final availWidth =
+            MediaQuery.sizeOf(context).width - 16 * 2 - 28;
+        final colCount =
+            (availWidth / 140).floor().clamp(2, 6).toInt();
+        final cardWidth =
+            (availWidth - (colCount - 1) * 12) / colCount;
+        final rowHeight = cardWidth + 52;
+        const headerH = 30.0;
+        // shelf 实际高：分组头(12+20+8) + 两排网格 168 + 尾间距 12 ≈ 220。
+        const shelfH = 184.0;
+        _letterIndexMap = {};
+        double offset = topArtists.isEmpty ? 0 : shelfH + 36;
+        for (final letter in letters) {
+          _letterIndexMap[letter] = offset.round();
+          offset += headerH;
+          final rows = (groups[letter]!.length / colCount).ceil();
+          offset += rows * rowHeight + 12;
+        }
+        return Stack(
+          children: [
+            ListView(
+              controller: _artistsScrollController,
+              // 右侧留 44 给字母索引条；左 16 对齐网格 padding；
+              // 底部 150 避让迷你播放器。
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 44,
+                bottom: 150,
+              ),
+              children: [
+                if (topArtists.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
+                    child: Text(
+                      l10n.topArtistsTitle,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppTheme.darkSecondaryText
+                            : AppTheme.lightSecondaryText,
+                      ),
                     ),
-                  );
-                }
-
-                // Artists tab: square cover grid grouped by pinyin first
-                // letter, topped by a "常听" shelf of most-played artists,
-                // with a right-edge scrubber for quick navigation.
-                if (_selectedFilter == 'Artists') {
-                  _maybePreloadArtistCovers(libraryProvider);
-                  final artists = libraryProvider.artists.toList()
-                    ..sort((a, b) => a.name.compareTo(b.name));
-                  if (artists.isEmpty) {
-                    return SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _LibraryEmptyState(
-                        isLocalMode: libraryProvider.isLocalOnlyMode,
+                  ),
+                  SizedBox(
+                    // 两排横滑：每排高 (168-8)/2 = 80，卡宽 170。
+                    height: 168,
+                    child: GridView.builder(
+                      scrollDirection: Axis.horizontal,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 8,
+                        mainAxisExtent: 170,
                       ),
+                      itemCount: topArtists.length,
+                      itemBuilder: (context, index) {
+                        final top = topArtists[index];
+                        return ArtistShelfCard(
+                          artist: top.artist,
+                          playCount: top.playCount,
+                          onTap: () => _openArtist(top.artist),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                for (final letter in letters) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
+                    child: Text(
+                      letter,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppTheme.darkSecondaryText
+                            : AppTheme.lightSecondaryText,
+                      ),
+                    ),
+                  ),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: colCount,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: cardWidth / rowHeight,
+                    ),
+                    itemCount: groups[letter]!.length,
+                    itemBuilder: (context, index) {
+                      final a = groups[letter]![index];
+                      return ArtistGridCard(
+                        artist: a,
+                        onTap: () => _openArtist(a),
+                        onPlayPressed: () => _playArtist(a),
+                      );
+                    },
+                  ),
+                ],
+              ],
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: _ArtistScrubber(
+                letters: letters,
+                selectedLetter: _selectedLetter,
+                onLetterDown: (letter) {
+                  final idx = _letterIndexMap[letter];
+                  if (idx != null &&
+                      _artistsScrollController.hasClients) {
+                    _artistsScrollController.jumpTo(
+                      idx.toDouble().clamp(
+                            0.0,
+                            _artistsScrollController
+                                .position.maxScrollExtent,
+                          ),
                     );
                   }
-                  final isDark =
-                      Theme.of(context).brightness == Brightness.dark;
-                  // 常听 TopN（本地播放统计，无历史则为空 → 不渲染 shelf）。
-                  final topArtists = libraryProvider.topArtists;
-                  final groups = <String, List<Artist>>{};
-                  for (final a in artists) {
-                    final letter = _firstLetter(a.name);
-                    groups.putIfAbsent(letter, () => []).add(a);
-                  }
-                  final letters = groups.keys.toList()..sort();
-                  final l10n = AppLocalizations.of(context)!;
-                  // Grid metrics: 列数由视口宽度推导，行高 = 卡宽 + 封面下
-                  // 8 + 固定 44px 文本区（ArtistGridCard 内文本区固定高度，
-                  // 与字体行高无关）。同时用于布局和右侧字母索引的偏移估算。
-                  final availWidth =
-                      MediaQuery.sizeOf(context).width - 16 * 2 - 28;
-                  final colCount =
-                      (availWidth / 140).floor().clamp(2, 6).toInt();
-                  final cardWidth =
-                      (availWidth - (colCount - 1) * 12) / colCount;
-                  final rowHeight = cardWidth + 52;
-                  const headerH = 30.0;
-                  // shelf 实际高：分组头(12+20+8) + 两排网格 168 + 尾间距 12 ≈ 220。
-                  const shelfH = 184.0;
-                  _letterIndexMap = {};
-                  double offset = topArtists.isEmpty ? 0 : shelfH + 36;
-                  for (final letter in letters) {
-                    _letterIndexMap[letter] = offset.round();
-                    offset += headerH;
-                    final rows = (groups[letter]!.length / colCount).ceil();
-                    offset += rows * rowHeight + 12;
-                  }
-                  return SliverFillRemaining(
-                    hasScrollBody: true,
-                    child: Stack(
-                      children: [
-                        ListView(
-                          controller: _artistsScrollController,
-                          // 右侧留 44 给字母索引条；左 16 对齐网格 padding。
-                          padding: const EdgeInsets.only(
-                            left: 16,
-                            right: 44,
-                            bottom: 80,
-                          ),
-                          children: [
-                            if (topArtists.isNotEmpty) ...[
-                              Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(0, 12, 0, 8),
-                                child: Text(
-                                  l10n.topArtistsTitle,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? AppTheme.darkSecondaryText
-                                        : AppTheme.lightSecondaryText,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                // 两排横滑：每排高 (168-8)/2 = 80，卡宽 170。
-                                height: 168,
-                                child: GridView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    mainAxisSpacing: 12,
-                                    crossAxisSpacing: 8,
-                                    mainAxisExtent: 170,
-                                  ),
-                                  itemCount: topArtists.length,
-                                  itemBuilder: (context, index) {
-                                    final top = topArtists[index];
-                                    return ArtistShelfCard(
-                                      artist: top.artist,
-                                      playCount: top.playCount,
-                                      onTap: () => _openArtist(top.artist),
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            for (final letter in letters) ...[
-                              Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(0, 12, 0, 8),
-                                child: Text(
-                                  letter,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? AppTheme.darkSecondaryText
-                                        : AppTheme.lightSecondaryText,
-                                  ),
-                                ),
-                              ),
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: colCount,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 16,
-                                  childAspectRatio: cardWidth / rowHeight,
-                                ),
-                                itemCount: groups[letter]!.length,
-                                itemBuilder: (context, index) {
-                                  final a = groups[letter]![index];
-                                  return ArtistGridCard(
-                                    artist: a,
-                                    onTap: () => _openArtist(a),
-                                    onPlayPressed: () => _playArtist(a),
-                                  );
-                                },
-                              ),
-                            ],
-                          ],
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          bottom: 0,
-                          child: _ArtistScrubber(
-                            letters: letters,
-                            selectedLetter: _selectedLetter,
-                            onLetterDown: (letter) {
-                              final idx = _letterIndexMap[letter];
-                              if (idx != null &&
-                                  _artistsScrollController.hasClients) {
-                                _artistsScrollController.jumpTo(
-                                  idx.toDouble().clamp(
-                                        0.0,
-                                        _artistsScrollController
-                                            .position.maxScrollExtent,
-                                      ),
-                                );
-                              }
-                              setState(() => _selectedLetter = letter);
-                            },
-                            onLetterUp: () =>
-                                setState(() => _selectedLetter = null),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (items.isEmpty) {
-                  return SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _LibraryEmptyState(
-                      isLocalMode: libraryProvider.isLocalOnlyMode,
-                    ),
-                  );
-                }
-
-                return SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final item = items[index];
-                    return _buildLibraryItem(context, item);
-                  }, childCount: items.length),
-                );
-              },
+                  setState(() => _selectedLetter = letter);
+                },
+                onLetterUp: () =>
+                    setState(() => _selectedLetter = null),
+              ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 150)),
           ],
-        ), // CustomScrollView
-      ), // GestureDetector
-    ); // Scaffold
+        );
+      },
+    );
+  }
+
+  /// Faves 页：文件夹磁贴 + 歌单/最近专辑列表。
+  Widget _buildFavesPage() {
+    return CustomScrollView(
+      controller: _favesScrollController,
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            children: [
+              // Playlists folder
+              _SpotifyLibraryTile(
+                icon: CupertinoIcons.list_bullet,
+                iconColor: const Color(0xFF3B82F6),
+                title: AppLocalizations.of(context)!.playlists,
+                subtitle: AppLocalizations.of(context)!.yourPlaylists,
+                isGradient: false,
+                onTap: () => _navigate(context, const PlaylistsScreen()),
+              ),
+              // Liked Songs folder
+              _SpotifyLibraryTile(
+                icon: CupertinoIcons.heart_fill,
+                iconColor: const Color(0xFF8B5CF6),
+                title: AppLocalizations.of(context)!.likedSongs,
+                subtitle: AppLocalizations.of(context)!.playlist,
+                isGradient: true,
+                onTap: () => _navigate(context, const FavoritesScreen()),
+              ),
+              // All Songs folder
+              _SpotifyLibraryTile(
+                icon: CupertinoIcons.music_note_list,
+                iconColor: const Color(0xFF34C759),
+                title: AppLocalizations.of(context)!.songs,
+                subtitle: AppLocalizations.of(context)!.songs,
+                isGradient: false,
+                onTap: () => _navigate(context, const AllSongsScreen()),
+              ),
+              // Liked Albums folder
+              _SpotifyLibraryTile(
+                icon: CupertinoIcons.star_fill,
+                iconColor: const Color(0xFFFF9500),
+                title: AppLocalizations.of(context)!.likedAlbums,
+                subtitle: AppLocalizations.of(context)!.albums,
+                isGradient: false,
+                onTap: () => _navigate(context, const LikedAlbumsScreen()),
+              ),
+              // Radio Stations folder
+              _SpotifyLibraryTile(
+                icon: CupertinoIcons.antenna_radiowaves_left_right,
+                iconColor: const Color(0xFF34C759),
+                title: AppLocalizations.of(context)!.radioStations,
+                subtitle: AppLocalizations.of(context)!.internetRadio,
+                isGradient: false,
+                onTap: () => _navigate(context, const RadioScreen()),
+              ),
+            ],
+          ),
+        ),
+        Consumer<LibraryProvider>(
+          builder: (context, libraryProvider, _) {
+            final items = _getFilteredItems(context, libraryProvider, 'Faves');
+            if (items.isEmpty) {
+              return SliverFillRemaining(
+                hasScrollBody: false,
+                child: _LibraryEmptyState(
+                  isLocalMode: libraryProvider.isLocalOnlyMode,
+                ),
+              );
+            }
+            return SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final item = items[index];
+                return _buildLibraryItem(context, item);
+              }, childCount: items.length),
+            );
+          },
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 150)),
+      ],
+    );
+  }
+
+  /// 通用列表页（Albums / Songs / Genres / Years 共用）。
+  Widget _buildItemsPage(String filter) {
+    return CustomScrollView(
+      controller: _controllerFor(filter),
+      slivers: [
+        Consumer<LibraryProvider>(
+          builder: (context, libraryProvider, _) {
+            final items = _getFilteredItems(context, libraryProvider, filter);
+            if (items.isEmpty) {
+              return SliverFillRemaining(
+                hasScrollBody: false,
+                child: _LibraryEmptyState(
+                  isLocalMode: libraryProvider.isLocalOnlyMode,
+                ),
+              );
+            }
+            return SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final item = items[index];
+                return _buildLibraryItem(context, item);
+              }, childCount: items.length),
+            );
+          },
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 150)),
+      ],
+    );
   }
 
   List<_LibraryItem> _getFilteredItems(
     BuildContext context,
     LibraryProvider provider,
+    String filter,
   ) {
     final l10n = AppLocalizations.of(context)!;
     List<_LibraryItem> items = [];
 
     // Faves tab: show Playlists and Recent Albums
-    if (_selectedFilter == 'Faves') {
+    if (filter == 'Faves') {
       // Add playlists
       items.addAll(
         provider.playlists.map(
@@ -549,7 +640,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     }
 
     // Albums tab: show all albums
-    if (_selectedFilter == 'Albums') {
+    if (filter == 'Albums') {
       final albums = provider.isLocalOnlyMode
           ? provider.cachedAllAlbums
           : (provider.cachedAllAlbums.isNotEmpty
@@ -579,21 +670,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       );
     }
 
-    if (_selectedFilter == 'Artists') {
-      items.addAll(
-        provider.artists.map(
-          (a) => _LibraryItem(
-            type: 'Artist',
-            id: a.id,
-            name: a.name,
-            subtitle: l10n.albumsCount(a.albumCount ?? 0),
-            coverArt: a.coverArt,
-          ),
-        ),
-      );
-    }
-
-    if (_selectedFilter == 'Songs') {
+    if (filter == 'Songs') {
       items.addAll(
         provider.cachedAllSongs.map(
           (s) => _LibraryItem(
@@ -607,7 +684,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       );
     }
 
-    if (_selectedFilter == 'Genres') {
+    if (filter == 'Genres') {
       final genreMap = <String, List<Song>>{};
       for (final s in provider.cachedAllSongs) {
         final g = (s.genre ?? 'Unknown').trim();
@@ -634,7 +711,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       );
     }
 
-    if (_selectedFilter == 'Years') {
+    if (filter == 'Years') {
       final yearMap = <int, List<Album>>{};
       for (final a in provider.cachedAllAlbums) {
         if (a.year != null) {
@@ -941,14 +1018,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
     NavigationHelper.push(context, ArtistScreen(artistId: artist.id));
   }
 
-  /// 从别的 tab 切回 Artists 时，后台预热当前屏封面：磁盘命中 → 解码进
+  /// 切回 Artists 时，后台预热当前屏封面：磁盘命中 → 解码进
   /// 内存 ImageCache。专辑封面已全量在磁盘（<1000 张不会 LRU 淘汰），
   /// 首屏慢的原因是冷内存批量读盘，预热后秒开。
+  /// 调用时机：`_onTabIndexChanged`（tab 落定为 Artists 且 `_wasArtistsTab`
+  /// 为 false 时）；首次进入 Artists 页不预热（正在展示，无需预热）。
   void _maybePreloadArtistCovers(LibraryProvider provider) {
-    final isArtists = _selectedFilter == 'Artists';
-    if (isArtists == _wasArtistsTab) return;
-    _wasArtistsTab = isArtists;
-    if (!isArtists) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final urls = <String>[];
       final seen = <String>{};

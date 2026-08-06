@@ -1,8 +1,8 @@
 # Luobo 音乐库四 Tab 平级横滑技术方案
 
-> 状态：方案设计 v1.0（2026-08-05，待 review 放行）
-> 范围：音乐库四个 tab（服务端模式 `Artists / Albums / Songs / Faves`，本地模式另含 `Genres / Years`）从"原地跳变切换"改为**平级左右无缝滑动**（手指跟手、页面横滑、状态保活）。纯客户端 UI 结构改造，**不动数据层/服务层/推荐引擎**
-> 设计约束：tab 列表随模式动态（4 / 6）；每页独立纵向滚动且切换不丢滚动位置；`_ArtistScrubber` 字母索引照常工作；桌面端（macOS/Windows）同步可用；与「音乐库艺术家页改版技术方案」**只重叠文件、不重叠改动**（本方案改结构，那份改 Artists 页内容）
+> 状态：方案设计 v1.3（2026-08-06，v1.2 审查修正 + **实施完成**：analyze 无 error、单测 102 绿（3 失败为改动前已存在）；**待真机验证**）
+> 范围：音乐库四个 tab（服务端模式 `Artists / Albums / Songs / Faves`，本地模式另含 `Genres / Years`）从"原地跳变切换"改为**网易新闻/百度 App 首页式：顶部 TabBar + 页面左右滑动切换**（手指跟手、惯性落页、状态保活）。纯客户端 UI 结构改造，**不动数据层/服务层/推荐引擎**
+> 设计约束：tab 列表随模式动态（4 / 6）；每页独立纵向滚动且切换不丢滚动位置；`_ArtistScrubber` 字母索引照常工作；桌面端（macOS/Windows）同步可用；与「音乐库艺术家页改版技术方案」**只重叠文件、不重叠改动**（本方案改结构，那份改 Artists 页内容）；样式对齐网易新闻/百度 App 首页（§5.1）
 > 实施进度：⬜ 未开工（待用户「开始 code」）
 
 ---
@@ -23,14 +23,24 @@
 | 切换无横滑视觉，只有原地淡入淡出 | `AnimatedSwitcher`（`:230-289`，`key: ValueKey(_selectedFilter)`，200ms） | ✅ 改为 PageView 页面横滑 |
 | 现有滑动是"松手判定跳变"而非跟手 | `GestureDetector`（`:106-123`）：`onHorizontalDragUpdate` 只累加 `_swipeDelta`，`onHorizontalDragEnd` 判断 `distance ≥ 30 && velocity ≥ 300` 才切；期间无任何位移反馈 | ✅ 删除该手势，交给 PageView 原生跟手 |
 | 切换即重建内容，滚动位置丢失 | `ValueKey(_selectedFilter)` 每次切换重建整列；仅 Artists 因 `_artistsScrollController` 常驻而保留位置（`:44`） | ✅ PageView 页保活，Albums/Songs/Faves 也保留位置 |
-| tab 头是横向滚动 FilterChip 行，非平级 TabBar | `SingleChildScrollView` + `FilterChip`（`:188-226`），选中态与页面无联动动画 | ⚠️ 保留 chips 或改 TabBar 风格（§5.1 待拍板） |
+| tab 头是横向滚动 FilterChip 行，非平级 TabBar | `SingleChildScrollView` + `FilterChip`（`:188-226`），选中态与页面无联动动画 | ✅ 替换为 `TabBar + TabBarView`（§5.1 定案） |
 
-### 1.3 目标
+### 1.3 目标与已确认决策
 
-- **平级感**：四个 tab 是横向可滑动的兄弟页面，手指拖动实时跟手，松手惯性落页
+**目标**：
+- **样式（已确认）**：网易新闻/百度 App 首页式——**顶部文字 TabBar + 下划线指示器，内容页左右滑动切换**（手指跟手、惯性落页），对应 Flutter 标准组合 `TabBar + TabBarView`
+- **平级感**：四个 tab 是横向可滑动的兄弟页面，不再原地淡入淡出
 - **状态保活**：切走再切回，各 tab 纵向滚动位置、Artists 字母索引高亮均保留
 - **零数据层改动**：`_getFilteredItems`（`:486` 起）与各 tab 内容构建逻辑整体复用，只改容器与编排
-- **双向联动**：点 chip 切页（动画滚动）⇄ 横滑切页（chip 选中态同步）
+- **双向联动**：点 tab 切页（动画滚动）⇄ 横滑切页（tab 选中态同步）
+
+**已确认决策（2026-08-05）**：
+
+| 决策点 | 选择 |
+|---|---|
+| 交互样式 | 网易新闻/百度 App 首页式：顶部 TabBar + 左右滑动（Flutter `TabBar + TabBarView`） |
+| 方案选型 | 方案 A（§3.1）；方案 B 作废 |
+| 头部形态 | 文字标签 + 下划线指示器，`isScrollable: true`（兼容 4/6 tab 动态数量） |
 
 ---
 
@@ -70,7 +80,7 @@ Scaffold
 
 | 横向手势来源 | 位置 | 与横滑的冲突 |
 |---|---|---|
-| FilterChip 行 `SingleChildScrollView` | `:188-189` | 窄屏溢出时会抢横向手势（§4.5 处理） |
+| FilterChip 行 `SingleChildScrollView` | `:188-189`（改造后替换为 TabBar） | 现会抢横向手势；TabBar 方案下由 TabBarView 手势仲裁消除（§4.5） |
 | 各 tab 内部列表 | 纵向滚动 | 无冲突 |
 | Artists 右缘 `_ArtistScrubber` | `:432-455` | 纵向 drag，无冲突 |
 | 桌面端鼠标横向拖拽 | — | PageView 原生支持，需验证 |
@@ -79,18 +89,20 @@ Scaffold
 
 ## 3. 方案选型
 
-### 3.1 方案 A：PageView 横滑（推荐）
+### 3.1 方案 A：TabBar + TabBarView 顶部横滑（已拍板）
 
-结构改为 **Column(共享头部 + Expanded(PageView))**，每页独立滚动视图：
+**样式定案**：网易新闻/百度 App 首页式——顶部文字 TabBar（下划线指示器）+ 内容 TabBarView 左右滑动。对应 Flutter 标准组合 `TabBar + TabBarView`（内部即 PageView，手指跟手 + 惯性落页），TabBar 与页面滚动天然联动。
+
+结构改为 **Column(共享头部 + Expanded(TabBarView))**，每页独立滚动视图：
 
 ```
 Scaffold
 └─ Column
    ├─ 共享头部（固定）
    │  ├─ AppBar（原 SliverAppBar 内容；现 pinned+floating+expandedHeight 60，固定后视觉等价）
-   │  └─ FilterChip 行（或 TabBar 风格，§5.1 待拍板）
+   │  └─ TabBar（isScrollable: true，文字标签 + 下划线指示器，§5.1）
    └─ Expanded
-      └─ PageView.builder（controller: PageController，onPageChanged 同步 _selectedFilter）
+      └─ TabBarView（TabController 驱动，滑动/点按双向联动）
          ├─ Page 0 Artists：现有瀑布流 + _ArtistScrubber（原样搬入）
          ├─ Page 1 Albums：SliverList（_getFilteredItems('Albums')）
          ├─ Page 2 Songs：SliverList（_getFilteredItems('Songs')）
@@ -100,12 +112,13 @@ Scaffold
 
 要点：
 
-1. **跟手**：PageView 手指拖动实时位移 + 惯性回弹，天然"无缝"
-2. **保活**：PageView 默认只构建视口±cacheExtent 页；加 `AutomaticKeepAliveClientMixin` 或直接让每页持自己滚动控制器即可保留滚动位置
-3. **删除** `_swipeDelta` / `GestureDetector` / `AnimatedSwitcher` 三处现有跳变逻辑
+1. **跟手**：TabBarView（内部 PageView）手指拖动实时位移 + 惯性回弹，天然"无缝"
+2. **保活**：TabBarView 默认只构建视口±cacheExtent 页；加 `AutomaticKeepAliveClientMixin` 或直接让每页持自己滚动控制器即可保留滚动位置
+3. **删除** `_swipeDelta` / `GestureDetector` / `AnimatedSwitcher` / FilterChip 行四处现有逻辑
 4. 每页底部保留 ~150 留白（迷你播放器避让，`main_screen.dart:551` MiniPlayer 悬浮在底部导航上方）
+5. TabController 需随 `_getFilters` 数量动态重建（4⇄6，§4.2）
 
-### 3.2 方案 B：保留共享滚动视图，做"跟手 Transform"（备选）
+### 3.2 方案 B：保留共享滚动视图，做"跟手 Transform"（**已作废 2026-08-05**）
 
 不引入 PageView：`onHorizontalDragUpdate` 时用 `Transform.translate` 按 `_swipeDelta` 平移内容列，松手再 `setState` 切到相邻 tab。改动约 30 行。
 
@@ -114,15 +127,15 @@ Scaffold
 
 ### 3.3 对比与建议
 
-| 维度 | A PageView | B Transform 跟手 |
+| 维度 | A TabBar + TabBarView | B Transform 跟手 |
 |---|---|---|
-| 平级横滑观感 | ✅ 标准 Spotify/Apple Music 形态 | ⚠️ 半成品 |
+| 平级横滑观感 | ✅ 网易新闻/百度 App 首页标准形态 | ⚠️ 半成品 |
 | 代码量 | 重构 build + 每页提取（约 150~250 行改动） | ~30 行 |
 | 状态保活 | ✅ 每页独立滚动控制器 | ❌ 仍整体重建 |
-| 维护成本 | 低（框架原生） | 高（手写手势状态机） |
-| 风险 | 中（手势仲裁、scrubber 重绑） | 低 |
+| 维护成本 | 低（框架原生 TabController） | 高（手写手势状态机） |
+| 风险 | 中（TabController 动态重建、scrubber 重绑） | 低 |
 
-**建议方案 A**：本次的核心诉求就是"平级 + 无缝"，B 只解决"跟手"不解决"平级"。方案 A 单文件改造、不碰数据层，工作量可控（§7）。
+**方案 A 已拍板**（2026-08-05）：本次核心诉求是网易新闻式"顶部 tab + 平级滑动"，B 只解决"跟手"不解决"平级"。方案 A 单文件改造、不碰数据层，工作量可控（§7）。
 
 ---
 
@@ -133,16 +146,24 @@ Scaffold
 - **方式 1（推荐）**：单文件内提取 4 个私有 widget（`_ArtistsPage` / `_AlbumsPage` / `_SongsPage` / `_FavesPage`），`library_screen.dart` 保留头部 + PageView 编排。改动集中、diff 可控，与「艺术家页改版」的 `:303-455` 整段替换互不干扰（页内再改内容即可）
 - **方式 2**：新建 `lib/screens/library/` 目录，每页独立文件。文件更小可读性更好，但引入 5~6 个新文件
 
-### 4.2 状态同步（单一事实来源）
+### 4.2 状态同步（v1.2 审查修正：删除 `_selectedFilter`，TabController 即状态源）
 
 ```
-_selectedFilter（String，:40 保留） ⇄ PageController
-  ├─ chip onSelected（:202-205）→ _pageController.animateToPage(idx, 250ms, easeOutCubic)
-  ├─ PageView onPageChanged(idx) → setState(_selectedFilter = filters[idx])
-  └─ 初始页 = filters.indexOf(_selectedFilter)
+TabController（State 持有，SingleTickerProviderStateMixin，可空 `TabController?` + `_tabInited` 首帧防护）
+  ├─ TabBar / TabBarView 共享同一 controller（点按/滑动由框架双向同步）
+  ├─ 页面内容 = 显式 filter 参数（_buildPage(f) → _getFilteredItems(..., f)），
+  │     不读 _selectedFilter —— 该字段整体删除（原 :40），_syncSelectedFilter/indexIsChanging 同步逻辑随之消失
+  ├─ _getFilters 数量变化（本地模式 4⇄6）→ 显式监听 LibraryProvider：
+  │     initState: Provider.of<LibraryProvider>(context, listen: false).addListener(_onLibraryChanged)
+  │     _onLibraryChanged: filters.length != _tabController?.length → setState 重建 controller
+  │     dispose 注销
+  │     ⚠️ 勿依赖 didChangeDependencies：State 层全用 listen:false（:92-93/:363）未注册依赖，
+  │        且 setServerOfflineMode 不 notify（library_provider.dart:191-193）
+  └─ 重建时 initialIndex = min(旧 index, length-1)，保留当前页
 ```
 
-- `_selectedFilter` 仍是唯一状态源，`_getFilteredItems` 等现有逻辑零改动
+- 删除 `_selectedFilter`（`:40`）：唯一引用方是 chips 行（已删）与内容分支（已参数化），无其他消费者
+- TabBarView children 加 `KeyedSubtree(key: ValueKey(filter))`，防 filters 顺序变化时按 index 复用错位
 - 删除 `_swipeDelta`（`:41`）与 `GestureDetector`（`:106-123`）
 
 ### 4.3 页面保活与滚动位置
@@ -160,8 +181,8 @@ _selectedFilter（String，:40 保留） ⇄ PageController
 
 | 手势 | 处理 |
 |---|---|
-| PageView 横向滑（页面主体区域） | ✅ 框架原生，页间跟手 |
-| FilterChip 行横向拖 | 行内可滚动时归行（滚动看更多 chips）；行不溢出时拖拽穿透到 PageView。**窄屏 6 chips（本地模式）会溢出** → 若改 TabBar 风格（§5.1 选项 2）则交给 `TabBarView` 仲裁，彻底无冲突 |
+| TabBarView 横向滑（页面主体区域） | ✅ 框架原生（内部 PageView），页间跟手 + 惯性 |
+| TabBar 行横向拖 | ✅ 交给 TabBarView 手势仲裁（标准组合行为）：TabBar 上滑动/点按均切页，与内容页滑动无竞争 |
 | 各页内纵向滚动 | PageView 横向、列表纵向，方向正交，互不抢 |
 | `_ArtistScrubber` 纵向拖 | 正交，无冲突 |
 | 桌面端鼠标 | PageView 支持鼠标拖拽；如需要可加键盘 ←/→（可选） |
@@ -179,18 +200,20 @@ _selectedFilter（String，:40 保留） ⇄ PageController
 
 ## 5. UI 层设计
 
-### 5.1 头部样式（待拍板，见 §11）
+### 5.1 头部样式（已拍板：网易新闻/百度 App 首页式 TabBar）
 
-| 选项 | 描述 | 优劣 |
-|---|---|---|
-| 1. 保留 FilterChip 行（最小改动） | 头部 = AppBar + 现 chips 行（`:188-226`） | 视觉零变化；窄屏 6 chips 溢出时行内滑动与横滑有局部竞争（§4.5） |
-| 2. 改 `TabBar`（`isScrollable: true`）+ `TabBarView` | 框架级手势仲裁，滑动/点按均标准 | 视觉从胶囊 chip 变下划线标签，与 Apple Music 风格更近但改动稍大 |
+| 项 | 定案 |
+|---|---|
+| 形态 | 顶部文字标签 + 下划线指示器（`TabBar`），内容页 `TabBarView` 左右滑动——网易新闻/百度 App 首页交互 |
+| 滚动 | `isScrollable: true`（标签按内容宽度排布），兼容 4 tab（服务端）与 6 tab（本地模式）动态数量 |
+| 选中态 | 选中 = 主题强调色 + 加粗；未选中 = 次要文字色；指示器 2~3pt 圆角下划线 |
+| 文案 | 沿用现有 `filterLabels`（`:180-187`），替换 FilterChip 行（`:188-226`） |
 
-> 注：两者都保留现有 `_selectedFilter` 状态模型（§4.2），切换成本低；建议先选项 1 验证横滑体验，如需再上选项 2。
+> 布局说明：网易新闻式 TabBar 位于 AppBar 正下方、内容区正上方，三者固定头部结构 `AppBar → TabBar → TabBarView`（内容左右滑动、头部不动）。
 
 ### 5.2 切换动画
 
-- PageView 自带跟手 + 惯性；`animateToPage` 用 `Curves.easeOutCubic`、250ms
+- TabBarView 自带跟手 + 惯性；Tab 点按切换用 `controller.animateTo`（`Curves.easeOutCubic`，250ms）
 - 移除 `AnimatedSwitcher`（`:231`）淡入淡出
 
 ### 5.3 底部留白
@@ -203,7 +226,7 @@ _selectedFilter（String，:40 保留） ⇄ PageController
 
 | 文件 | 改动 | 状态 |
 |---|---|---|
-| `lib/screens/library_screen.dart` | build 重构：共享头部（AppBar + chips 行）提出固定 Column；`GestureDetector`/`_swipeDelta`/`AnimatedSwitcher` 删除；引入 `PageController` + `PageView.builder`；提取 `_ArtistsPage/_AlbumsPage/_SongsPage/_FavesPage`（方式 1） | ⬜ |
+| `lib/screens/library_screen.dart` | ✅ build 重构（`:181-297`：AppBar `:199` + TabBar `:261` + TabBarView `:286`）；TabController 生命周期 `_ensureTabController:82` / `_onLibraryChanged:98` / `_onTabIndexChanged:106`（initState `:70` 显式监听 LibraryProvider、dispose `:121`，可空 + 首帧防护）；删除 `GestureDetector`/`_swipeDelta`/`AnimatedSwitcher`/FilterChip 行/`_selectedFilter`；每页独立 ScrollController（`:54-59`）；页面拆分 `_buildArtistsPage:331` / `_buildFavesPage:492` / `_buildItemsPage:572` + `_controllerFor:310`；`_getFilteredItems:600` 加 filter 参数、删 Artists 死分支；封面预热改 `_onTabIndexChanged` 触发（`_maybePreloadArtistCovers:1026`） | ✅ 2026-08-06 实施：analyze 无 error；widgets/services 单测全绿，`flutter test` +102 ~5 -3（3 失败经 git stash 验证为改动前已存在：`player_provider_test` 构造签名过期、`app_test` 登录文案断言过期） |
 | `lib/screens/library_screen.dart` | `_getFilteredItems` 与各 tab 内容逻辑**整体搬移不修改**；`_ArtistScrubber`/`_letterIndexMap`/`_artistsScrollController` 移入 `_ArtistsPage` | ⬜ |
 | `lib/l10n/app_en.arb` + `app_zh.arb` | 无新增文案（chips/TabBar 文案已有） | — |
 | `test/` | 无逻辑改动，不新增单测；`flutter analyze` + 现有单测回归 | ⬜ |
@@ -266,8 +289,9 @@ _selectedFilter（String，:40 保留） ⇄ PageController
 
 ## 11. 待拍板决策清单（review 时确认）
 
-| # | 决策点 | 推荐 | 备选 |
-|---|---|---|---|
-| 1 | 方案选型 | A PageView（§3.1） | B Transform 跟手（§3.2） |
-| 2 | 页面拆分方式 | 单文件私有 widget（方式 1） | 新建 `lib/screens/library/` 目录（方式 2） |
-| 3 | 头部样式 | 先保留 FilterChip（选项 1），横滑体验验证后再定是否上 TabBar | 直接上 TabBar + TabBarView（选项 2） |
+| # | 决策点 | 状态 |
+|---|---|---|
+| 1 | 方案选型 | ✅ 已拍板：A `TabBar + TabBarView`（2026-08-05，样式参照网易新闻/百度 App 首页）；B 作废 |
+| 2 | 页面拆分方式 | ✅ 已按推荐实施：**同文件方法化**（`_buildArtistsPage:331` / `_buildFavesPage:492` / `_buildItemsPage:572`，状态留 State，避免跨类回调） |
+| 3 | 头部样式 | ✅ 已拍板：文字 TabBar + 下划线指示器（`isScrollable: true`），替换 FilterChip 行 |
+| 4 | 小幅横滑回弹 | ✅ 已确认（2026-08-06 真机反馈）：小幅拖动页面跟手移动后松手回弹为 PageView 标准行为（半页+速度阈值，网易新闻/百度 App 同款），**保持现状不改** |

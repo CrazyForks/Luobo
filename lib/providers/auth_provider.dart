@@ -53,7 +53,8 @@ class AuthProvider extends ChangeNotifier {
           'to': results.map((r) => r.name).join(',')
         },
       );
-      await _subsonicService.resolveActiveUrl();
+      // 网络已变化：强制同步探测，不依赖上次会话的记忆跳过。
+      await _subsonicService.resolveActiveUrl(forceProbe: true);
       Log.i('Auth',
           'Network changed, active URL: ${_subsonicService.activeBaseUrl}');
     });
@@ -94,11 +95,11 @@ class AuthProvider extends ChangeNotifier {
     PingResult? pingResult;
     const maxAttempts = 3;
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      pingResult = await _subsonicService.pingWithError().timeout(
-            const Duration(seconds: 10),
-            onTimeout: () =>
-                PingResult(success: false, error: 'Connection timed out'),
-          );
+      // 第 1 次尝试带备选地址兜底（LAN↔远端）；后续尝试按当前 activeBaseUrl
+      // 重建 URL（后台探测已切换时自然落到备选地址）。
+      pingResult = attempt == 1
+          ? await _pingWithFailover()
+          : await _pingWithErrorOnce();
       if (pingResult.success) break;
       debugPrint(
           '[Auth] Ping attempt $attempt/$maxAttempts failed: ${pingResult.error}');
@@ -139,6 +140,50 @@ class AuthProvider extends ChangeNotifier {
       _state = AuthState.serverUnreachable;
     }
     notifyListeners();
+  }
+
+  /// 单次带超时的 ping（10s 上限）。
+  Future<PingResult> _pingWithErrorOnce() {
+    return _subsonicService.pingWithError().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () =>
+              PingResult(success: false, error: 'Connection timed out'),
+        );
+  }
+
+  /// 带备选地址兜底的认证 ping：单次 ping 失败且配置了局域网地址、且属于
+  /// 连接类错误时，强制同步探测备选地址（可达则切换）后重试一次，消除
+  /// 「上次在远端 → 登录 ping 远端、远端偶发不可达但局域网通」的偶发登录失败，
+  /// 也覆盖「已提交局域网但局域网抖动」场景。凭据/SSL 类错误不触发（换地址无意义）。
+  Future<PingResult> _pingWithFailover() async {
+    var ping = await _pingWithErrorOnce();
+    if (ping.success) return ping;
+
+    final error = ping.error ?? '';
+    if (_subsonicService.hasLocalUrl && _isConnectionError(error)) {
+      debugPrint('[Auth] Ping failed, failover: probing alternate URL');
+      DiagnosticsService.instance.record(
+        EventType.netSwitch,
+        LogLevel.info,
+        {'from': 'pingFailover', 'to': 'forceProbe', 'error': error},
+      );
+      await _subsonicService.resolveActiveUrl(forceProbe: true);
+      final retry = await _pingWithErrorOnce();
+      if (retry.success) return retry;
+    }
+    return ping;
+  }
+
+  /// 连接类错误才触发地址兜底；凭据（Invalid username）/SSL 换地址无意义。
+  bool _isConnectionError(String error) {
+    final e = error.toLowerCase();
+    return e.contains('socket') ||
+        e.contains('connection refused') ||
+        e.contains('connection failed') ||
+        e.contains('connection errored') ||
+        e.contains('cannot connect') ||
+        e.contains('timed out') ||
+        e.contains('timeout');
   }
 
   void enterOfflineMode() {
@@ -236,7 +281,7 @@ class AuthProvider extends ChangeNotifier {
     await _subsonicService.resolveActiveUrl();
 
     try {
-      final pingResult = await _subsonicService.pingWithError();
+      final pingResult = await _pingWithFailover();
       if (pingResult.success) {
         debugPrint(
             '[Auth] Login OK — type=${pingResult.serverType} version=${pingResult.serverVersion}');

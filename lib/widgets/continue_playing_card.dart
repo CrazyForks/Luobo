@@ -16,6 +16,7 @@ class ContinuePlayingCard extends StatelessWidget {
   final double width;
   final bool showPlayButton;
   final int titleMaxLines;
+  final String? subtitle;
 
   const ContinuePlayingCard({
     super.key,
@@ -25,6 +26,7 @@ class ContinuePlayingCard extends StatelessWidget {
     this.width = 200,
     this.showPlayButton = true,
     this.titleMaxLines = 1,
+    this.subtitle,
   });
 
   @override
@@ -66,7 +68,7 @@ class ContinuePlayingCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      song.artist ?? '',
+                      subtitle ?? song.artist ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

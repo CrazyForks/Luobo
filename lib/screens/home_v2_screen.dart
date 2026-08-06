@@ -580,6 +580,11 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
                 width: cardWidth,
                 showPlayButton: false,
                 titleMaxLines: 2,
+                // 副标题歌手 + 专辑：填满右侧留白，且"歌手 · 专辑"更便于认歌。
+                subtitle: [song.artist, song.album]
+                    .whereType<String>()
+                    .where((s) => s.isNotEmpty)
+                    .join(' · '),
                 onTap: () => _play(context, song, discover, index),
               );
             },

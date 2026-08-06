@@ -83,7 +83,11 @@ class SubsonicService {
   /// stall up to 3s probing a LAN that is not reachable: when the previous
   /// session ended on the remote URL, the probe is skipped and the LAN is
   /// re-probed in the background, switching silently once it responds.
-  Future<void> resolveActiveUrl() async {
+  ///
+  /// Pass [forceProbe] to always probe the LAN synchronously, ignoring the
+  /// persisted last-active hint. Used when the network changed or after a
+  /// ping failure to re-evaluate the reachable address.
+  Future<void> resolveActiveUrl({bool forceProbe = false}) async {
     if (_config == null) return;
     final localUrl = _config!.normalizedLocalUrl;
     if (localUrl == null) {
@@ -99,9 +103,11 @@ class SubsonicService {
     }
 
     // Last session ended on the remote URL — use it immediately and probe the
-    // LAN in the background instead of blocking startup.
+    // LAN in the background instead of blocking startup (unless forceProbe).
     final lastActive = await _storageService?.getLastActiveBaseUrl();
-    if (lastActive != null && lastActive == _config!.normalizedUrl) {
+    if (!forceProbe &&
+        lastActive != null &&
+        lastActive == _config!.normalizedUrl) {
       _activeBaseUrl = _config!.normalizedUrl;
       Log.i('Net', 'Last session on remote, skipping LAN probe: $_activeBaseUrl');
       DiagnosticsService.instance.record(

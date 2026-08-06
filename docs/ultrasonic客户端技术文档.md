@@ -351,6 +351,7 @@ CachedDataSource.Factory(resolvingDataSource)
 7. **三级缓存分层**：文件 → 内存 TTL → Room，各自职责清晰（§10）；
 8. **流 URL 注入认证后不执行请求**：dummy 响应拿最终 URL 技巧（§5.1），可借鉴到 Flutter 外部播放器场景；
 9. **DataStore 版 Settings 注意**：本项目仍用 SharedPreferences 委托属性模式，key 集中管理，Luobo 可对照自己的设置模块。
+10. **连接模型反面对照（2026-08-05）**：Ultrasonic **没有局域网/远端双地址**——`ServerSetting` 单 `url`（`data/ServerSetting.kt:27`），离线是假服务器 `url=localhost` + `serverId=-1`（`data/ActiveServerProvider.kt:219-226`），`ping()` 无重试无兜底（`RESTMusicService.kt:63-64`）。因此它**不需要**地址探测/切换/failover——Luobo 的 localUrl 双地址特性必须自带探测+回退（`resolveActiveUrl` + 认证 failover，见性能监控文档 §6.3）。
 
 ## 12. 目录速查
 
