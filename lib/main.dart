@@ -32,7 +32,7 @@ import 'utils/image_cache.dart';
 
 /// 运行时上报的应用版本，写入诊断导出 meta.json；
 /// 与 pubspec.yaml `version` 保持一致，发版时同步更新。
-const String kAppVersion = '1.1.9+4';
+const String kAppVersion = '1.1.10+5';
 
 /// Shows the privacy policy dialog on first launch
 Future<void> _showPrivacyPolicyIfNeeded() async {
@@ -264,6 +264,13 @@ void main() async {
 
   // Create TranscodingService instance to share across providers
   final transcodingService = TranscodingService();
+
+  // 局域网转码规则：局域网连接强制原码（不转码），非局域网按设置判断。
+  // 接线必须在 MultiProvider 创建 AuthProvider 之前——AuthProvider 构造时
+  // _loadSavedConfig() 会触发首次 resolveActiveUrl，其地址变化需同步刷新
+  // 转码层的 LAN 判定。
+  transcodingService.setLanStateSource(() => subsonicService.isUsingLocalUrl);
+  subsonicService.onActiveUrlChanged = transcodingService.onNetworkPathChanged;
 
   final Widget appWithProviders = MultiProvider(
     providers: [

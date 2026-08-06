@@ -35,6 +35,11 @@ class SubsonicService {
   String? _activeBaseUrl;
   final StorageService? _storageService;
 
+  /// Notified whenever [_activeBaseUrl] actually changes (LAN↔remote switch
+  /// during startup / background probe / network-change re-probe, or config
+  /// reset). Wired in main.dart to refresh the transcoding LAN override.
+  void Function()? onActiveUrlChanged;
+
   static const String _clientName = 'Musly';
   static const String _apiVersion = '1.16.1';
 
@@ -54,7 +59,7 @@ class SubsonicService {
 
   Future<void> configure(ServerConfig config) async {
     _config = config;
-    _activeBaseUrl = null;
+    _setActiveBaseUrl(null);
     if (config.isJellyfin) {
       _jellyfin ??= JellyfinService();
       _jellyfin!.configure(config);
@@ -76,6 +81,15 @@ class SubsonicService {
     }
   }
 
+  /// Assigns [_activeBaseUrl] and notifies [onActiveUrlChanged] only when the
+  /// value actually changes, so listeners (transcoding LAN override) refresh
+  /// exactly once per LAN↔remote switch.
+  void _setActiveBaseUrl(String? url) {
+    if (url == _activeBaseUrl) return;
+    _activeBaseUrl = url;
+    onActiveUrlChanged?.call();
+  }
+
   /// Probes the local URL; if reachable, uses it. Otherwise falls back to the
   /// remote (serverUrl). Call this after [configure] and before making requests.
   ///
@@ -91,7 +105,7 @@ class SubsonicService {
     if (_config == null) return;
     final localUrl = _config!.normalizedLocalUrl;
     if (localUrl == null) {
-      _activeBaseUrl = _config!.normalizedUrl;
+      _setActiveBaseUrl(_config!.normalizedUrl);
       Log.i('Net', 'No local URL configured, using remote: $_activeBaseUrl');
       DiagnosticsService.instance.record(
         EventType.netUrlResolved,
@@ -108,7 +122,7 @@ class SubsonicService {
     if (!forceProbe &&
         lastActive != null &&
         lastActive == _config!.normalizedUrl) {
-      _activeBaseUrl = _config!.normalizedUrl;
+      _setActiveBaseUrl(_config!.normalizedUrl);
       Log.i('Net', 'Last session on remote, skipping LAN probe: $_activeBaseUrl');
       DiagnosticsService.instance.record(
         EventType.netUrlResolved,
@@ -124,7 +138,7 @@ class SubsonicService {
     final probe = await _probeLocalUrl(localUrl);
     if (probe.ok) {
       final switched = _activeBaseUrl != localUrl;
-      _activeBaseUrl = localUrl;
+      _setActiveBaseUrl(localUrl);
       DiagnosticsService.instance.record(
         EventType.netUrlResolved,
         LogLevel.info,
@@ -140,7 +154,7 @@ class SubsonicService {
     }
 
     final switched = _activeBaseUrl != _config!.normalizedUrl;
-    _activeBaseUrl = _config!.normalizedUrl;
+    _setActiveBaseUrl(_config!.normalizedUrl);
     DiagnosticsService.instance.record(
       EventType.netUrlResolved,
       LogLevel.info,
@@ -180,7 +194,7 @@ class SubsonicService {
     final probe = await _probeLocalUrl(localUrl);
     if (!probe.ok || _config == null) return;
     final switched = _activeBaseUrl != localUrl;
-    _activeBaseUrl = localUrl;
+    _setActiveBaseUrl(localUrl);
     DiagnosticsService.instance.record(
       EventType.netUrlResolved,
       LogLevel.info,
@@ -210,7 +224,13 @@ class SubsonicService {
   /// Whether the active connection is using the LAN (local) URL rather than
   /// the remote server URL.  Only meaningful when the user configured both
   /// addresses.
+  ///
+  /// Jellyfin always resolves its base URL to serverUrl (jellyfin_service
+  /// configure), so the LAN probe never affects its actual traffic — treating
+  /// it as LAN would force original streams over the WAN path (rule 1
+  /// mismatch), so it is excluded here.
   bool get isUsingLocalUrl {
+    if (_jellyfin != null) return false;
     if (_config == null || _config!.normalizedLocalUrl == null) return false;
     final base = _activeBaseUrl ?? _config!.normalizedUrl;
     return base.isNotEmpty && base == _config!.normalizedLocalUrl;

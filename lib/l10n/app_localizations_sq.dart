@@ -1991,6 +1991,10 @@ class AppLocalizationsSq extends AppLocalizations {
   String get transcodingFormatOriginal => 'Original';
 
   @override
+  String get transcodingLanForceOriginal =>
+      'LAN connection — always original (no transcoding)';
+
+  @override
   String get imageCacheTitle => 'Image Cache';
 
   @override

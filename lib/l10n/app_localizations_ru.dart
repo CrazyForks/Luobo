@@ -1997,6 +1997,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get transcodingFormatOriginal => 'Оригинал';
 
   @override
+  String get transcodingLanForceOriginal =>
+      'LAN connection — always original (no transcoding)';
+
+  @override
   String get imageCacheTitle => 'Кэш изображений';
 
   @override

@@ -1948,6 +1948,7 @@
   "transcodingFormatSubtitle": "流媒体使用的音频编码",
   "transcodingBitrateOriginal": "原始（不转码）",
   "transcodingFormatOriginal": "原始",
+  "transcodingLanForceOriginal": "局域网连接中 · 强制原始音质（不转码）",
   "imageCacheTitle": "图片缓存",
   "imageCacheSubtitle": "本地保存专辑封面",
   "sectionAboutInformation": "信息",

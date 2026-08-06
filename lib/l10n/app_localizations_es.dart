@@ -1997,6 +1997,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get transcodingFormatOriginal => 'Original';
 
   @override
+  String get transcodingLanForceOriginal =>
+      'LAN connection — always original (no transcoding)';
+
+  @override
   String get imageCacheTitle => 'Caché de imagen';
 
   @override

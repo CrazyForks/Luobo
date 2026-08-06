@@ -3784,6 +3784,12 @@ abstract class AppLocalizations {
   /// **'Original'**
   String get transcodingFormatOriginal;
 
+  /// Hint shown in streaming settings while connected via the local (LAN) URL: transcoding is forced off regardless of the bitrate settings
+  ///
+  /// In en, this message translates to:
+  /// **'LAN connection — always original (no transcoding)'**
+  String get transcodingLanForceOriginal;
+
   /// Toggle title for image (album art) cache
   ///
   /// In en, this message translates to:

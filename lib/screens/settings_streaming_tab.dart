@@ -95,6 +95,35 @@ class SettingsStreamingTab extends StatelessWidget {
                     onChanged: (v) => ts.setEnabled(v),
                   ),
                 ),
+                // 局域网连接时强制原码（规则 1）：即便设置了转码码率也
+                // 不生效，这里显式提示，避免用户以为设置失效。
+                if (ts.isLanOverrideActive) ...[
+                  _buildDivider(isDark),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.lan_rounded,
+                          size: 16,
+                          color: Colors.green,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            AppLocalizations.of(context)!
+                                .transcodingLanForceOriginal,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: secondaryText,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (ts.enabled) ...[
                   _buildDivider(isDark),
                   ListTile(

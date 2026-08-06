@@ -70,6 +70,14 @@ class TranscodingService extends ChangeNotifier {
   bool _smartEnabled = false;
   ConnectionType _currentConnectionType = ConnectionType.wifi;
 
+  /// LAN override: when the active server connection is a LAN (local) URL,
+  /// transcoding is forced off regardless of the WiFi/mobile settings (rule 1:
+  /// 局域网链接 → 一定不转码). The source callback is wired to
+  /// SubsonicService.isUsingLocalUrl in main.dart and read lazily on every
+  /// bitrate/format decision, so a LAN↔remote switch takes effect without an
+  /// explicit refresh.
+  bool Function()? _isLanOverride;
+
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   int get wifiBitrate => _wifiBitrate;
@@ -78,11 +86,15 @@ class TranscodingService extends ChangeNotifier {
   // Smart mode: bitrate follows the current connection type (WiFi quality on
   // WiFi, mobile quality on cellular). Manual mode: a single fixed bitrate is
   // always used, regardless of the network.
-  int get currentBitRate => _smartEnabled
-      ? (_currentConnectionType == ConnectionType.wifi
-          ? _wifiBitrate
-          : _mobileBitrate)
-      : _manualBitrate;
+  int get currentBitRate {
+    // LAN connection: always original, regardless of the settings (rule 1).
+    if (_isLanOverride?.call() ?? false) return TranscodeBitrate.original;
+    return _smartEnabled
+        ? (_currentConnectionType == ConnectionType.wifi
+            ? _wifiBitrate
+            : _mobileBitrate)
+        : _manualBitrate;
+  }
   String get format => _format;
   bool get enabled => _enabled;
   bool get smartEnabled => _smartEnabled;
@@ -217,6 +229,25 @@ class TranscodingService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Wires the LAN-state source (SubsonicService.isUsingLocalUrl). The value
+  /// is read lazily on every bitrate/format decision, so a LAN↔remote switch
+  /// takes effect as soon as SubsonicService notifies the change.
+  void setLanStateSource(bool Function() isLan) {
+    _isLanOverride = isLan;
+  }
+
+  /// Refresh hook called by SubsonicService whenever the active URL changes
+  /// (LAN↔remote). Re-reads the LAN source lazily and re-broadcasts so the
+  /// settings page / song tiles / toasts pick up the new effective bitrate.
+  void onNetworkPathChanged() {
+    notifyListeners();
+  }
+
+  /// Whether the active server connection is a LAN (local URL). When true,
+  /// transcoding is forced off (rule 1) — surfaced in the streaming settings
+  /// so the "Original despite a set bitrate" state isn't confusing.
+  bool get isLanOverrideActive => _isLanOverride?.call() ?? false;
+
   int? getCurrentBitrate() {
     if (!_enabled) return null;
     final bitrate = currentBitRate;
@@ -224,6 +255,8 @@ class TranscodingService extends ChangeNotifier {
   }
 
   String? getCurrentFormat() {
+    // LAN connection: no transcoding format is requested (rule 1).
+    if (_isLanOverride?.call() ?? false) return null;
     if (!_enabled) return null;
     return _format == TranscodeFormat.original ? null : _format;
   }

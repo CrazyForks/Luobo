@@ -2,7 +2,7 @@
 
 **Luobo**（萝卜）是基于 [Musly](https://github.com/dddevid/Musly) 二次开发的 Navidrome / Subsonic 音乐播放客户端，使用 Flutter 构建，支持 Android 和 iOS。**相比原版 Musly 增加了 Apple Music 风格首页、车载模式、听歌报告、AI 歌单等特色功能，并对设置页、音乐库艺术家页做了重构，以及大规模国际化适配。**
 
-> **当前版本：v1.1.9**（在 Musly v1.0.13 基础上独立迭代）
+> **当前版本：v1.1.10**（在 Musly v1.0.13 基础上独立迭代）
 
 ---
 
@@ -203,7 +203,18 @@
 
 ## 🛠️ 版本历史
 
-**v1.1.9（当前）** — 封面缓存全面优化（连接复用 / 语义化 key / 内存预热 / 登出不清缓存）：
+**v1.1.10（当前）** — 局域网转码策略（局域网连接强制原始音质）：
+
+**🎚️ 局域网转码策略（规则 1）**
+- ✅ **局域网连接强制不转码** — 连接局域网（localUrl）时转码强制关闭：`currentBitRate` 回落原始、`getCurrentFormat` 返回 null，不拼 maxBitRate/format 参数，服务器直出原码流（无损音质零转码延迟）；WiFi/移动码率设置在局域网下不生效
+- ✅ **LAN↔远端切换即时生效** — `SubsonicService` 新增 `onActiveUrlChanged` 回调，启动探测 / 后台探测 / 网络变化 forceProbe 切换地址时通知转码层刷新生效码率（`_setActiveBaseUrl` 值变化才通知）
+- ✅ **转码/缓存流路由修正** — `PlayerProvider` 新增 `_willTranscode()` 按「实际是否转码」选择 ExoPlayer 直连或 LockCachingAudioSource 缓存流：局域网原码流重新走本地缓存，拖动定位不受影响；三处转码参数拼接统一走 `getCurrentBitrate/getCurrentFormat`
+- ✅ **Jellyfin 排除** — Jellyfin 恒走远端 URL 不判局域网，避免公网场景误强推原码流
+- ✅ **设置页显式提示** — 局域网连接时流媒体设置页顶部显示绿色 LAN 图标「局域网连接中 · 强制原始音质（不转码）」，避免误以为设置失效
+- ✅ **LAN-only 配置双存** — 仅配置局域网地址时 localUrl 与 serverUrl 同址双存，规则 1 在纯局域网场景仍生效
+- ✅ **测试与文档** — 新增 `transcoding_service_test`（LAN 覆盖 / 地址切换刷新），`subsonic_service_test` / `player_provider_test` 适配；`docs/局域网转码策略技术方案.md` 归档；机制说明与 28 语言文案同步（`transcodingLanForceOriginal`）
+
+**v1.1.9** — 封面缓存全面优化（连接复用 / 语义化 key / 内存预热 / 登出不清缓存）：
 
 **🖼️ 封面缓存优化（P0-P5 全量落地）**
 - ✅ **封面下载复用连接池（P0）** — 封面下载从每次新 TCP+TLS 握手改为共享 `http.Client`（懒加载以继承登录时配置的自签证书），连续加载未缓存封面 TCP 连接数从 ~50 收敛到 1~2

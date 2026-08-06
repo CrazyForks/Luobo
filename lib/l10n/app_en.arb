@@ -2052,6 +2052,9 @@
   "transcodingFormatOriginal": "Original",
   "@transcodingFormatOriginal": { "description": "Transcoding format option: original (no conversion)" },
 
+  "transcodingLanForceOriginal": "LAN connection — always original (no transcoding)",
+  "@transcodingLanForceOriginal": { "description": "Hint shown in streaming settings while connected via the local (LAN) URL: transcoding is forced off regardless of the bitrate settings" },
+
   "sectionCacheSettings": "CACHE SETTINGS",
   "@sectionCacheSettings": { "description": "Storage settings section header" },
 

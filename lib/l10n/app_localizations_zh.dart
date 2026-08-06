@@ -1948,6 +1948,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get transcodingFormatOriginal => '原始';
 
   @override
+  String get transcodingLanForceOriginal => '局域网连接中 · 强制原始音质（不转码）';
+
+  @override
   String get imageCacheTitle => '图片缓存';
 
   @override

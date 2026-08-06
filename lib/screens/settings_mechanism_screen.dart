@@ -219,9 +219,9 @@ const List<MechanismItem> _storageItems = [
   MechanismItem(
     title: '转码（音质 / 流量）原理',
     summary:
-        '「转码」是在你的服务器（Navidrome）上完成的，App 只负责告诉服务器要什么码率和格式（mp3 / opus / aac 或原始直出）。开启「智能模式」后：连 WiFi 用高码率（音质好），走蜂窝数据用低码率（省流量），网络切换自动换档。注意：开启转码时在线播放不落本地缓存——因为转码流拖动定位更可靠，这是刻意设计。',
+        '「转码」是在你的服务器（Navidrome）上完成的，App 只负责告诉服务器要什么码率和格式（mp3 / opus / aac 或原始直出）。连接局域网时一定不转码（强制原始音质，规则 1）；非局域网才按设置判断：开启「智能模式」后连 WiFi 用高码率（音质好）、走蜂窝数据用低码率（省流量），网络切换自动换档。注意：开启转码时在线播放不落本地缓存——因为转码流拖动定位更可靠，这是刻意设计。',
     details:
-        'getStreamUrl 拼 maxBitRate/format 参数到 /rest/stream；TranscodingService 监听系统网络切换（net.switch 埋点）并在 WiFi/移动网间切换生效码率。\n依据：subsonic_service.dart:534-551、transcoding_service.dart:56-236',
+        'getStreamUrl 拼 maxBitRate/format 参数到 /rest/stream；TranscodingService 监听系统网络切换（net.switch 埋点）并在 WiFi/移动网间切换生效码率。局域网覆盖（规则 1）：currentBitRate 在 isUsingLocalUrl 为 true 时强制 original(0)、getCurrentFormat 返回 null → 不拼转码参数；地址切换（启动探测/后台探测/网络变化 forceProbe）经 onActiveUrlChanged 通知转码层刷新。\n依据：subsonic_service.dart:571-588,232、transcoding_service.dart:89-99,244-257',
   ),
   MechanismItem(
     title: '封面图片缓存',

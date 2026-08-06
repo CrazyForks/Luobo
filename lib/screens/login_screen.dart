@@ -392,10 +392,14 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     // If only the LAN (local) URL was provided, use it as the primary
-    // server url so the app can connect from home.
-    if (_serverFamily != 'youtube' &&
-        serverUrl.isEmpty &&
-        localUrl.isNotEmpty) {
+    // server url so the app can connect from home. Keep it also as localUrl
+    // (double-store) so the LAN rule — always original, no transcoding —
+    // stays active for LAN-only setups. Also matches re-saves of a LAN-only
+    // profile (both fields hold the same address, see _prefillFromConfig).
+    final isLanOnly = _serverFamily != 'youtube' &&
+        localUrl.isNotEmpty &&
+        (serverUrl.isEmpty || localUrl == serverUrl);
+    if (isLanOnly && serverUrl.isEmpty) {
       serverUrl = localUrl;
     }
 
@@ -413,9 +417,13 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final profileName = _profileNameController.text.trim();
     // Only pass localUrl if it differs from serverUrl (avoids pointless
-    // LAN-probe when the user only configured a single address).
+    // LAN-probe when the user only configured a single address) — except for
+    // LAN-only configs, where localUrl == serverUrl is required so the LAN
+    // override (always original) stays active.
     final effectiveLocalUrl =
-        (localUrl.isNotEmpty && localUrl != serverUrl) ? localUrl : null;
+        (localUrl.isNotEmpty && (localUrl != serverUrl || isLanOnly))
+            ? localUrl
+            : null;
     final success = await authProvider.login(
       serverUrl: serverUrl,
       localUrl: effectiveLocalUrl,

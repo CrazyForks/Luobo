@@ -1032,6 +1032,13 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
+  /// Whether the stream built for the current transcode state will actually be
+  /// transcoded by the server (a bitrate OR a format is requested). On LAN both
+  /// resolve to null → the original stream is routed through the local cache.
+  bool _willTranscode() =>
+      _transcodingService.getCurrentBitrate() != null ||
+      _transcodingService.getCurrentFormat() != null;
+
   /// True when audio is playing on a remote renderer (UPnP or Cast) rather
   /// than locally.  Used to suppress audio-focus and noisy-event handling that
   /// would incorrectly pause the remote device, and to route UI volume changes
@@ -1837,13 +1844,10 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
             if (offlinePath != null) {
               playUrl = 'file://$offlinePath';
             } else {
-              // Apply transcoding settings if enabled
-              final maxBitRate = _transcodingService.enabled
-                  ? _transcodingService.currentBitRate
-                  : null;
-              final format = _transcodingService.enabled
-                  ? _transcodingService.format
-                  : null;
+              // Apply transcoding settings if enabled (LAN connection always
+              // resolves to null → original, rule 1).
+              final maxBitRate = _transcodingService.getCurrentBitrate();
+              final format = _transcodingService.getCurrentFormat();
               _setActiveStream(maxBitRate, format);
               playUrl = _subsonicService.getStreamUrl(song.id,
                   maxBitRate: maxBitRate, format: format);
@@ -1854,11 +1858,12 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
           if (song.isLocal == true ||
               _offlineService.getLocalPath(song.id) != null) {
             await _audioPlayer.setUrl(playUrl);
-          } else if (_transcodingService.enabled) {
+          } else if (_willTranscode()) {
             // Transcoding streams don't support HTTP range requests reliably.
             // Route straight to ExoPlayer so seeking keeps the target position
             // — LockCachingAudioSource would downgrade range requests to a
             // full 200 response and restart playback from the beginning.
+            // (LAN always resolves to false here → cached original stream.)
             await _audioPlayer.setAudioSource(
               AudioSource.uri(Uri.parse(playUrl), tag: song.id),
             );
@@ -2795,11 +2800,10 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (offlinePath != null) {
       return AudioSource.uri(Uri.file(offlinePath));
     }
-    // Apply transcoding settings if enabled
-    final maxBitRate =
-        _transcodingService.enabled ? _transcodingService.currentBitRate : null;
-    final format =
-        _transcodingService.enabled ? _transcodingService.format : null;
+    // Apply transcoding settings if enabled (LAN connection always resolves
+    // to null → original, rule 1).
+    final maxBitRate = _transcodingService.getCurrentBitrate();
+    final format = _transcodingService.getCurrentFormat();
     // Only the current song's source reflects the actual active stream;
     // sources for other queue entries are prebuilt and must not overwrite it.
     if (song.id == _currentSong?.id) {
@@ -2811,7 +2815,8 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // them straight to ExoPlayer so seeking keeps the target position —
     // LockCachingAudioSource would downgrade range requests to a full 200
     // response and restart playback from the beginning (#170).
-    if (_transcodingService.enabled) {
+    // (LAN always resolves to false here → cached original stream.)
+    if (_willTranscode()) {
       return AudioSource.uri(Uri.parse(url), tag: song.id);
     }
     // Cache remote streams locally so seeking works even when the server
@@ -2857,11 +2862,9 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
           } else {
             // Apply transcoding settings if enabled, matching playSong's
             // stream URL so the restore path honors the same bitrate/format.
-            final maxBitRate = _transcodingService.enabled
-                ? _transcodingService.currentBitRate
-                : null;
-            final format =
-                _transcodingService.enabled ? _transcodingService.format : null;
+            // (LAN connection always resolves to null → original, rule 1.)
+            final maxBitRate = _transcodingService.getCurrentBitrate();
+            final format = _transcodingService.getCurrentFormat();
             _setActiveStream(maxBitRate, format);
             playUrl = _subsonicService.getStreamUrl(_currentSong!.id,
                 maxBitRate: maxBitRate, format: format);
@@ -2870,7 +2873,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         if (_currentSong!.isLocal == true ||
             _offlineService.getLocalPath(_currentSong!.id) != null) {
           await _audioPlayer.setUrl(playUrl);
-        } else if (_transcodingService.enabled) {
+        } else if (_willTranscode()) {
           // Transcoding streams don't support HTTP range requests reliably;
           // let ExoPlayer handle seeking natively instead of wrapping the
           // stream in LockCachingAudioSource (which restarts from 0 on seek).

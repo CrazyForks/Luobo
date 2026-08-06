@@ -5,6 +5,7 @@ import 'package:luobo/providers/library_provider.dart';
 import 'package:luobo/providers/player_provider.dart';
 import 'package:luobo/services/services.dart';
 import 'package:luobo/services/audio_handler.dart';
+import 'package:luobo/services/transcoding_service.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers.dart';
@@ -26,6 +27,7 @@ void main() {
         UpnpService(),
         MuslyAudioHandler(),
         JukeboxService(),
+        TranscodingService(),
       );
 
       await tester.pumpWidget(
@@ -36,6 +38,10 @@ void main() {
       );
 
       await tester.pump();
+      // PlayerProvider 构造时 DiagnosticsService.record 会排一个 200ms 去抖
+      // 通知定时器（_scheduleNotify）；先推进假时钟让它触发，否则 testWidgets
+      // 收尾的 "no pending timers" 断言会失败（与本次改动无关的既有问题）。
+      await tester.pump(const Duration(milliseconds: 250));
       provider.dispose();
       expect(true, true); // If we got here without exception, disposal worked
     });
