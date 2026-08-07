@@ -188,11 +188,43 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// Handle app lifecycle changes - save queue state when going to background (important for iOS)
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    DiagnosticsService.instance.record(
+      EventType.appLifecycle,
+      LogLevel.info,
+      {
+        'state': state.name,
+        'isPlaying': _isPlaying,
+        'playerPlaying': _audioPlayer.playing,
+        'processingState': _audioPlayer.processingState.name,
+        'songId': _currentSong?.id,
+        'posMs': _audioPlayer.position.inMilliseconds,
+        'hasSource': _audioPlayer.audioSource != null,
+        'remotePlayback': _isRenderingRemotely,
+      },
+    );
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       debugPrint(
           '[Player] App lifecycle state: $state - saving queue state immediately');
       _saveQueueStateImmediate();
+      // inactive 是瞬态（通知栏/App 切换器/来电横幅），不算退后台；
+      // 只有真正退后台（paused）才置位，避免瞬态回前台误触发会话重激活。
+      if (state == AppLifecycleState.paused) {
+        _wasBackgrounded = true;
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      final hadBackgrounded = _wasBackgrounded;
+      _wasBackgrounded = false;
+      // 退后台再回前台：记录会话/路由快照，并重新激活音频会话——
+      // 暂停 + 蓝牙断开 + 长时间后台会让系统收回会话（无声 bug 触发链的一环），
+      // 前台恢复时把会话重新激活，保证下次 play 时输出管线就绪。
+      unawaited(_recordAudioSessionState('lifecycleResume'));
+      unawaited(_snapshotAudioRoute());
+      if (hadBackgrounded) {
+        debugPrint(
+            '[Player] App resumed from background - reactivating audio session');
+        unawaited(_reactivateSessionOnResume());
+      }
     }
   }
 
@@ -1092,6 +1124,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   StreamSubscription<Duration>? _positionSub;
   StreamSubscription<Duration?>? _durationSub;
   StreamSubscription<int?>? _currentIndexSub;
+  StreamSubscription<Set<AudioDevice>>? _devicesSub;
 
   ConcatenatingAudioSource? _concatenatingSource;
 
@@ -1448,6 +1481,20 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
       debugPrint('[Player] AudioSession configured for music playback');
+      DiagnosticsService.instance.record(
+        EventType.audioSessionState,
+        LogLevel.info,
+        {'trigger': 'configure', 'config': 'music', 'platform': 'android'},
+      );
+
+      // 设备流变化（蓝牙断开/重连、耳机插拔）→ 记录路由变更。
+      // 订阅是纯观测：只写日志，不干预播放；持有引用以便 dispose 取消。
+      _devicesSub ??= session.devicesStream.listen(
+        (_) => unawaited(_snapshotAudioRoute()),
+        onError: (Object e) {
+          debugPrint('[Player] Devices stream error (ignored): $e');
+        },
+      );
 
       // Listen for audio interruptions (another app takes audio focus)
       session.interruptionEventStream.listen((event) {
@@ -1497,24 +1544,71 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   // ── 音频路由/会话诊断辅助 ─────────────────────────────────
 
+  /// 退后台标记：paused/inactive 置位，resumed 清除。
+  /// 用于区分「正常 play」与「退后台回前台后的首次 play」（无声高发窗口）。
+  bool _wasBackgrounded = false;
+
   List<String> _lastAudioDevices = const [];
+
+  /// 当前输出设备摘要（'name:type' 排序列表）；查询失败/超时返回 null。
+  /// 设备查询在会话重建窗口可能挂起（曾导致会话快照事件延迟 2s 甚至丢失），
+  /// 这里限时 300ms——快照埋点绝不阻塞在设备查询上。
+  Future<List<String>?> _audioDevicesSummary() async {
+    try {
+      if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return null;
+      final session = await AudioSession.instance;
+      final devices = await session
+          .getDevices()
+          .timeout(const Duration(milliseconds: 300));
+      return devices.map((d) => '${d.name}:${d.type.name}').toList()..sort();
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// 快照当前音频输出设备（audio_session 无 route 流，用 getDevices 对比）。
   Future<void> _snapshotAudioRoute() async {
+    final names = await _audioDevicesSummary();
+    if (names == null) return;
+    if (!listEquals(names, _lastAudioDevices)) {
+      DiagnosticsService.instance.record(
+        EventType.audioRouteChanged,
+        LogLevel.info,
+        {'from': _lastAudioDevices.join(','), 'to': names.join(',')},
+      );
+      _lastAudioDevices = names;
+    }
+  }
+
+  /// 会话/输出管线状态快照。只查询不干预：用于还原「播放无声」时间线，
+  /// 尤其「退后台 → 回前台 → play」后位置前进但无输出的场景（playing 与
+  /// 位置前进并不代表输出管线已重建）。
+  Future<void> _recordAudioSessionState(
+    String trigger, {
+    Map<String, dynamic>? extra,
+  }) async {
+    if (kIsWeb) return;
     try {
-      if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
-      final session = await AudioSession.instance;
-      final devices = await session.getDevices();
-      final names = devices.map((d) => '${d.name}:${d.type.name}').toList()
-        ..sort();
-      if (!listEquals(names, _lastAudioDevices)) {
-        DiagnosticsService.instance.record(
-          EventType.audioRouteChanged,
-          LogLevel.info,
-          {'from': _lastAudioDevices.join(','), 'to': names.join(',')},
-        );
-        _lastAudioDevices = names;
-      }
+      final devices = await _audioDevicesSummary();
+      DiagnosticsService.instance.record(
+        EventType.audioSessionState,
+        LogLevel.info,
+        {
+          'trigger': trigger,
+          'playerPlaying': _audioPlayer.playing,
+          'processingState': _audioPlayer.processingState.name,
+          'posMs': _audioPlayer.position.inMilliseconds,
+          // idle 态下 duration 为 null（重载守卫漏判的关键证据，见 play()）。
+          'durationMs': _audioPlayer.duration?.inMilliseconds,
+          'volume': _audioPlayer.volume,
+          'hasSource': _audioPlayer.audioSource != null,
+          'songId': _currentSong?.id,
+          'remotePlayback': _isRenderingRemotely,
+          'afterResume': _wasBackgrounded,
+          if (devices != null) 'devices': devices.join(','),
+          if (extra != null) ...extra,
+        },
+      );
     } catch (_) {}
   }
 
@@ -2088,6 +2182,13 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       {
         'action': 'play',
         'route': DiagnosticsService.instance.currentRoute,
+        'songId': _currentSong?.id,
+        'posMs': _audioPlayer.position.inMilliseconds,
+        'processingState': _audioPlayer.processingState.name,
+        'durationMs': _audioPlayer.duration?.inMilliseconds,
+        'volume': _audioPlayer.volume,
+        'hasSource': _audioPlayer.audioSource != null,
+        'afterResume': _wasBackgrounded,
       },
     );
     unawaited(_snapshotAudioRoute());
@@ -2111,20 +2212,43 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     } else {
       // After app restart the audio source may not be loaded yet.
       // If we have a current song but the player has no source, prepare it first.
+      // idle 态同样必须重载：暂停 + 蓝牙断开 + 长时间后台会让源陈旧失效
+      // （processingState=idle、duration=null），此时直接 play() 时钟照走但
+      // 无声（2026-08-07 诊断日志确认的无声 bug 根因，位置前进≠输出管线重建）。
+      var neededPrepare = false;
       if (_currentSong != null &&
           (_audioPlayer.audioSource == null ||
+              _audioPlayer.processingState == ProcessingState.idle ||
               _audioPlayer.duration == Duration.zero)) {
+        neededPrepare = true;
+        // 重载前记录最后位置与歌曲：_prepareCurrentSong 从头建源会把位置清零，
+        // 重载后 seek 回去，避免暂停后恢复从 0:00 重放。
+        final restorePos = _audioPlayer.position;
+        final restoreSongId = _currentSong?.id;
         await _prepareCurrentSong();
+        // 重载可能耗时（网络流）：期间若已切歌/停止，seek 不能作用到新源上。
+        if (restoreSongId != null &&
+            restoreSongId == _currentSong?.id &&
+            restorePos > Duration.zero) {
+          await _audioPlayer.seek(restorePos);
+        }
       }
       await _ensureAudioFocus();
       await _audioPlayer.play();
       await _fadeIn();
-      // 无声检测：play 后 1.5s 内 playing 但位置未前进 → 疑似无声
+      // 无声检测：play 后 1.5s 内 playing 但位置未前进 → 疑似无声；
+      // 同时无条件记录一次会话快照，覆盖「位置前进但无声」场景。
       _checkSilentPlayback();
+      unawaited(_recordAudioSessionState('play', extra: {
+        'prepared': neededPrepare,
+        'fadeEnabled': _fadeSettingsService.getFadeEnabled(),
+      }));
     }
   }
 
   /// 派生检测器：play 后无声音输出（状态 playing 但 position 停滞）。
+  /// 同时无条件记录一次会话快照（postPlayCheck）：覆盖与停滞相反的另一类
+  /// 无声——位置在前进但输出管线未重建（退后台回前台后首次 play 的典型症状）。
   Future<void> _checkSilentPlayback() async {
     final token = ++_silentCheckToken; // 只让最新一次 play 的检测生效
     final songId = _currentSong?.id;
@@ -2134,11 +2258,56 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (token != _silentCheckToken) return; // 已被更新的 play/pause/seek 取代
     try {
       final nowPos = _audioPlayer.position;
+      final advancedMs = (nowPos - startPos).inMilliseconds;
+      await _recordAudioSessionState('postPlayCheck', extra: {
+        'posBeforeMs': startPos.inMilliseconds,
+        'posAfterMs': nowPos.inMilliseconds,
+        'advancedMs': advancedMs,
+        'fadeEnabled': _fadeSettingsService.getFadeEnabled(),
+        // 「位置前进但无声」指纹：playing && ready && 位置推进 && 音量>0。
+        // 若满足而用户没听到声音，说明输出管线/会话未接上。
+        'silentLikely':
+            _audioPlayer.playing &&
+                _audioPlayer.processingState == ProcessingState.ready &&
+                advancedMs >= 500 &&
+                _audioPlayer.volume > 0.01,
+      });
       if (startPlaying != _audioPlayer.playing) return; // 用户已暂停/切歌
       if (!_audioPlayer.playing) return;
-      if (_audioPlayer.processingState != ProcessingState.ready) return;
       if (_currentSong?.id != songId) return; // 已切歌，不误报
-      if (nowPos - startPos < const Duration(milliseconds: 500)) {
+      // 自愈：play 后 1.5s 仍处于 idle → 源陈旧/输出管线未重建（退后台回前台
+      // 首次 play 的无声场景，日志确认的根因），自动重载音源替代用户手动
+      // 暂停-播放。re-prepare 会重建整个输出管线。radio（_currentSong==null）
+      // 不在此列，源掉线由其自身路径处理。
+      if (_audioPlayer.processingState == ProcessingState.idle &&
+          _currentSong != null) {
+        DiagnosticsService.instance.record(
+          EventType.audioSilentPlayback,
+          LogLevel.warn,
+          {
+            'posBeforeMs': startPos.inMilliseconds,
+            'posAfterMs': nowPos.inMilliseconds,
+            'route': DiagnosticsService.instance.currentRoute,
+            'songId': songId,
+            'recovery': 'reprepare',
+          },
+        );
+        try {
+          await _prepareCurrentSong();
+          if (token != _silentCheckToken) return; // 重载期间用户已暂停/切歌
+          // 重载从头建源：恢复到触发时位置，避免从 0:00 重放。
+          if (startPos > Duration.zero) {
+            await _audioPlayer.seek(startPos);
+          }
+          await _audioPlayer.play();
+          unawaited(_recordAudioSessionState('selfHeal'));
+        } catch (e) {
+          debugPrint('[Player] Self-heal re-prepare failed: $e');
+        }
+        return;
+      }
+      if (_audioPlayer.processingState != ProcessingState.ready) return;
+      if (advancedMs < 500) {
         DiagnosticsService.instance.record(
           EventType.audioSilentPlayback,
           LogLevel.error,
@@ -2160,7 +2329,15 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     DiagnosticsService.instance.record(
       EventType.audioPlayerAction,
       LogLevel.info,
-      {'action': 'pause'},
+      {
+        'action': 'pause',
+        'songId': _currentSong?.id,
+        'posMs': _audioPlayer.position.inMilliseconds,
+        'processingState': _audioPlayer.processingState.name,
+        'durationMs': _audioPlayer.duration?.inMilliseconds,
+        'volume': _audioPlayer.volume,
+        'fadeEnabled': _fadeSettingsService.getFadeEnabled(),
+      },
     );
     if (_jukeboxService.enabled) {
       await _jukeboxService.pause(_subsonicService);
@@ -2186,6 +2363,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       _isPlaying = false;
       notifyListeners();
       _updateAndroidAuto();
+      unawaited(_recordAudioSessionState('pause'));
     }
   }
 
@@ -3052,8 +3230,51 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// 退后台回前台：重新激活音频会话（Android/iOS 通用）。
+  /// 播放器暂停期间系统会收回会话/焦点（尤其蓝牙断开 + 长时间后台），恢复时
+  /// setActive(true) 让下次 play() 的输出管线处于就绪态。不自动恢复播放——
+  /// 保持用户离开时的暂停状态。
+  Future<void> _reactivateSessionOnResume() async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+    if (_isRenderingRemotely) return; // 远程播放不干预本地会话
+    if (_currentSong == null) return; // 无可播放内容时不抢会话/焦点
+    try {
+      final session = await AudioSession.instance;
+      // setActive(true) 在 Android 上返回音频焦点请求结果（granted/failed）——
+      // 必须如实记录，焦点被其他 app 持有时 result=false（此前恒记 true 失真）。
+      final ok = await session.setActive(true);
+      DiagnosticsService.instance.record(
+        EventType.audioSessionState,
+        LogLevel.info,
+        {'trigger': 'reactivateAfterBackground', 'result': ok},
+      );
+    } catch (e) {
+      DiagnosticsService.instance.record(
+        EventType.audioSessionState,
+        LogLevel.warn,
+        {
+          'trigger': 'reactivateAfterBackground',
+          'result': false,
+          'error': '$e',
+        },
+      );
+    }
+  }
+
   Future<void> reactivateAudioSession() async {
-    await _androidSystemService.requestAudioFocus();
+    final focusGranted = await _androidSystemService.requestAudioFocus();
+    DiagnosticsService.instance.record(
+      EventType.audioSessionState,
+      LogLevel.info,
+      {
+        'trigger': 'reactivate',
+        'focusGranted': focusGranted,
+        'playerPlaying': _audioPlayer.playing,
+        'processingState': _audioPlayer.processingState.name,
+        'posMs': _audioPlayer.position.inMilliseconds,
+        'songId': _currentSong?.id,
+      },
+    );
 
     if (_currentSong != null) {
       _updateAllServices();
@@ -3136,6 +3357,8 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _positionSub?.cancel();
     _durationSub?.cancel();
     _currentIndexSub?.cancel();
+    _devicesSub?.cancel();
+    _devicesSub = null;
     _positionController.close();
     // Remove app lifecycle observer
     WidgetsBinding.instance.removeObserver(this);

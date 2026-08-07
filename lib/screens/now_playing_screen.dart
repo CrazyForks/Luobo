@@ -25,6 +25,7 @@ import '../widgets/glass_surface.dart';
 import '../utils/navigation_helper.dart';
 import '../utils/image_cache.dart';
 import '../utils/screen_helper.dart';
+import '../utils/car_mode_auto_entry.dart';
 import '../widgets/synced_lyrics_view.dart';
 import '../widgets/compact_lyrics_view.dart';
 import 'album_screen.dart';
@@ -53,6 +54,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     if (_showLyricsInternal == value) return;
     _showLyricsInternal = value;
     _updateWakelock();
+    _onLyricsModeChanged();
   }
 
   Future<void> _updateWakelock() async {
@@ -94,6 +96,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
   Timer? _autoCarModeTimer;
   late final PlayerProvider _playerProvider;
   bool _appBackgrounded = false;
+  bool _carModeOpen = false;
 
   double get _swipeProgress =>
       (_horizontalDragOffset.abs() / _swipeThreshold).clamp(0.0, 1.0);
@@ -110,10 +113,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.pointerRouter.addGlobalRoute(_onGlobalPointerDown);
     // 已处于播放中时立即开始倒计时（不依赖下一次 provider 通知）。
-    _syncAutoCarModeTimer(
-      isPlaying: _playerProvider.isPlaying &&
-          !_playerProvider.isPlayingRadio,
-    );
+    _syncAutoCarModeTimer(isPlaying: _playerProvider.isPlaying);
   }
 
   @override
@@ -145,9 +145,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
   }
 
   void _onPlayerChanged() {
-    _syncAutoCarModeTimer(
-      isPlaying: _playerProvider.isPlaying && !_playerProvider.isPlayingRadio,
-    );
+    _syncAutoCarModeTimer(isPlaying: _playerProvider.isPlaying);
   }
 
   void _onGlobalPointerDown(PointerEvent event) {
@@ -155,9 +153,25 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     _resetAutoCarModeTimer();
   }
 
+  void _onLyricsModeChanged() {
+    if (_showLyrics) {
+      // 歌词页展示时不进入车载页：取消计时，退出歌词后重新开始。
+      _autoCarModeTimer?.cancel();
+      _autoCarModeTimer = null;
+    } else {
+      _syncAutoCarModeTimer(isPlaying: _playerProvider.isPlaying);
+    }
+  }
+
   void _syncAutoCarModeTimer({required bool isPlaying}) {
-    if (!mounted || _appBackgrounded) return;
-    if (isPlaying) {
+    if (!mounted) return;
+    if (shouldRunAutoCarModeTimer(
+      isPlaying: isPlaying,
+      isPlayingRadio: _playerProvider.isPlayingRadio,
+      appBackgrounded: _appBackgrounded,
+      carModeOpen: _carModeOpen,
+      lyricsShowing: _showLyrics,
+    )) {
       if (_autoCarModeTimer == null) _startAutoCarModeTimer();
     } else {
       _autoCarModeTimer?.cancel();
@@ -176,13 +190,31 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
 
   void _enterCarModeAutomatically() {
     _autoCarModeTimer = null;
-    if (!mounted || _appBackgrounded) return;
+    if (!mounted) return;
+    if (!shouldRunAutoCarModeTimer(
+      isPlaying: _playerProvider.isPlaying,
+      isPlayingRadio: _playerProvider.isPlayingRadio,
+      appBackgrounded: _appBackgrounded,
+      carModeOpen: _carModeOpen,
+      lyricsShowing: _showLyrics,
+    )) {
+      return;
+    }
+    // 有弹层/其他路由覆盖本页（如队列弹层）时不进入车载页；
+    // 重新排一次 30s 再试 —— 稳态播放无 provider 通知，不重排会静默失效。
+    final route = ModalRoute.of(context);
+    if (route == null || !route.isCurrent) {
+      _startAutoCarModeTimer();
+      return;
+    }
     _openCarMode();
   }
 
   Future<void> _openCarMode() {
+    if (_carModeOpen) return Future.value();
     _autoCarModeTimer?.cancel();
     _autoCarModeTimer = null;
+    _carModeOpen = true;
     final transitionSw = Stopwatch()..start();
     return Navigator.push(
       context,
@@ -196,6 +228,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
         reverseTransitionDuration: Duration.zero,
       ),
     ).then((_) {
+      _carModeOpen = false;
       DiagnosticsRouteObserver.transition(
         from: 'NowPlayingScreen',
         to: 'CarModeScreen',
@@ -203,10 +236,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       );
       // 从车载页返回后重新开始倒计时，行为可重复。
       if (mounted && !_appBackgrounded) {
-        _syncAutoCarModeTimer(
-          isPlaying: _playerProvider.isPlaying &&
-              !_playerProvider.isPlayingRadio,
-        );
+        _syncAutoCarModeTimer(isPlaying: _playerProvider.isPlaying);
       }
     });
   }

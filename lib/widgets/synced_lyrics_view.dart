@@ -800,7 +800,7 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
               setState(() => _showReturnButton = true);
             },
             fontSize: isFullscreen ? 38.0 : (_isDesktop ? 32.0 : 30.0),
-            lineGap: isFullscreen ? 32.0 : 24.0,
+            lineGap: isFullscreen ? 34.0 : 26.0,
             enableBlur: true,
             alignPosition: isFullscreen ? 0.40 : 0.42,
           ),
@@ -1553,18 +1553,9 @@ class _AMLLLineWidgetState extends State<_AMLLLineWidget>
       );
     }
 
-    // ── Selected / past / active-unsynced ─────────────────────────────────────
-    if (widget.isActive || widget.isSelected || widget.staticProgress >= 1.0) {
-      return Text(
-        widget.line.text,
-        textAlign: TextAlign.left,
-        style: textStyle,
-      );
-    }
-
-    // ── Dim future line ───────────────────────────────────────────────────────
-    // Inner text stays fully white (alpha 1.0); the outer Opacity handles the
-    // symmetric dimming so past/future lines at the same distance match.
+    // ── Selected / past / active-unsynced / dim future ───────────────────────
+    // 文字保持纯白（内层 alpha 1.0），衰减统一由外层 Opacity 承担，
+    // 使已播/待播在相同距离上完全对称。
     return Text(
       widget.line.text,
       textAlign: TextAlign.left,
