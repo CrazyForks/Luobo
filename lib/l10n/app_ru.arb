@@ -1331,59 +1331,6 @@
       }
     }
   },
-  "@_JUKEBOX": {},
-  "sectionJukebox": "РЕЖИМ «МУЗ. АВТОМАТ»",
-  "@sectionJukebox": {
-    "description": "Section header for the jukebox settings in the Server tab"
-  },
-  "jukeboxMode": "Режим муз. автомат",
-  "@jukeboxMode": {
-    "description": "Toggle label for enabling jukebox mode"
-  },
-  "jukeboxModeSubtitle": "Воспроизводите через сервер вместо этого устройства",
-  "@jukeboxModeSubtitle": {
-    "description": "Subtitle for the jukebox mode toggle"
-  },
-  "openJukeboxController": "Открыть контроллер муз. автомата",
-  "@openJukeboxController": {
-    "description": "List tile label to navigate to the jukebox controller screen"
-  },
-  "jukeboxClearQueue": "Очистить очередь",
-  "@jukeboxClearQueue": {
-    "description": "Action label to clear the jukebox playback queue"
-  },
-  "jukeboxShuffleQueue": "Перемешать очередь",
-  "@jukeboxShuffleQueue": {
-    "description": "Action label to shuffle the jukebox playback queue"
-  },
-  "jukeboxQueueEmpty": "В очереди нет песен",
-  "@jukeboxQueueEmpty": {
-    "description": "Empty state when the jukebox queue has no songs"
-  },
-  "jukeboxNowPlaying": "Сейчас играет",
-  "@jukeboxNowPlaying": {
-    "description": "Section header for the now-playing area in the jukebox controller"
-  },
-  "jukeboxQueue": "Очередь",
-  "@jukeboxQueue": {
-    "description": "Section header for the queue list in the jukebox controller"
-  },
-  "jukeboxVolume": "Громкость",
-  "@jukeboxVolume": {
-    "description": "Label for the volume slider in the jukebox controller"
-  },
-  "playOnJukebox": "Играть через муз. автомат",
-  "@playOnJukebox": {
-    "description": "Option to replace the jukebox queue with this song and start playback"
-  },
-  "addToJukeboxQueue": "Добавить в очередь муз. автомата",
-  "@addToJukeboxQueue": {
-    "description": "Option to append a song to the jukebox queue"
-  },
-  "jukeboxNotSupported": "Режим муз. автомата не поддерживается этим сервером. Включите его в конфигурации сервера (например, EnableJukebox = true в Navidrome).",
-  "@jukeboxNotSupported": {
-    "description": "Error shown when the server returns 501 for jukebox API calls"
-  },
   "@_MUSIC_FOLDERS": {},
   "musicFoldersDialogTitle": "Выберите папки с музыкой",
   "@musicFoldersDialogTitle": {

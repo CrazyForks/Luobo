@@ -756,6 +756,9 @@
 
   "settingsGroupServer": "账号与服务器",
   "settingsServerSettings": "服务器设置",
+  "serverManagement": "服务器管理",
+  "noSavedProfiles": "暂无已保存的服务器配置",
+  "connectedSuccessfully": "连接成功",
   "settingsGroupPlayback": "播放与音质",
   "settingsPlaybackSettings": "播放设置",
   "settingsStreamingEntry": "音质与流媒体",
@@ -1615,59 +1618,6 @@
         "type": "int"
       }
     }
-  },
-  "@_JUKEBOX": {},
-  "sectionJukebox": "点唱机模式",
-  "@sectionJukebox": {
-    "description": "Section header for the jukebox settings in the Server tab"
-  },
-  "jukeboxMode": "点唱机模式",
-  "@jukeboxMode": {
-    "description": "Toggle label for enabling jukebox mode"
-  },
-  "jukeboxModeSubtitle": "通过服务器而非本设备播放音频",
-  "@jukeboxModeSubtitle": {
-    "description": "Subtitle for the jukebox mode toggle"
-  },
-  "openJukeboxController": "打开点唱机控制器",
-  "@openJukeboxController": {
-    "description": "List tile label to navigate to the jukebox controller screen"
-  },
-  "jukeboxClearQueue": "清空队列",
-  "@jukeboxClearQueue": {
-    "description": "Action label to clear the jukebox playback queue"
-  },
-  "jukeboxShuffleQueue": "随机排序队列",
-  "@jukeboxShuffleQueue": {
-    "description": "Action label to shuffle the jukebox playback queue"
-  },
-  "jukeboxQueueEmpty": "队列中没有歌曲",
-  "@jukeboxQueueEmpty": {
-    "description": "Empty state when the jukebox queue has no songs"
-  },
-  "jukeboxNowPlaying": "正在播放",
-  "@jukeboxNowPlaying": {
-    "description": "Section header for the now-playing area in the jukebox controller"
-  },
-  "jukeboxQueue": "播放队列",
-  "@jukeboxQueue": {
-    "description": "Section header for the queue list in the jukebox controller"
-  },
-  "jukeboxVolume": "音量",
-  "@jukeboxVolume": {
-    "description": "Label for the volume slider in the jukebox controller"
-  },
-  "playOnJukebox": "在点唱机上播放",
-  "@playOnJukebox": {
-    "description": "Option to replace the jukebox queue with this song and start playback"
-  },
-  "addToJukeboxQueue": "添加到点唱机队列",
-  "@addToJukeboxQueue": {
-    "description": "Option to append a song to the jukebox queue"
-  },
-  "jukeboxNotSupported": "此服务器不支持点唱机模式。请在服务器配置中启用（例如在 Navidrome 中设置 EnableJukebox = true）。",
-  "@jukeboxNotSupported": {
-    "description": "Error shown when the server returns 501 for jukebox API calls"
   },
   "@_MUSIC_FOLDERS": {},
   "musicFoldersDialogTitle": "选择音乐文件夹",

@@ -1,3 +1,5 @@
+import 'json_coerce.dart';
+
 class Genre {
   final String value;
   final int songCount;
@@ -12,8 +14,8 @@ class Genre {
   factory Genre.fromJson(Map<String, dynamic> json) {
     return Genre(
       value: json['value']?.toString() ?? '',
-      songCount: json['songCount'] as int? ?? 0,
-      albumCount: json['albumCount'] as int? ?? 0,
+      songCount: jsonInt(json['songCount']) ?? 0,
+      albumCount: jsonInt(json['albumCount']) ?? 0,
     );
   }
 

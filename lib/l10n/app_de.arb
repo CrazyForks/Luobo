@@ -1309,11 +1309,6 @@
   "@noAlbumsInGenre": {
     "description": "Empty state on the Albums tab of the genre screen"
   },
-  "@_JUKEBOX": {},
-  "jukeboxMode": "Jukebox Modus",
-  "@jukeboxMode": {
-    "description": "Toggle label for enabling jukebox mode"
-  },
   "@_MUSIC_FOLDERS": {},
   "artworkPreview": "Vorschau",
   "@artworkPreview": {

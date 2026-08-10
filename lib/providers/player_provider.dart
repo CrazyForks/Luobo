@@ -25,7 +25,6 @@ import '../services/discord_rpc_service.dart';
 import '../services/storage_service.dart';
 import '../services/cast_service.dart';
 import '../services/upnp_service.dart';
-import '../services/jukebox_service.dart';
 import '../services/audio_handler.dart';
 import '../services/fade_settings_service.dart';
 import '../services/lock_screen_lyrics_service.dart';
@@ -116,6 +115,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   static const String _keyQueueIndex = 'persistent_queue_index';
   static const String _keyQueueSongId = 'persistent_queue_song_id';
   static const String _keyQueuePosition = 'persistent_queue_position_ms';
+  static const String _keyQueueServer = 'persistent_queue_server';
 
   final bool _reactivatingSession = false;
 
@@ -126,14 +126,12 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   int _sleepTimerFadeDurationSeconds = 30;
   Timer? _sleepTimerFadeTimer;
   Timer? _sleepTimerFadePeriodicTimer;
-  Timer? _jukeboxPollTimer;
 
   // Fade in/out
   final FadeSettingsService _fadeSettingsService = FadeSettingsService();
   Timer? _fadeTimer;
   bool _isFading = false;
 
-  final JukeboxService _jukeboxService;
   final TranscodingService _transcodingService;
 
   double _playbackSpeed = 1.0;
@@ -146,7 +144,6 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     this._castService,
     this._upnpService,
     this._audioHandler,
-    this._jukeboxService,
     this._transcodingService,
   ) {
     _storageService = storageService;
@@ -154,9 +151,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _castService.addListener(_onCastStateChanged);
     _upnpService.addListener(_onUpnpStateChanged);
     _upnpService.onRendererLost = _onUpnpRendererLost;
-    _jukeboxService.addListener(_onJukeboxEnabledChanged);
     _initializePlayer();
-    _onJukeboxEnabledChanged();
     try {
       _initializeAndroidAuto();
     } catch (_) {}
@@ -258,6 +253,12 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       await _prefs!.setInt(_keyQueueIndex, _currentIndex);
       await _prefs!.setString(_keyQueueSongId, _currentSong?.id ?? '');
       await _prefs!.setInt(_keyQueuePosition, _position.inMilliseconds);
+      // 记录队列所属服务器（coverCacheServerId 命名空间），冷启动恢复时校验，
+      // 避免切服后恢复旧服务器的队列（旧 songId 打新服务器 → stream/lyrics 404）。
+      await _prefs!.setString(
+        _keyQueueServer,
+        _subsonicService.coverCacheServerId,
+      );
       debugPrint(
           'Queue state saved: index $_currentIndex, position $_position');
     } catch (e) {
@@ -277,6 +278,20 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
       final queueRaw = _prefs!.getString(_keyQueue);
       if (queueRaw == null || queueRaw.isEmpty) return;
+
+      // 服务器归属校验：队列记录的是上次保存时的 coverCacheServerId。
+      // 若与当前服务器不一致（切服后冷启动），丢弃旧服务器队列，
+      // 避免用旧 songId 打新服务器导致 stream/lyrics 404。
+      if (!await _queueMatchesCurrentServer()) {
+        debugPrint('[Player] Queue server mismatch — discarding restored queue');
+        DiagnosticsService.instance.record(
+          EventType.restoreError,
+          LogLevel.info,
+          {'error': 'queueServerMismatch'},
+        );
+        _clearPersistedQueue();
+        return;
+      }
 
       final queueJson = jsonDecode(queueRaw) as List<dynamic>;
       if (queueJson.isEmpty) return;
@@ -333,6 +348,29 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// 队列是否属于当前服务器。冷启动时 AuthProvider 可能尚未 configure
+  /// （coverCacheServerId 为空），此时视为「未知服务器」，放行恢复，
+  /// 由 [validateQueueForServer] 在配置就绪后补校验。
+  Future<bool> _queueMatchesCurrentServer() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    if (_prefs == null) return true;
+    final savedServer = _prefs!.getString(_keyQueueServer) ?? '';
+    final currentServer = _subsonicService.coverCacheServerId;
+    if (savedServer.isEmpty || currentServer.isEmpty) return true;
+    return savedServer == currentServer;
+  }
+
+  /// 服务器配置就绪后的队列归属补校验（MainScreen.initState 调用）：
+  /// 冷启动时队列可能在 configure 前就被恢复，若队列属于旧服务器则清空。
+  Future<void> validateQueueForServer() async {
+    if (_queue.isEmpty) return;
+    if (await _queueMatchesCurrentServer()) return;
+    debugPrint(
+        '[Player] validateQueueForServer: queue belongs to another server — '
+        'clearing ${_queue.length} songs');
+    clearQueue();
+  }
+
   void _clearPersistedQueue() {
     _persistDebounceTimer?.cancel();
     try {
@@ -340,79 +378,10 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         p.remove(_keyQueue);
         p.remove(_keyQueueIndex);
         p.remove(_keyQueueSongId);
+        p.remove(_keyQueuePosition);
+        p.remove(_keyQueueServer);
       });
     } catch (_) {}
-  }
-
-  // ── Jukebox mode ─────────────────────────────────────────────────────────
-
-  void _onJukeboxEnabledChanged() {
-    if (_jukeboxService.enabled) {
-      _startJukeboxPolling();
-    } else {
-      _stopJukeboxPolling();
-    }
-  }
-
-  void _startJukeboxPolling() {
-    _stopJukeboxPolling();
-    _jukeboxPollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _pollJukebox();
-    });
-    _pollJukebox();
-  }
-
-  void _stopJukeboxPolling() {
-    _jukeboxPollTimer?.cancel();
-    _jukeboxPollTimer = null;
-  }
-
-  Future<void> _pollJukebox() async {
-    if (!_jukeboxService.enabled) return;
-    try {
-      await _jukeboxService.refresh(_subsonicService);
-      _syncFromJukeboxStatus();
-    } catch (e) {
-      debugPrint('Jukebox poll error: $e');
-    }
-  }
-
-  void _syncFromJukeboxStatus() {
-    if (!_jukeboxService.enabled) return;
-    final status = _jukeboxService.status;
-    final song = status.currentSong;
-
-    bool changed = false;
-    if (song != null && song.id != _currentSong?.id) {
-      _currentSong = song;
-      _resolvedArtworkUrl = null;
-      changed = true;
-    }
-    if (_isPlaying != status.playing) {
-      _isPlaying = status.playing;
-      changed = true;
-    }
-    if (_position != status.position) {
-      _position = status.position;
-      changed = true;
-    }
-    if (status.playlist.isNotEmpty && !identical(_queue, status.playlist)) {
-      _queue = List.from(status.playlist);
-      changed = true;
-    }
-    final clampedIndex = status.currentIndex.clamp(
-      0,
-      (_queue.length - 1).clamp(0, double.maxFinite.toInt()),
-    );
-    if (_currentIndex != clampedIndex) {
-      _currentIndex = clampedIndex;
-      changed = true;
-    }
-    if (changed) {
-      notifyListeners();
-      _updateAllServices();
-      _updateAndroidAuto();
-    }
   }
 
   void setLibraryProvider(LibraryProvider libraryProvider) {
@@ -1745,26 +1714,6 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // re-capture whatever is actually applied to this song's stream.
     _setActiveStream(null, null);
 
-    // Jukebox mode: send to server instead of playing locally.
-    if (_jukeboxService.enabled) {
-      final targetPlaylist = (playlist ?? [song]).toList();
-      final targetIndex = startIndex ??
-          targetPlaylist
-              .indexWhere((s) => s.id == song.id)
-              .clamp(0, targetPlaylist.length - 1);
-      await _jukeboxService.setQueue(
-        _subsonicService,
-        targetPlaylist,
-        startIndex: targetIndex,
-      );
-      _isPlaying = true;
-      _isLoading = false;
-      notifyListeners();
-      _updateAllServices();
-      _updateAndroidAuto();
-      return;
-    }
-
     debugPrint(
         '[Player] ▶ playSong: "${song.title}" by ${song.artist ?? 'unknown'} (id=${song.id} local=${song.isLocal})');
     _isLoading = true;
@@ -2192,13 +2141,6 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       },
     );
     unawaited(_snapshotAudioRoute());
-    if (_jukeboxService.enabled) {
-      await _jukeboxService.play(_subsonicService);
-      _isPlaying = true;
-      notifyListeners();
-      _updateAndroidAuto();
-      return;
-    }
     if (_castService.isConnected) {
       await _castService.play();
       _isPlaying = true;
@@ -2339,13 +2281,6 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         'fadeEnabled': _fadeSettingsService.getFadeEnabled(),
       },
     );
-    if (_jukeboxService.enabled) {
-      await _jukeboxService.pause(_subsonicService);
-      _isPlaying = false;
-      notifyListeners();
-      _updateAndroidAuto();
-      return;
-    }
     if (_castService.isConnected) {
       await _castService.pause();
       _isPlaying = false;
@@ -2499,10 +2434,6 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _silentCheckToken++; // 使挂起的无声检测失效（seek 后位置跳变）
     _position = position;
     notifyListeners();
-    if (_jukeboxService.enabled) {
-      // Jukebox doesn't support seek by position; ignore.
-      return;
-    }
     if (_castService.isConnected) {
       await _castService.seek(position);
     } else if (_upnpService.isConnected) {
@@ -2522,11 +2453,6 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> skipNext() async {
     if (_currentSong != null) {
       _recordSongEnd(_currentSong!, _position.inSeconds, _duration.inSeconds);
-    }
-
-    if (_jukeboxService.enabled) {
-      await _jukeboxService.skipNext(_subsonicService);
-      return;
     }
 
     if (_autoDjService.shouldAddSongs(_currentIndex, _queue.length)) {
@@ -2681,10 +2607,6 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> skipPrevious() async {
-    if (_jukeboxService.enabled) {
-      await _jukeboxService.skipPrevious(_subsonicService);
-      return;
-    }
     if (_position.inSeconds > 3) {
       await seek(Duration.zero);
       return;
@@ -3024,8 +2946,6 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _prepareCurrentSong() async {
     if (_currentSong == null) return;
-    // When jukebox mode is active, the server handles playback.
-    if (_jukeboxService.enabled) return;
     try {
       if (_gaplessEnabled && _queue.isNotEmpty) {
         await _buildAndSetConcatenatingSource(initialIndex: _currentIndex);
@@ -3313,8 +3233,6 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // Save queue state immediately before cancelling the debounce timer
     _saveQueueStateImmediate();
     _persistDebounceTimer?.cancel();
-    _jukeboxPollTimer?.cancel();
-    _jukeboxService.removeListener(_onJukeboxEnabledChanged);
     _windowsPositionTimer?.cancel();
     _castService.removeListener(_onCastStateChanged);
     _upnpService.removeListener(_onUpnpStateChanged);

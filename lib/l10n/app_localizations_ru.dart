@@ -784,6 +784,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsServerSettings => 'Server Settings';
 
   @override
+  String get serverManagement => 'Server Management';
+
+  @override
+  String get noSavedProfiles => 'No saved server configurations yet';
+
+  @override
+  String get connectedSuccessfully => 'Connected successfully';
+
+  @override
   String get settingsGroupPlayback => 'Playback & Quality';
 
   @override
@@ -1728,47 +1737,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String genreTooltip(int songCount, int albumCount) {
     return '$songCount пес. • $albumCount альб.';
   }
-
-  @override
-  String get sectionJukebox => 'РЕЖИМ «МУЗ. АВТОМАТ»';
-
-  @override
-  String get jukeboxMode => 'Режим муз. автомат';
-
-  @override
-  String get jukeboxModeSubtitle =>
-      'Воспроизводите через сервер вместо этого устройства';
-
-  @override
-  String get openJukeboxController => 'Открыть контроллер муз. автомата';
-
-  @override
-  String get jukeboxClearQueue => 'Очистить очередь';
-
-  @override
-  String get jukeboxShuffleQueue => 'Перемешать очередь';
-
-  @override
-  String get jukeboxQueueEmpty => 'В очереди нет песен';
-
-  @override
-  String get jukeboxNowPlaying => 'Сейчас играет';
-
-  @override
-  String get jukeboxQueue => 'Очередь';
-
-  @override
-  String get jukeboxVolume => 'Громкость';
-
-  @override
-  String get playOnJukebox => 'Играть через муз. автомат';
-
-  @override
-  String get addToJukeboxQueue => 'Добавить в очередь муз. автомата';
-
-  @override
-  String get jukeboxNotSupported =>
-      'Режим муз. автомата не поддерживается этим сервером. Включите его в конфигурации сервера (например, EnableJukebox = true в Navidrome).';
 
   @override
   String get musicFoldersDialogTitle => 'Выберите папки с музыкой';

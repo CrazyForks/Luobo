@@ -1570,6 +1570,24 @@ abstract class AppLocalizations {
   /// **'Server Settings'**
   String get settingsServerSettings;
 
+  /// No description provided for @serverManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Management'**
+  String get serverManagement;
+
+  /// No description provided for @noSavedProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved server configurations yet'**
+  String get noSavedProfiles;
+
+  /// No description provided for @connectedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected successfully'**
+  String get connectedSuccessfully;
+
   /// No description provided for @settingsGroupPlayback.
   ///
   /// In en, this message translates to:
@@ -3297,84 +3315,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{songCount} songs • {albumCount} albums'**
   String genreTooltip(int songCount, int albumCount);
-
-  /// Section header for the jukebox settings in the Server tab
-  ///
-  /// In en, this message translates to:
-  /// **'JUKEBOX MODE'**
-  String get sectionJukebox;
-
-  /// Toggle label for enabling jukebox mode
-  ///
-  /// In en, this message translates to:
-  /// **'Jukebox Mode'**
-  String get jukeboxMode;
-
-  /// Subtitle for the jukebox mode toggle
-  ///
-  /// In en, this message translates to:
-  /// **'Play audio through the server instead of this device'**
-  String get jukeboxModeSubtitle;
-
-  /// List tile label to navigate to the jukebox controller screen
-  ///
-  /// In en, this message translates to:
-  /// **'Open Jukebox Controller'**
-  String get openJukeboxController;
-
-  /// Action label to clear the jukebox playback queue
-  ///
-  /// In en, this message translates to:
-  /// **'Clear Queue'**
-  String get jukeboxClearQueue;
-
-  /// Action label to shuffle the jukebox playback queue
-  ///
-  /// In en, this message translates to:
-  /// **'Shuffle Queue'**
-  String get jukeboxShuffleQueue;
-
-  /// Empty state when the jukebox queue has no songs
-  ///
-  /// In en, this message translates to:
-  /// **'No songs in queue'**
-  String get jukeboxQueueEmpty;
-
-  /// Section header for the now-playing area in the jukebox controller
-  ///
-  /// In en, this message translates to:
-  /// **'Now Playing'**
-  String get jukeboxNowPlaying;
-
-  /// Section header for the queue list in the jukebox controller
-  ///
-  /// In en, this message translates to:
-  /// **'Queue'**
-  String get jukeboxQueue;
-
-  /// Label for the volume slider in the jukebox controller
-  ///
-  /// In en, this message translates to:
-  /// **'Volume'**
-  String get jukeboxVolume;
-
-  /// Option to replace the jukebox queue with this song and start playback
-  ///
-  /// In en, this message translates to:
-  /// **'Play on Jukebox'**
-  String get playOnJukebox;
-
-  /// Option to append a song to the jukebox queue
-  ///
-  /// In en, this message translates to:
-  /// **'Add to Jukebox Queue'**
-  String get addToJukeboxQueue;
-
-  /// Error shown when the server returns 501 for jukebox API calls
-  ///
-  /// In en, this message translates to:
-  /// **'Jukebox mode is not supported by this server. Enable it in your server configuration (e.g. EnableJukebox = true in Navidrome).'**
-  String get jukeboxNotSupported;
 
   /// Title of the music folders selection dialog
   ///

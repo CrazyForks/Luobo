@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/album.dart';
 import '../models/playlist.dart';
+import '../services/subsonic_service.dart';
 import '../theme/app_theme.dart';
 
 class QuickAccessGrid extends StatelessWidget {
@@ -78,6 +80,13 @@ class _QuickAccessItemState extends State<_QuickAccessItem> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    // 封面统一走 getCoverArtUrl：绝对 URL 会按服务器 host 校验，
+    // 旧服务器/无效值返回空 → 占位图，不再把跨服绝对 URL 直接外发。
+    final subsonicService =
+        Provider.of<SubsonicService>(context, listen: false);
+    final coverUrl = widget.coverArt != null
+        ? subsonicService.getCoverArtUrl(widget.coverArt)
+        : null;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -102,9 +111,9 @@ class _QuickAccessItemState extends State<_QuickAccessItem> {
                 child: SizedBox(
                   width: 80,
                   height: 80,
-                  child: widget.coverArt != null
+                  child: coverUrl != null && coverUrl.isNotEmpty
                       ? Image.network(
-                          widget.coverArt!,
+                          coverUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) =>
                               _buildPlaceholder(isDark),

@@ -776,6 +776,15 @@ class AppLocalizationsBn extends AppLocalizations {
   String get settingsServerSettings => 'Server Settings';
 
   @override
+  String get serverManagement => 'Server Management';
+
+  @override
+  String get noSavedProfiles => 'No saved server configurations yet';
+
+  @override
+  String get connectedSuccessfully => 'Connected successfully';
+
+  @override
   String get settingsGroupPlayback => 'Playback & Quality';
 
   @override
@@ -1716,47 +1725,6 @@ class AppLocalizationsBn extends AppLocalizations {
   String genreTooltip(int songCount, int albumCount) {
     return '$songCount songs • $albumCount albums';
   }
-
-  @override
-  String get sectionJukebox => 'JUKEBOX MODE';
-
-  @override
-  String get jukeboxMode => 'Jukebox Mode';
-
-  @override
-  String get jukeboxModeSubtitle =>
-      'Play audio through the server instead of this device';
-
-  @override
-  String get openJukeboxController => 'Open Jukebox Controller';
-
-  @override
-  String get jukeboxClearQueue => 'Clear Queue';
-
-  @override
-  String get jukeboxShuffleQueue => 'Shuffle Queue';
-
-  @override
-  String get jukeboxQueueEmpty => 'No songs in queue';
-
-  @override
-  String get jukeboxNowPlaying => 'Now Playing';
-
-  @override
-  String get jukeboxQueue => 'Queue';
-
-  @override
-  String get jukeboxVolume => 'Volume';
-
-  @override
-  String get playOnJukebox => 'Play on Jukebox';
-
-  @override
-  String get addToJukeboxQueue => 'Add to Jukebox Queue';
-
-  @override
-  String get jukeboxNotSupported =>
-      'Jukebox mode is not supported by this server. Enable it in your server configuration (e.g. EnableJukebox = true in Navidrome).';
 
   @override
   String get musicFoldersDialogTitle => 'Select Music Folders';

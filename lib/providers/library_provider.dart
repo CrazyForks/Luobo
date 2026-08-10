@@ -775,6 +775,49 @@ class LibraryProvider extends ChangeNotifier {
     }
   }
 
+  /// 服务器切换后全量重置：清空旧服务器的内存列表、prefs 缓存（歌单/艺人）
+  /// 与曲库 DB，再从新服务器重拉。由 main.dart 的 onServerSwitched 回调调用，
+  /// 消除「切服后首页/音乐库仍展示旧服务器专辑/艺人，点击用旧 ID 打新服务器
+  /// 404」的问题（诊断日志 confirmed）。
+  Future<void> resetForServerChange() async {
+    debugPrint('[Library] resetForServerChange: clearing server data');
+    _artists = [];
+    _recentAlbums = [];
+    _frequentAlbums = [];
+    _newestAlbums = [];
+    _randomAlbums = [];
+    _playlists = [];
+    _randomSongs = [];
+    _genres = [];
+    _richGenres = [];
+    _starred = null;
+    _cachedAllAlbums = [];
+    _cachedAllSongs = [];
+    _cachedPlaylists = [];
+    _topArtistsCache = null;
+    _lastCacheUpdate = null;
+    _isInitialized = false;
+    _error = null;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_playlistsCacheKey);
+      await prefs.remove(_artistsCacheKey);
+      await prefs.remove(_lastUpdateKey);
+    } catch (e) {
+      debugPrint('Error clearing library cache prefs: $e');
+    }
+
+    try {
+      await _db.clearServerData();
+    } catch (e) {
+      debugPrint('Error clearing library DB: $e');
+    }
+
+    notifyListeners();
+    await initialize(force: true);
+  }
+
   void _pushLibraryToAndroidAuto() {
     if (_artists.isNotEmpty) {
       _androidAutoService.updateArtists(_artists);

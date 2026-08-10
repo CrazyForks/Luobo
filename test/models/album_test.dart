@@ -34,6 +34,21 @@ void main() {
       expect(album.songCount, isNull);
     });
 
+    test('should parse string numerics (XML-derived JSON)', () {
+      // daoliyu 的 Subsonic 兼容层把数值字段输出成字符串。
+      final album = Album.fromJson({
+        'id': 'alb_1',
+        'name': 'Daoliyu Album',
+        'songCount': '12',
+        'duration': '3600',
+        'year': '2023',
+      });
+
+      expect(album.songCount, 12);
+      expect(album.duration, 3600);
+      expect(album.year, 2023);
+    });
+
     test('should format duration correctly', () {
       final album1 = Album(id: '1', name: 'Album 1', duration: 180);
       expect(album1.formattedDuration, '3:00');

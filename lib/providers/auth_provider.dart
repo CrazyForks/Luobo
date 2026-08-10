@@ -222,6 +222,10 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     debugPrint(
         '[Auth] login: user=$username server=$serverUrl local=$localUrl family=$serverFamily');
+    // 记录登录前的状态：已登录（authenticated）时添加配置失败不应改变
+    // AuthWrapper 根路由——否则 MainScreen 会被 error 态的 LoginScreen 替换，
+    // 用户从设置页 push 的登录页返回后看到的是空登录页（bug）。
+    final prevState = _state;
     _state = AuthState.authenticating;
     _error = null;
     notifyListeners();
@@ -278,18 +282,29 @@ class AuthProvider extends ChangeNotifier {
       userId: jellyfinUserId,
     );
 
-    await _subsonicService.configure(config);
-    await _subsonicService.resolveActiveUrl();
-
     try {
+      await _subsonicService.configure(config);
+      await _subsonicService.resolveActiveUrl();
+
       final pingResult = await _pingWithFailover();
       if (pingResult.success) {
         debugPrint(
             '[Auth] Login OK — type=${pingResult.serverType} version=${pingResult.serverVersion}');
         debugPrint('[Auth] State: authenticating → authenticated');
+
+        // 道理鱼：Subsonic 层 ping 通过后，后台登录自研 /api 层拿 JWT
+        // （歌词/随机歌依赖）。失败不阻塞登录——Subsonic 浏览/播放仍可用，
+        // 仅歌词/随机歌降级走兜底。
+        if (serverFamily == 'daoliyu') {
+          final apiOk = await _subsonicService.loginToApi();
+          debugPrint('[Auth] 道理鱼 API login: $apiOk');
+        }
+
         final updatedConfig = config.copyWith(
           serverType: pingResult.serverType,
           serverVersion: pingResult.serverVersion,
+          apiToken: _subsonicService.apiJwtOrNull,
+          userId: _subsonicService.apiUserId,
         );
         _config = updatedConfig;
         await _storageService.saveServerConfig(updatedConfig);
@@ -300,9 +315,18 @@ class AuthProvider extends ChangeNotifier {
         registerCoverCacheServerId(_subsonicService.coverCacheServerId);
         notifyListeners();
 
-        _storageService.saveProfile(updatedConfig).catchError(
-              (e) => debugPrint('Error saving profile: $e'),
-            );
+        // 保存到 profile 列表（await + 日志：此前 fire-and-forget 失败不可见，
+        // 用户登录成功但服务列表看不到新服务器）。
+        try {
+          await _storageService.saveProfile(updatedConfig);
+          debugPrint('[Auth] Profile saved: ${updatedConfig.serverUrl}');
+        } catch (e) {
+          debugPrint('[Auth] ERROR saving profile: $e');
+        }
+
+        // 切换服务器成功：通知 UI 清空旧服务器缓存（队列持久化等），
+        // 避免旧 Navidrome ID 请求新道理鱼服务器导致 404。
+        _notifyServerSwitched();
 
         final offlineService = OfflineService();
         await offlineService.initialize();
@@ -314,8 +338,16 @@ class AuthProvider extends ChangeNotifier {
         _error =
             _formatError(pingResult.error ?? 'Failed to connect to server');
         debugPrint('[Auth] Login failed: $_error');
-        debugPrint('[Auth] State: authenticating → error');
-        _state = AuthState.error;
+        // 已登录时添加配置失败：恢复原状态（MainScreen 不被替换），
+        // 错误由登录页的 _loginError 展示；仅首次登录场景才进 error 态。
+        // 关键：configure() 在 try 内已把 SubsonicService 切到新服务器，
+        // 必须回滚到旧配置，否则用户返回首页后所有请求打失败的新服务器。
+        if (prevState == AuthState.authenticated && _config != null) {
+          await _subsonicService.configure(_config!);
+          await _subsonicService.resolveActiveUrl();
+        }
+        _state =
+            prevState == AuthState.authenticated ? prevState : AuthState.error;
         notifyListeners();
         return false;
       }
@@ -323,7 +355,13 @@ class AuthProvider extends ChangeNotifier {
       _error = _formatError(e);
       debugPrint('[Auth] Login exception: $e');
       debugPrint('[Auth] State: authenticating → error (formatted: $_error)');
-      _state = AuthState.error;
+      // 同上：异常时回滚服务层配置，保持已登录会话继续可用。
+      if (prevState == AuthState.authenticated && _config != null) {
+        await _subsonicService.configure(_config!);
+        await _subsonicService.resolveActiveUrl();
+      }
+      _state =
+          prevState == AuthState.authenticated ? prevState : AuthState.error;
       notifyListeners();
       return false;
     }
@@ -391,12 +429,54 @@ class AuthProvider extends ChangeNotifier {
   Future<void> deleteProfile(ServerConfig profile) =>
       _storageService.deleteProfile(profile);
 
+  /// 服务器切换/登录成功后回调（main.dart 接线）：清空依赖旧服务器 ID 的
+  /// 本地缓存（播放队列持久化/首页推荐等），避免用 Navidrome 的旧歌曲 ID
+  /// 请求道理鱼导致 404（诊断日志 confirmed）。
+  void Function()? onServerSwitched;
+
+  /// 登录成功或切换 profile 后调用，通知 UI 层清理旧服务器缓存。
+  void _notifyServerSwitched() {
+    onServerSwitched?.call();
+  }
+
   Future<void> switchProfile(ServerConfig profile) async {
+    final prevConfig = _config;
+    final switched = prevConfig?.serverUrl != profile.serverUrl ||
+        prevConfig?.username != profile.username;
     _config = profile;
     await _storageService.saveServerConfig(profile);
     await _subsonicService.configure(profile);
     await _subsonicService.resolveActiveUrl();
     await _verifyConnection();
+    // 切换失败（服务器不可达/认证失败）：回滚到旧配置并恢复会话，
+    // 与 login() 的失败处理一致——否则用户被踢到 serverUnreachable 屏，
+    // 且 _notifyServerSwitched 还会清空当前服务器的队列与音乐库。
+    if (!isAuthenticated && prevConfig != null) {
+      debugPrint('[Auth] switchProfile failed — rolling back to ${prevConfig.serverUrl}');
+      _config = prevConfig;
+      await _storageService.saveServerConfig(prevConfig);
+      await _subsonicService.configure(prevConfig);
+      await _subsonicService.resolveActiveUrl();
+      // 封面缓存 key 命名空间跟随回滚后的服务器，避免用新 serverId 拼 key。
+      registerCoverCacheServerId(_subsonicService.coverCacheServerId);
+      _state = AuthState.authenticated;
+      notifyListeners();
+      return;
+    }
+    // 道理鱼：切换 profile 也要登录自研 /api 层拿 JWT（歌词/随机歌依赖）。
+    // 登录成功后才算完整切换到该服务器；失败不阻塞，仅歌词/随机降级。
+    if (profile.serverFamily == 'daoliyu' && isAuthenticated) {
+      final apiOk = await _subsonicService.loginToApi();
+      debugPrint('[Auth] switchProfile 道理鱼 API login: $apiOk');
+      final updated = _config!.copyWith(
+        apiToken: _subsonicService.apiJwtOrNull,
+        userId: _subsonicService.apiUserId,
+      );
+      _config = updated;
+      await _storageService.saveServerConfig(updated);
+      await _storageService.saveProfile(updated);
+    }
+    if (switched && isAuthenticated) _notifyServerSwitched();
   }
 
   Future<void> updateSelectedMusicFolderIds(List<String> ids) async {

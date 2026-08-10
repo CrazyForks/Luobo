@@ -8,7 +8,6 @@ import 'package:luobo/services/subsonic_service.dart';
 import 'package:luobo/services/storage_service.dart';
 import 'package:luobo/services/upnp_service.dart';
 import 'package:luobo/services/audio_handler.dart';
-import 'package:luobo/services/jukebox_service.dart';
 import 'package:luobo/services/transcoding_service.dart';
 import 'package:luobo/widgets/song_tile.dart';
 import '../test_helpers.dart';
@@ -29,7 +28,6 @@ void main() {
         FakeCastService(),
         UpnpService(),
         MuslyAudioHandler(),
-        JukeboxService(),
         TranscodingService(),
       );
     });

@@ -779,6 +779,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsServerSettings => 'Server Settings';
 
   @override
+  String get serverManagement => 'Server Management';
+
+  @override
+  String get noSavedProfiles => 'No saved server configurations yet';
+
+  @override
+  String get connectedSuccessfully => 'Connected successfully';
+
+  @override
   String get settingsGroupPlayback => 'Playback & Quality';
 
   @override
@@ -1732,47 +1741,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String genreTooltip(int songCount, int albumCount) {
     return '$songCount pistes • $albumCount albums';
   }
-
-  @override
-  String get sectionJukebox => 'MODE JUKEBOX';
-
-  @override
-  String get jukeboxMode => 'Mode Jukebox';
-
-  @override
-  String get jukeboxModeSubtitle =>
-      'Jouer l\'audio via le serveur au lieu de cet appareil';
-
-  @override
-  String get openJukeboxController => 'Ouvrir le contrôleur du Jukebox';
-
-  @override
-  String get jukeboxClearQueue => 'Vider la file d\'attente';
-
-  @override
-  String get jukeboxShuffleQueue => 'Mélanger la file d\'attente';
-
-  @override
-  String get jukeboxQueueEmpty => 'Aucune piste dans la file d\'attente';
-
-  @override
-  String get jukeboxNowPlaying => 'En cours de lecture';
-
-  @override
-  String get jukeboxQueue => 'File d\'attente';
-
-  @override
-  String get jukeboxVolume => 'Volume';
-
-  @override
-  String get playOnJukebox => 'Jouer sur le Jukebox';
-
-  @override
-  String get addToJukeboxQueue => 'Ajouter à la file d\'attente du Jukebox';
-
-  @override
-  String get jukeboxNotSupported =>
-      'Le mode Jukebox n\'est pas pris en charge par ce serveur. Activez-le dans la configuration de votre serveur (par exemple EnableJukebox = true dans Navidrome).';
 
   @override
   String get musicFoldersDialogTitle => 'Sélectionner les dossiers de musique';

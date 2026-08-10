@@ -1,4 +1,5 @@
 import 'artist_ref.dart';
+import 'json_coerce.dart';
 
 class Album {
   final String id;
@@ -36,9 +37,9 @@ class Album {
       artist: json['artist']?.toString(),
       artistId: json['artistId']?.toString(),
       coverArt: json['coverArt']?.toString(),
-      songCount: json['songCount'] as int?,
-      duration: json['duration'] as int?,
-      year: json['year'] as int?,
+      songCount: jsonInt(json['songCount']),
+      duration: jsonInt(json['duration']),
+      year: jsonInt(json['year']),
       genre: json['genre']?.toString(),
       created: json['created'] != null
           ? DateTime.tryParse(json['created'].toString())

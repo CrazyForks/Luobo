@@ -194,7 +194,7 @@ class SettingsRootScreen extends StatelessWidget {
       trailing: _chevron(context),
       onTap: () => _openSubPage(
         context,
-        l10n.settingsServerSettings,
+        l10n.serverManagement,
         const SettingsServerTab(),
       ),
     );

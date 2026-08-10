@@ -779,6 +779,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsServerSettings => 'Server Settings';
 
   @override
+  String get serverManagement => 'Server Management';
+
+  @override
+  String get noSavedProfiles => 'No saved server configurations yet';
+
+  @override
+  String get connectedSuccessfully => 'Connected successfully';
+
+  @override
   String get settingsGroupPlayback => 'Playback & Quality';
 
   @override
@@ -1724,47 +1733,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String genreTooltip(int songCount, int albumCount) {
     return '$songCount músicas • $albumCount álbuns';
   }
-
-  @override
-  String get sectionJukebox => 'MODO JUKEBOX';
-
-  @override
-  String get jukeboxMode => 'Modo Jukebox';
-
-  @override
-  String get jukeboxModeSubtitle =>
-      'Reproduzir áudio pelo servidor ao invés deste dispositivo';
-
-  @override
-  String get openJukeboxController => 'Abrir Controle do Jukebox';
-
-  @override
-  String get jukeboxClearQueue => 'Limpar Fila';
-
-  @override
-  String get jukeboxShuffleQueue => 'Aleatorizar Fila';
-
-  @override
-  String get jukeboxQueueEmpty => 'Nenhuma música na fila';
-
-  @override
-  String get jukeboxNowPlaying => 'Tocando Agora';
-
-  @override
-  String get jukeboxQueue => 'Fila';
-
-  @override
-  String get jukeboxVolume => 'Volume';
-
-  @override
-  String get playOnJukebox => 'Tocar na Jukebox';
-
-  @override
-  String get addToJukeboxQueue => 'Adicionar à Fila do Jukebox';
-
-  @override
-  String get jukeboxNotSupported =>
-      'O modo Jukebox não é suportado por este servidor. Ative-o na configuração do servidor (ex: EnableJukebox = true no Navidrome).';
 
   @override
   String get musicFoldersDialogTitle => 'Selecionar pastas de música';

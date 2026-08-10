@@ -1331,59 +1331,6 @@
       }
     }
   },
-  "@_JUKEBOX": {},
-  "sectionJukebox": "MODO TOCADISCOS",
-  "@sectionJukebox": {
-    "description": "Section header for the jukebox settings in the Server tab"
-  },
-  "jukeboxMode": "Modo tocadiscos",
-  "@jukeboxMode": {
-    "description": "Toggle label for enabling jukebox mode"
-  },
-  "jukeboxModeSubtitle": "Reproducir audio a través del servidor en lugar de este dispositivo",
-  "@jukeboxModeSubtitle": {
-    "description": "Subtitle for the jukebox mode toggle"
-  },
-  "openJukeboxController": "Abrir Controlador de Tocadiscos",
-  "@openJukeboxController": {
-    "description": "List tile label to navigate to the jukebox controller screen"
-  },
-  "jukeboxClearQueue": "Limpiar cola",
-  "@jukeboxClearQueue": {
-    "description": "Action label to clear the jukebox playback queue"
-  },
-  "jukeboxShuffleQueue": "Mezclar cola",
-  "@jukeboxShuffleQueue": {
-    "description": "Action label to shuffle the jukebox playback queue"
-  },
-  "jukeboxQueueEmpty": "No hay canciones en cola",
-  "@jukeboxQueueEmpty": {
-    "description": "Empty state when the jukebox queue has no songs"
-  },
-  "jukeboxNowPlaying": "Reproduciendo",
-  "@jukeboxNowPlaying": {
-    "description": "Section header for the now-playing area in the jukebox controller"
-  },
-  "jukeboxQueue": "Cola",
-  "@jukeboxQueue": {
-    "description": "Section header for the queue list in the jukebox controller"
-  },
-  "jukeboxVolume": "Volumen",
-  "@jukeboxVolume": {
-    "description": "Label for the volume slider in the jukebox controller"
-  },
-  "playOnJukebox": "Reproducir en Jukebox",
-  "@playOnJukebox": {
-    "description": "Option to replace the jukebox queue with this song and start playback"
-  },
-  "addToJukeboxQueue": "Añadir a la cola de Tocadiscos",
-  "@addToJukeboxQueue": {
-    "description": "Option to append a song to the jukebox queue"
-  },
-  "jukeboxNotSupported": "El modo Jukebox no es compatible con este servidor. Actívalo en la configuración del servidor (p. ej. EnableJukebox = true en Navidrome).",
-  "@jukeboxNotSupported": {
-    "description": "Error shown when the server returns 501 for jukebox API calls"
-  },
   "@_MUSIC_FOLDERS": {},
   "musicFoldersDialogTitle": "Seleccionar Carpetas de Música",
   "@musicFoldersDialogTitle": {

@@ -313,11 +313,11 @@ const List<MechanismItem> _connectivityItems = [
     details: '依据：subsonic_service.dart、jellyfin_service.dart、auth_provider.dart',
   ),
   MechanismItem(
-    title: '点唱机与网络电台',
+    title: '网络电台',
     summary:
-        '点唱机（Jukebox）= 在服务器上播放，手机当遥控器（控制播放/音量/队列），适合把音乐推给接在服务器上的音响。网络电台 = 服务端维护的在线电台列表，点播后当普通流播放，不占曲库。',
+        '服务端维护的在线电台列表，点播后当普通流播放，不占曲库。',
     details:
-        'Jukebox 走 Subsonic jukeboxControl API（服务端不支持时标记 serverUnsupported）；电台走 getInternetRadioStations。\n依据：jukebox_service.dart:66-155、subsonic_service.dart:1033-1136',
+        '电台走 getInternetRadioStations。\n依据：subsonic_service.dart:1296',
   ),
   MechanismItem(
     title: 'Auto DJ 自动续播',

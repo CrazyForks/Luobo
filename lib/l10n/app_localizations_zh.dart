@@ -767,6 +767,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsServerSettings => '服务器设置';
 
   @override
+  String get serverManagement => '服务器管理';
+
+  @override
+  String get noSavedProfiles => '暂无已保存的服务器配置';
+
+  @override
+  String get connectedSuccessfully => '连接成功';
+
+  @override
   String get settingsGroupPlayback => '播放与音质';
 
   @override
@@ -1691,46 +1700,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String genreTooltip(int songCount, int albumCount) {
     return '$songCount 首歌曲 • $albumCount 张专辑';
   }
-
-  @override
-  String get sectionJukebox => '点唱机模式';
-
-  @override
-  String get jukeboxMode => '点唱机模式';
-
-  @override
-  String get jukeboxModeSubtitle => '通过服务器而非本设备播放音频';
-
-  @override
-  String get openJukeboxController => '打开点唱机控制器';
-
-  @override
-  String get jukeboxClearQueue => '清空队列';
-
-  @override
-  String get jukeboxShuffleQueue => '随机排序队列';
-
-  @override
-  String get jukeboxQueueEmpty => '队列中没有歌曲';
-
-  @override
-  String get jukeboxNowPlaying => '正在播放';
-
-  @override
-  String get jukeboxQueue => '播放队列';
-
-  @override
-  String get jukeboxVolume => '音量';
-
-  @override
-  String get playOnJukebox => '在点唱机上播放';
-
-  @override
-  String get addToJukeboxQueue => '添加到点唱机队列';
-
-  @override
-  String get jukeboxNotSupported =>
-      '此服务器不支持点唱机模式。请在服务器配置中启用（例如在 Navidrome 中设置 EnableJukebox = true）。';
 
   @override
   String get musicFoldersDialogTitle => '选择音乐文件夹';

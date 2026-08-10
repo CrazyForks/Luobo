@@ -87,7 +87,9 @@ class _LoginScreenState extends State<LoginScreen> {
     _profileNameController.text = config.name ?? '';
     _serverFamily =
         config.serverFamily.isEmpty ? 'subsonic' : config.serverFamily;
-    _useLegacyAuth = config.useLegacyAuth;
+    // 道理鱼只认明文 p=，从已存 profile 恢复表单时同样强制。
+    _useLegacyAuth =
+        config.useLegacyAuth || config.serverFamily == 'daoliyu';
     _allowSelfSignedCertificates = config.allowSelfSignedCertificates;
     _customCertificatePath = config.customCertificatePath;
     if (config.customCertificatePath != null) {
@@ -424,27 +426,48 @@ class _LoginScreenState extends State<LoginScreen> {
         (localUrl.isNotEmpty && (localUrl != serverUrl || isLanOnly))
             ? localUrl
             : null;
-    final success = await authProvider.login(
-      serverUrl: serverUrl,
-      localUrl: effectiveLocalUrl,
-      username: _usernameController.text.trim(),
-      password: _passwordController.text,
-      useLegacyAuth: _useLegacyAuth,
-      allowSelfSignedCertificates: _allowSelfSignedCertificates,
-      customCertificatePath: _customCertificatePath,
-      clientCertificatePath: _clientCertificatePath,
-      clientCertificatePassword: _clientCertPasswordController.text.isEmpty
-          ? null
-          : _clientCertPasswordController.text,
-      profileName: profileName.isEmpty ? null : profileName,
-      serverFamily: _serverFamily,
-    );
+    bool success = false;
+    try {
+      success = await authProvider.login(
+        serverUrl: serverUrl,
+        localUrl: effectiveLocalUrl,
+        username: _usernameController.text.trim(),
+        password: _passwordController.text,
+        useLegacyAuth: _useLegacyAuth,
+        allowSelfSignedCertificates: _allowSelfSignedCertificates,
+        customCertificatePath: _customCertificatePath,
+        clientCertificatePath: _clientCertificatePath,
+        clientCertificatePassword: _clientCertPasswordController.text.isEmpty
+            ? null
+            : _clientCertPasswordController.text,
+        profileName: profileName.isEmpty ? null : profileName,
+        serverFamily: _serverFamily,
+      );
+    } catch (e) {
+      // login() 内部已兜底返回 false，此处防御异常（如 configure 阶段抛出），
+      // 避免 _login() 静默中断导致"无提示、卡 loading"。
+      debugPrint('[Login] login() threw: $e');
+      success = false;
+    }
 
     if (success && mounted) {
-      // Opened from the settings page (add/edit profile): return to the
-      // previous screen after connecting. On first launch this screen is
-      // the root route, so nothing happens.
-      _popIfPushed();
+      // 先取 root messenger，pop 后再显示——避免 SnackBar 因 LoginScreen
+      // context 随 pop 销毁而被吞（此前 show 在 pop 前，用户看不到成功提示）。
+      final messenger = ScaffoldMessenger.of(context);
+      // 跳转首页：弹到根路由。从设置页添加配置时，导航栈是
+      // [AuthWrapper, SettingsRootScreen, SettingsServerTab, LoginScreen]，
+      // popUntil(isFirst) 全部弹出 → AuthWrapper 因 state=authenticated 显示
+      // MainScreen 首页；首次登录时根路由已是 first，无副作用。
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.connectedSuccessfully,
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } else if (!success && mounted) {
       setState(
         () => _loginError = authProvider.error ??
@@ -468,7 +491,9 @@ class _LoginScreenState extends State<LoginScreen> {
     _profileNameController.text = config.name ?? '';
     setState(() {
       _serverFamily = config.serverFamily;
-      _useLegacyAuth = config.useLegacyAuth;
+      // 道理鱼只认明文 p=，从已存 profile / 扫描配置恢复时同样强制。
+      _useLegacyAuth =
+          config.useLegacyAuth || config.serverFamily == 'daoliyu';
       _allowSelfSignedCertificates = config.allowSelfSignedCertificates;
     });
 
@@ -479,7 +504,7 @@ class _LoginScreenState extends State<LoginScreen> {
       localUrl: config.localUrl,
       username: config.username,
       password: config.password,
-      useLegacyAuth: config.useLegacyAuth,
+      useLegacyAuth: config.useLegacyAuth || config.serverFamily == 'daoliyu',
       allowSelfSignedCertificates: config.allowSelfSignedCertificates,
       profileName: config.name,
       serverFamily: config.serverFamily,
@@ -498,7 +523,8 @@ class _LoginScreenState extends State<LoginScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      _popIfPushed();
+      // 与表单登录一致：弹到根路由显示首页。
+      Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
 
@@ -696,7 +722,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             serverFamily: _serverFamily,
                             onChanged: (v) => setState(() {
                               _serverFamily = v;
-                              _useLegacyAuth = false;
+                              // 道理鱼只认明文 p=，切到 daoliyu 时强制开启 legacy auth。
+                              _useLegacyAuth = v == 'daoliyu';
                             }),
                           ),
                           const SizedBox(height: 16),
@@ -757,6 +784,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               validator: (value) {
                                 final url = (value ?? '').trim();
+                                // 远程与局域网都为空才提示（支持仅局域网配置）——
+                                // 与 _login() 的「至少填一个地址」校验一致，避免
+                                // 空表单提交时只走 submit-time 的硬编码中文提示。
+                                if (url.isEmpty &&
+                                    _localServerController.text.trim().isEmpty) {
+                                  return AppLocalizations.of(context)!
+                                      .pleaseEnterServerUrl;
+                                }
                                 if (url.isNotEmpty &&
                                     !url.startsWith('http://') &&
                                     !url.startsWith('https://')) {
@@ -864,11 +899,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               CupertinoSwitch(
                                 value: _useLegacyAuth,
                                 activeTrackColor: AppTheme.appleMusicRed,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _useLegacyAuth = value;
-                                  });
-                                },
+                                onChanged: _serverFamily == 'daoliyu'
+                                    ? null // 道理鱼强制明文认证，不可关闭
+                                    : (value) {
+                                        setState(() {
+                                          _useLegacyAuth = value;
+                                        });
+                                      },
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -1473,6 +1510,12 @@ class _ServerFamilyToggle extends StatelessWidget {
         label: 'Emby / Jellyfin',
         family: 'jellyfin',
         icon: CupertinoIcons.tv,
+        activeColor: const Color(0xFF6366F1),
+      ),
+      (
+        label: '道理鱼',
+        family: 'daoliyu',
+        icon: CupertinoIcons.music_note_list,
         activeColor: const Color(0xFF6366F1),
       ),
       // (

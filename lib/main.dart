@@ -32,7 +32,7 @@ import 'utils/image_cache.dart';
 
 /// 运行时上报的应用版本，写入诊断导出 meta.json；
 /// 与 pubspec.yaml `version` 保持一致，发版时同步更新。
-const String kAppVersion = '1.1.12+7';
+const String kAppVersion = '1.1.13+8';
 
 /// Shows the privacy policy dialog on first launch
 Future<void> _showPrivacyPolicyIfNeeded() async {
@@ -192,7 +192,6 @@ void main() async {
   final castService = CastService();
   final localeService = LocaleService();
   final upnpService = UpnpService();
-  final jukeboxService = JukeboxService();
   final themeService = ThemeService();
   final nowPlayingThemeService = NowPlayingThemeService();
   MetricsCollector.milestone('servicesCreated', startupSw.elapsedMilliseconds);
@@ -230,9 +229,6 @@ void main() async {
   });
   await themeService.initialize().catchError((e) {
     debugPrint('Failed to initialize theme service: $e');
-  });
-  jukeboxService.initialize().catchError((e) {
-    debugPrint('Failed to initialize jukebox service: $e');
   });
   nowPlayingThemeService.initialize().catchError((e) {
     debugPrint('Failed to initialize now playing theme service: $e');
@@ -299,7 +295,6 @@ void main() async {
         value: nowPlayingThemeService,
       ),
       ChangeNotifierProvider<UpnpService>.value(value: upnpService),
-      ChangeNotifierProvider<JukeboxService>.value(value: jukeboxService),
       ChangeNotifierProvider(
         create: (_) => PlayerProvider(
           subsonicService,
@@ -307,7 +302,6 @@ void main() async {
           castService,
           upnpService,
           audioHandler,
-          jukeboxService,
           transcodingService,
         ),
       ),
@@ -333,8 +327,46 @@ void main() async {
 class MuslyApp extends StatelessWidget {
   const MuslyApp({super.key});
 
+  /// 一次性接线：AuthProvider.onServerSwitched → 清理旧服务器缓存。
+  /// 切服务器后旧 Navidrome 的歌曲/专辑 ID 请求新道理鱼服务器会 404
+  /// （诊断日志 confirmed），需清空播放队列持久化 + 首页推荐缓存。
+  static bool _serverSwitchWired = false;
+
   @override
   Widget build(BuildContext context) {
+    if (!_serverSwitchWired) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_serverSwitchWired) return;
+        // 测试 harness 只提供部分 provider，捕获 ProviderNotFoundException
+        // 跳过接线，保持 widget/integration 测试可运行（生产环境 providers 齐全）。
+        final AuthProvider auth;
+        final PlayerProvider player;
+        final HomeRecommendationService homeRec;
+        final LibraryProvider library;
+        try {
+          auth = context.read<AuthProvider>();
+          player = context.read<PlayerProvider>();
+          homeRec = context.read<HomeRecommendationService>();
+          library = context.read<LibraryProvider>();
+        } catch (_) {
+          // 不置标记：provider 齐全时才算接线成功，否则下次重建再试。
+          return;
+        }
+        _serverSwitchWired = true;
+        auth.onServerSwitched = () {
+          player.clearQueue(); // 清空播放队列 + persistent_queue 持久化
+          homeRec.clearCaches(); // 清首页每日/探索缓存
+          // 清 LibraryProvider 内存/prefs/DB 缓存并从新服务器重拉，
+          // 消除「切服后旧专辑/艺人仍展示，点击用旧 ID 打新服务器 404」。
+          // 回调是同步的，这里不能 await，失败只记日志避免未捕获异常。
+          library.resetForServerChange().catchError(
+                (e) => debugPrint('[Main] resetForServerChange failed: $e'),
+              );
+          debugPrint(
+              '[Main] Server switched — cleared queue, home caches & library');
+        };
+      });
+    }
     final localeService = Provider.of<LocaleService>(context);
     final themeService = Provider.of<ThemeService>(context);
 
@@ -391,36 +423,50 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
+  /// 最近一次非 authenticating 状态的稳定页面。authenticating 时保留它，
+  /// 避免 MainScreen 被卸载 → 内层 Navigator（mobileNavigatorKey，含
+  /// 设置页/登录页）销毁 → 登录页 mounted=false，错误/成功提示无法显示
+  /// （真机日志 confirmed：「登录失败无提示 + 回首页」）。
+  /// loading 由页面自身呈现（LoginScreen 按钮 isLoading 转圈）。
+  Widget? _stableChild;
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
     switch (authProvider.state) {
       case AuthState.unknown:
-        return Scaffold(
-          body: Center(child: const CircularProgressIndicator()),
+        _stableChild = const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
         );
+        return _stableChild!;
       case AuthState.authenticated:
         // Show privacy policy first if needed
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           await _showPrivacyPolicyIfNeeded();
         });
-        return const MainScreen();
+        _stableChild = const MainScreen();
+        return _stableChild!;
       case AuthState.offlineMode:
-        return const MainScreen(isOfflineMode: true);
+        _stableChild = const MainScreen(isOfflineMode: true);
+        return _stableChild!;
       case AuthState.serverUnreachable:
-        return _ServerUnreachableScreen(
+        _stableChild = _ServerUnreachableScreen(
           hasOfflineContent: authProvider.hasOfflineContent,
           onEnterOfflineMode: () => authProvider.enterOfflineMode(),
           onDisconnect: () => authProvider.disconnect(),
         );
+        return _stableChild!;
       case AuthState.authenticating:
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        // 保留上一个页面（MainScreen 或 LoginScreen），不卸载导航栈。
+        return _stableChild ??
+            const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
       case AuthState.unauthenticated:
       case AuthState.error:
-        return const LoginScreen();
+        _stableChild = const LoginScreen();
+        return _stableChild!;
     }
   }
 }

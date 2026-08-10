@@ -1,3 +1,5 @@
+import 'json_coerce.dart';
+
 /// A lightweight artist reference parsed from Navidrome's `participants` field.
 /// Standard Subsonic servers do not provide this field, so it is always optional.
 class ArtistRef {
@@ -31,10 +33,11 @@ class ArtistRef {
   };
 
   static List<ArtistRef>? parseList(dynamic data) {
-    if (data == null || data is! List) return null;
-    final list = data
-        .whereType<Map<String, dynamic>>()
-        .map((e) => ArtistRef.fromJson(e))
+    if (data == null) return null;
+    // 单条时可能是 Map 而非 List（XML→JSON 直转的服务端）。
+    final list = jsonList(data)
+        .whereType<Map>()
+        .map((e) => ArtistRef.fromJson(Map<String, dynamic>.from(e)))
         .where((a) => a.id.isNotEmpty || a.name.isNotEmpty)
         .toList();
     return list.isEmpty ? null : list;

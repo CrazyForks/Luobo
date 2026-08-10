@@ -6,12 +6,10 @@ import '../models/music_folder.dart';
 import '../models/server_config.dart';
 import '../providers/auth_provider.dart';
 import '../providers/player_provider.dart';
-import '../services/jukebox_service.dart';
 import '../services/subsonic_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
 import '../widgets/server_qr_dialog.dart';
-import 'jukebox_screen.dart';
 import 'login_screen.dart';
 
 class SettingsServerTab extends StatefulWidget {
@@ -30,13 +28,25 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
     final authProvider = Provider.of<AuthProvider>(context);
     final serverType = authProvider.config?.serverType;
     final serverVersion = authProvider.config?.serverVersion;
+    final serverFamily = authProvider.config?.serverFamily;
 
-    String serverSubtitle = 'Subsonic API';
-    if (serverType != null && serverType.isNotEmpty) {
-      serverSubtitle = serverType;
-      if (serverVersion != null && serverVersion.isNotEmpty) {
-        serverSubtitle += ' $serverVersion';
-      }
+    // 优先按客户端认定的家族显示（serverType 是服务器 ping 自报的协议名，
+    // 道理鱼这类带私有扩展的服务器不会自报「daoliyu」）。未知家族回退
+    // 到 serverType，都没有时用默认文案。
+    String serverSubtitle;
+    switch (serverFamily) {
+      case 'daoliyu':
+        serverSubtitle = '道理鱼';
+      case 'jellyfin':
+        serverSubtitle = 'Jellyfin';
+      default:
+        serverSubtitle = 'Subsonic API';
+        if (serverType != null && serverType.isNotEmpty) {
+          serverSubtitle = serverType;
+        }
+    }
+    if (serverVersion != null && serverVersion.isNotEmpty) {
+      serverSubtitle += ' $serverVersion';
     }
 
     return ListView(
@@ -73,11 +83,6 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
         _buildSection(
           title: l10n.sectionMusicFolders,
           children: [_buildMusicFoldersButton()],
-        ),
-        const SizedBox(height: 24),
-        _buildSection(
-          title: l10n.sectionJukebox,
-          children: [_buildJukeboxSection()],
         ),
         const SizedBox(height: 24),
         _buildSection(
@@ -231,80 +236,6 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
     );
   }
 
-  Widget _buildJukeboxSection() {
-    final l10n = AppLocalizations.of(context)!;
-    return Consumer<JukeboxService>(
-      builder: (context, jukebox, _) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SwitchListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 4,
-            ),
-            secondary: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF9500), Color(0xFFFF6000)],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                CupertinoIcons.speaker_2,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-            title: Text(l10n.jukeboxMode, style: const TextStyle(fontSize: 16)),
-            subtitle: Text(
-              l10n.jukeboxModeSubtitle,
-              style: TextStyle(
-                fontSize: 13,
-                color: _isDark
-                    ? AppTheme.darkSecondaryText
-                    : AppTheme.lightSecondaryText,
-              ),
-            ),
-            value: jukebox.enabled,
-            activeThumbColor: Theme.of(context).colorScheme.primary,
-            onChanged: (v) => jukebox.setEnabled(v),
-          ),
-          if (jukebox.enabled) ...[
-            Padding(
-              padding: const EdgeInsets.only(left: 56),
-              child: Container(
-                height: 0.5,
-                color: _isDark ? AppTheme.darkDivider : AppTheme.lightDivider,
-              ),
-            ),
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 4,
-              ),
-              leading: const SizedBox(width: 32),
-              title: Text(
-                l10n.openJukeboxController,
-                style: const TextStyle(fontSize: 16),
-              ),
-              trailing: Icon(
-                CupertinoIcons.chevron_right,
-                size: 16,
-                color: _isDark
-                    ? AppTheme.darkSecondaryText
-                    : AppTheme.lightSecondaryText,
-              ),
-              onTap: () =>
-                  NavigationHelper.push(context, const JukeboxScreen()),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _buildLogoutButton() {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -365,7 +296,22 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
           Provider.of<AuthProvider>(context, listen: false).getSavedProfiles(),
       builder: (context, snapshot) {
         final profiles = snapshot.data ?? [];
-        if (profiles.isEmpty) return const SizedBox.shrink();
+        if (profiles.isEmpty) {
+          // 服务列表页空态：引导用户添加第一个服务器配置。
+          final l10n = AppLocalizations.of(context)!;
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            child: Text(
+              l10n.noSavedProfiles,
+              style: TextStyle(
+                fontSize: 13,
+                color: _isDark
+                    ? AppTheme.darkSecondaryText
+                    : AppTheme.lightSecondaryText,
+              ),
+            ),
+          );
+        }
 
         final l10n = AppLocalizations.of(context)!;
         final authProvider = Provider.of<AuthProvider>(context);
@@ -440,31 +386,27 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
                                 : AppTheme.lightSecondaryText,
                           ),
                         ),
-                        trailing: isActive
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(CupertinoIcons.qrcode,
-                                        size: 20),
-                                    tooltip: l10n.shareQrCode,
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) =>
-                                            ServerQrDialog(config: profile),
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(CupertinoIcons.pencil,
-                                        size: 20),
-                                    tooltip: l10n.edit,
-                                    onPressed: () => _openEditProfile(profile),
-                                  ),
-                                ],
-                              )
-                            : null,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(CupertinoIcons.qrcode, size: 20),
+                              tooltip: l10n.shareQrCode,
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) =>
+                                      ServerQrDialog(config: profile),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(CupertinoIcons.pencil, size: 20),
+                              tooltip: l10n.edit,
+                              onPressed: () => _openEditProfile(profile),
+                            ),
+                          ],
+                        ),
                         onTap: isActive
                             ? () => _openEditProfile(profile)
                             : () async {

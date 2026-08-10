@@ -96,6 +96,42 @@ void main() {
       expect(() => service.getStreamUrl('song123'), throwsException);
     });
 
+    test('hoistXmlAttributes lifts _attributes into the parent map', () {
+      final normalized = SubsonicService.hoistXmlAttributes({
+        '_attributes': {'status': 'ok', 'version': '1.16.1'},
+        'albumList2': {
+          'album': [
+            {
+              '_attributes': {'id': 'alb_1', 'name': 'Daoliyu Album'},
+            },
+          ],
+        },
+      }) as Map<String, dynamic>;
+
+      expect(normalized['status'], 'ok');
+      expect(normalized['version'], '1.16.1');
+      expect(normalized.containsKey('_attributes'), false);
+
+      final albums = normalized['albumList2']['album'] as List;
+      expect(albums.first['id'], 'alb_1');
+      expect(albums.first['name'], 'Daoliyu Album');
+      expect((albums.first as Map).containsKey('_attributes'), false);
+    });
+
+    test('hoistXmlAttributes leaves flat responses untouched', () {
+      final normalized = SubsonicService.hoistXmlAttributes({
+        'status': 'ok',
+        'artists': {
+          'index': [
+            {'name': 'A', 'albumCount': 5},
+          ],
+        },
+      }) as Map<String, dynamic>;
+
+      expect(normalized['status'], 'ok');
+      expect((normalized['artists']['index'] as List).first['albumCount'], 5);
+    });
+
     group('resolveActiveUrl', () {
       // Port 1 on loopback refuses connections instantly on every platform, so
       // the LAN probe fails fast without hitting a real server.

@@ -1,4 +1,5 @@
 import 'artist_ref.dart';
+import 'json_coerce.dart';
 
 class Song {
   final String id;
@@ -62,7 +63,11 @@ class Song {
   });
 
   factory Song.fromJson(Map<String, dynamic> json) {
-    final replayGain = json['replayGain'] as Map<String, dynamic>?;
+    // 硬转 `as Map<String, dynamic>?` 在服务端把 replayGain 输出成别的形状时
+    // 会让整首歌解析失败，这里只在确实是 Map 时取值。
+    final rawReplayGain = json['replayGain'];
+    final replayGain =
+        rawReplayGain is Map ? Map<String, dynamic>.from(rawReplayGain) : null;
 
     return Song(
       id: json['id']?.toString() ?? '',
@@ -71,30 +76,30 @@ class Song {
       albumId: json['albumId']?.toString(),
       artist: json['artist']?.toString(),
       artistId: json['artistId']?.toString(),
-      track: json['track'] as int?,
-      year: json['year'] as int?,
+      track: jsonInt(json['track']),
+      year: jsonInt(json['year']),
       genre: json['genre']?.toString(),
       coverArt: json['coverArt']?.toString(),
-      duration: json['duration'] as int?,
-      bitRate: json['bitRate'] as int?,
+      duration: jsonInt(json['duration']),
+      bitRate: jsonInt(json['bitRate']),
       suffix: json['suffix']?.toString(),
       contentType: json['contentType']?.toString(),
-      size: json['size'] as int?,
+      size: jsonInt(json['size']),
       path: json['path']?.toString(),
       starred: json['starred'] != null ? true : false,
-      userRating: json['userRating'] as int?,
-      isLocal: json['isLocal'] as bool? ?? false,
-      replayGainTrackGain: (replayGain?['trackGain'] as num?)?.toDouble(),
-      replayGainAlbumGain: (replayGain?['albumGain'] as num?)?.toDouble(),
-      replayGainTrackPeak: (replayGain?['trackPeak'] as num?)?.toDouble(),
-      replayGainAlbumPeak: (replayGain?['albumPeak'] as num?)?.toDouble(),
+      userRating: jsonInt(json['userRating']),
+      isLocal: jsonBool(json['isLocal']) ?? false,
+      replayGainTrackGain: jsonDouble(replayGain?['trackGain']),
+      replayGainAlbumGain: jsonDouble(replayGain?['albumGain']),
+      replayGainTrackPeak: jsonDouble(replayGain?['trackPeak']),
+      replayGainAlbumPeak: jsonDouble(replayGain?['albumPeak']),
       artistParticipants: ArtistRef.parseList(json['artists']),
       created: json['created'] != null
           ? DateTime.tryParse(json['created'].toString())
           : null,
-      hasDolbyAtmos: json['hasDolbyAtmos'] as bool?,
-      samplingRate: json['samplingRate'] as int?,
-      bitDepth: json['bitDepth'] as int?,
+      hasDolbyAtmos: jsonBool(json['hasDolbyAtmos']),
+      samplingRate: jsonInt(json['samplingRate']),
+      bitDepth: jsonInt(json['bitDepth']),
     );
   }
 

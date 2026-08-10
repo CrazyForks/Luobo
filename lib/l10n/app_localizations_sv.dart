@@ -777,6 +777,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsServerSettings => 'Server Settings';
 
   @override
+  String get serverManagement => 'Server Management';
+
+  @override
+  String get noSavedProfiles => 'No saved server configurations yet';
+
+  @override
+  String get connectedSuccessfully => 'Connected successfully';
+
+  @override
   String get settingsGroupPlayback => 'Playback & Quality';
 
   @override
@@ -1721,47 +1730,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String genreTooltip(int songCount, int albumCount) {
     return '$songCount låtar • $albumCount album';
   }
-
-  @override
-  String get sectionJukebox => 'JUKEBOXLÄGE';
-
-  @override
-  String get jukeboxMode => 'Jukeboxläge';
-
-  @override
-  String get jukeboxModeSubtitle =>
-      'Spela upp ljud genom servern istället för denna enhet';
-
-  @override
-  String get openJukeboxController => 'Öppna Jukeboxkontroll';
-
-  @override
-  String get jukeboxClearQueue => 'Rensa Kö';
-
-  @override
-  String get jukeboxShuffleQueue => 'Blanda Kö';
-
-  @override
-  String get jukeboxQueueEmpty => 'Inga låtar i kö';
-
-  @override
-  String get jukeboxNowPlaying => 'Spelas Nu';
-
-  @override
-  String get jukeboxQueue => 'Kö';
-
-  @override
-  String get jukeboxVolume => 'Volym';
-
-  @override
-  String get playOnJukebox => 'Spela på Jukebox';
-
-  @override
-  String get addToJukeboxQueue => 'Lägg till i Jukeboxkön';
-
-  @override
-  String get jukeboxNotSupported =>
-      'Jukeboxläget stöds inte av denna server. Aktivera det i din serverkonfiguration (t.ex. EnableJukebox = true in Navidrome).';
 
   @override
   String get musicFoldersDialogTitle => 'Välj Musikmappar';

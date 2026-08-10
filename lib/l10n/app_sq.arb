@@ -694,7 +694,6 @@
   "@_CAST_TOOLTIPS": {},
   "@_ERROR_MESSAGES": {},
   "@_GENRE_SCREEN": {},
-  "@_JUKEBOX": {},
   "@_MUSIC_FOLDERS": {},
   "@internetRadio": {
     "description": "Subtitle shown in the mini player and player bar when a radio station is playing"

@@ -32,9 +32,33 @@ class _GenresScreenState extends State<GenresScreen> {
         listen: false,
       );
       await libraryProvider.loadGenres();
+      var genres = libraryProvider.richGenres;
+
+      // 道理鱼：getGenres 不支持（返回空）→ 从已缓存歌曲本地聚合
+      // （复用音乐库 Genres Tab 的分组逻辑，genre 取自歌曲元数据字段）。
+      if (genres.isEmpty && libraryProvider.cachedAllSongs.isNotEmpty) {
+        final genreMap = <String, int>{};
+        for (final s in libraryProvider.cachedAllSongs) {
+          final g = (s.genre ?? 'Unknown').trim();
+          if (g.isEmpty) continue;
+          genreMap[g] = (genreMap[g] ?? 0) + 1;
+        }
+        // Genre 构造器三参必填；本地聚合无专辑维度，albumCount 置 0。
+        genres = genreMap.entries
+            .map(
+              (e) => Genre(
+                value: e.key,
+                songCount: e.value,
+                albumCount: 0,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => a.value.compareTo(b.value));
+      }
+
       if (mounted) {
         setState(() {
-          _genres = libraryProvider.richGenres;
+          _genres = genres;
           _isLoading = false;
         });
       }

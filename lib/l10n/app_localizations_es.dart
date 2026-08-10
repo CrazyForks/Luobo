@@ -779,6 +779,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsServerSettings => 'Server Settings';
 
   @override
+  String get serverManagement => 'Server Management';
+
+  @override
+  String get noSavedProfiles => 'No saved server configurations yet';
+
+  @override
+  String get connectedSuccessfully => 'Connected successfully';
+
+  @override
   String get settingsGroupPlayback => 'Playback & Quality';
 
   @override
@@ -1727,47 +1736,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String genreTooltip(int songCount, int albumCount) {
     return '$songCount canciones • $albumCount  ábumes';
   }
-
-  @override
-  String get sectionJukebox => 'MODO TOCADISCOS';
-
-  @override
-  String get jukeboxMode => 'Modo tocadiscos';
-
-  @override
-  String get jukeboxModeSubtitle =>
-      'Reproducir audio a través del servidor en lugar de este dispositivo';
-
-  @override
-  String get openJukeboxController => 'Abrir Controlador de Tocadiscos';
-
-  @override
-  String get jukeboxClearQueue => 'Limpiar cola';
-
-  @override
-  String get jukeboxShuffleQueue => 'Mezclar cola';
-
-  @override
-  String get jukeboxQueueEmpty => 'No hay canciones en cola';
-
-  @override
-  String get jukeboxNowPlaying => 'Reproduciendo';
-
-  @override
-  String get jukeboxQueue => 'Cola';
-
-  @override
-  String get jukeboxVolume => 'Volumen';
-
-  @override
-  String get playOnJukebox => 'Reproducir en Jukebox';
-
-  @override
-  String get addToJukeboxQueue => 'Añadir a la cola de Tocadiscos';
-
-  @override
-  String get jukeboxNotSupported =>
-      'El modo Jukebox no es compatible con este servidor. Actívalo en la configuración del servidor (p. ej. EnableJukebox = true en Navidrome).';
 
   @override
   String get musicFoldersDialogTitle => 'Seleccionar Carpetas de Música';

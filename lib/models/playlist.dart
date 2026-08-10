@@ -1,3 +1,4 @@
+import 'json_coerce.dart';
 import 'song.dart';
 
 class Playlist {
@@ -56,21 +57,23 @@ class Playlist {
   }
 
   factory Playlist.fromJson(Map<String, dynamic> json) {
-    List<Song>? songsList;
-    if (json['entry'] != null) {
-      songsList = (json['entry'] as List)
-          .map((e) => Song.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
+    // `entry` 在 XML→JSON 直转的服务端上，单条时会是 Map 而非 List。
+    final entries = jsonList(json['entry']);
+    final songsList = entries.isEmpty
+        ? null
+        : [
+            for (final e in entries)
+              if (e is Map) Song.fromJson(Map<String, dynamic>.from(e)),
+          ];
 
     return Playlist(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? 'Unknown Playlist',
       comment: json['comment']?.toString(),
       owner: json['owner']?.toString(),
-      public: json['public'] as bool?,
-      songCount: json['songCount'] as int?,
-      duration: json['duration'] as int?,
+      public: jsonBool(json['public']),
+      songCount: jsonInt(json['songCount']),
+      duration: jsonInt(json['duration']),
       created: json['created'] != null
           ? DateTime.tryParse(json['created'].toString())
           : null,

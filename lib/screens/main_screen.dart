@@ -77,6 +77,10 @@ class _MainScreenState extends State<MainScreen> {
       playerProvider.setLibraryProvider(libraryProvider);
       playerProvider.setRecommendationService(recommendationService);
 
+      // 冷启动时队列可能在服务器配置就绪前被恢复（persistent_queue 全局键），
+      // 此处补一次归属校验：队列属于旧服务器则清空，避免旧 songId 打新服务器。
+      playerProvider.validateQueueForServer();
+
       if (authProvider.isLocalOnlyMode) {
         final localMusicService = Provider.of<LocalMusicService>(
           context,

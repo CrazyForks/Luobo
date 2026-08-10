@@ -1,4 +1,5 @@
 import 'album.dart';
+import 'json_coerce.dart';
 
 class Artist {
   final String id;
@@ -27,12 +28,11 @@ class Artist {
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? 'Unknown Artist',
       coverArt: json['coverArt']?.toString(),
-      albumCount: json['albumCount'] as int?,
+      albumCount: jsonInt(json['albumCount']),
       artistImageUrl: json['artistImageUrl']?.toString(),
       albums: [
-        if (json['album'] is List)
-          for (final a in json['album'] as List)
-            if (a is Map) Album.fromJson(Map<String, dynamic>.from(a)),
+        for (final a in jsonList(json['album']))
+          if (a is Map) Album.fromJson(Map<String, dynamic>.from(a)),
       ],
     );
   }

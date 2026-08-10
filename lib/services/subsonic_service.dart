@@ -7,6 +7,7 @@ import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:uuid/uuid.dart';
+import '../models/json_coerce.dart';
 import '../models/models.dart';
 import 'diagnostics/diagnostics.dart';
 import 'jellyfin_service.dart';
@@ -35,6 +36,19 @@ class SubsonicService {
   String? _activeBaseUrl;
   final StorageService? _storageService;
 
+  // ── 道理鱼自研 /api 层 JWT 通道 ─────────────────────────────────────────
+  // 道理鱼除 Subsonic 兼容层外，还有一套自研 JSON API（/api/*），需要
+  // Bearer JWT。歌词/随机歌等能力走这一层（见 getLyricsBySongId /
+  // getRandomSongs 的 daoliyu 分支）。
+  String? _apiJwt;
+  bool _apiLoginFailed = false;
+
+  /// 最近一次 loginToApi 拿到的 userId（道理鱼 /api/auth/login 响应 user.id）。
+  String? _apiUserId;
+
+  /// 进行中的 loginToApi Future：并发去重，多个 _apiGet 同时触发时只发一次登录。
+  Future<bool>? _loginInFlight;
+
   /// Notified whenever [_activeBaseUrl] actually changes (LAN↔remote switch
   /// during startup / background probe / network-change re-probe, or config
   /// reset). Wired in main.dart to refresh the transcoding LAN override.
@@ -59,6 +73,10 @@ class SubsonicService {
 
   Future<void> configure(ServerConfig config) async {
     _config = config;
+    _apiJwt = null;
+    _apiLoginFailed = false;
+    _apiUserId = null;
+    _loginInFlight = null; // 丢弃进行中的登录（旧服务器凭据/地址已失效）
     _setActiveBaseUrl(null);
     if (config.isJellyfin) {
       _jellyfin ??= JellyfinService();
@@ -87,6 +105,9 @@ class SubsonicService {
   void _setActiveBaseUrl(String? url) {
     if (url == _activeBaseUrl) return;
     _activeBaseUrl = url;
+    // LAN↔远程切换：自研 /api 层 JWT 与地址绑定，切换后需按新地址重新登录。
+    _apiJwt = null;
+    _apiLoginFailed = false;
     onActiveUrlChanged?.call();
   }
 
@@ -352,6 +373,110 @@ class SubsonicService {
 
   bool get isConfigured => _config != null && _config!.isValid;
 
+  /// Whether the configured server is 道理鱼 (daoliyu family). Gates the
+  /// self-layer /api branches (lyrics / random / genres) so Navidrome and
+  /// other Subsonic servers are completely unaffected.
+  bool get isDaoliyu => _config?.serverFamily == 'daoliyu';
+
+  /// The 道理鱼 JWT from the last successful /api/auth/login (null if not
+  /// logged in yet). Persisted into ServerConfig.apiToken by AuthProvider.
+  String? get apiJwtOrNull => _apiJwt;
+
+  /// The 道理鱼 userId from the last successful /api/auth/login.
+  String? get apiUserId => _apiUserId;
+
+  /// Logs into the 道理鱼 self-layer API and caches the JWT.
+  ///
+  /// - 并发安全：进行中的登录 Future 会被复用（_loginInFlight），多个调用
+  ///   同时触发只发一次 login 请求。
+  /// - 错误分类：凭据无效 / 响应结构异常 → 永久标记失败（_apiLoginFailed），
+  ///   避免每首歌重复尝试；网络/超时等瞬时错误 → 不标记，下次请求可重试
+  ///   （否则一次网络抖动会导致整个会话的歌词/随机歌永久降级）。
+  /// - 成功/失败均不影响 Subsonic 层（浏览/播放走 Subsonic 兼容层）。
+  Future<bool> loginToApi() async {
+    if (_apiJwt != null) return true;
+    if (_apiLoginFailed) return false;
+    if (_config == null) return false;
+    // 并发去重：已有进行中的登录则直接复用其结果。
+    final inFlight = _loginInFlight;
+    if (inFlight != null) return inFlight;
+    final future = _performApiLogin();
+    _loginInFlight = future;
+    try {
+      return await future;
+    } finally {
+      if (identical(_loginInFlight, future)) _loginInFlight = null;
+    }
+  }
+
+  Future<bool> _performApiLogin() async {
+    try {
+      final resp = await _dio.post(
+        '$activeBaseUrl/api/auth/login',
+        data: {'username': _config!.username, 'password': _config!.password},
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      final data = resp.data as Map<String, dynamic>;
+      final token = data['token'] as String?;
+      if (token == null || token.isEmpty) {
+        // 结构异常（非预期响应）→ 永久失败
+        _apiLoginFailed = true;
+        return false;
+      }
+      _apiJwt = token;
+      final user = data['user'] as Map<String, dynamic>?;
+      _apiUserId = user?['id'] as String?;
+      _apiLoginFailed = false;
+      Log.i('Daoliyu', 'API login OK (user=${_apiUserId})');
+      return true;
+    } on DioException catch (e) {
+      // 401 = 凭据无效 → 永久失败；其它（网络/超时/5xx）→ 可重试。
+      if (e.response?.statusCode == 401) {
+        _apiLoginFailed = true;
+      }
+      Log.w('Daoliyu', 'API login failed: $e');
+      return false;
+    } catch (e) {
+      // 响应结构解析异常 → 永久失败（换凭据才有意义）
+      _apiLoginFailed = true;
+      Log.w('Daoliyu', 'API login parse failed: $e');
+      return false;
+    }
+  }
+
+  /// GET the 道理鱼 self-layer API with Bearer auth.
+  ///
+  /// JWT 过期（401）时重登一次再重试；仍失败返回 null（调用方走降级）。
+  Future<Map<String, dynamic>?> _apiGet(String path) async {
+    if (!await loginToApi()) return null;
+    try {
+      final resp = await _dio.get(
+        '$activeBaseUrl$path',
+        options: Options(headers: {'Authorization': 'Bearer $_apiJwt'}),
+      );
+      return resp.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        _apiJwt = null;
+        _apiLoginFailed = false;
+        if (await loginToApi()) {
+          try {
+            final retry = await _dio.get(
+              '$activeBaseUrl$path',
+              options: Options(headers: {'Authorization': 'Bearer $_apiJwt'}),
+            );
+            return retry.data as Map<String, dynamic>;
+          } catch (_) {
+            return null;
+          }
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Map<String, String> _getAuthParams() {
     if (_config == null) throw Exception('Server not configured');
 
@@ -422,6 +547,63 @@ class SubsonicService {
     return '$activeBaseUrl/rest/$endpoint?$queryString';
   }
 
+  /// 把 XML→JSON 直转服务端（daoliyu）的 `_attributes` 子对象提升到父层。
+  ///
+  /// daoliyu 的 Subsonic 兼容层把所有「XML 属性」塞进 `_attributes` 里
+  /// （`{"subsonic-response":{"_attributes":{"status":"ok"},
+  /// "albumList2":{"album":[{"_attributes":{"id":"alb_1"}}]}}}`），
+  /// 而 Navidrome 等是平铺的。不归一化会让 `Album/Song/Artist.fromJson`
+  /// 全部拿到空 id 与 `Unknown Album`，表现为「接口全 200 但没有任何数据」。
+  /// 无 `_attributes` 时结构原样返回，因此对其他服务端零影响。
+  @visibleForTesting
+  static dynamic hoistXmlAttributes(dynamic node) => _hoistXmlAttributes(node);
+
+  static dynamic _hoistXmlAttributes(dynamic node) {
+    if (node is List) return node.map(_hoistXmlAttributes).toList();
+    if (node is! Map) return node;
+
+    final children = Map<String, dynamic>.from(node);
+    final attrs = children.remove('_attributes');
+    final result = <String, dynamic>{};
+    if (attrs is Map) {
+      attrs.forEach((key, value) => result[key.toString()] = value);
+    }
+    // 子元素后写，父层同名键优先，避免属性覆盖真正的子节点。
+    children.forEach(
+      (key, value) => result[key.toString()] = _hoistXmlAttributes(value),
+    );
+    return result;
+  }
+
+  /// XML→JSON 直转的服务端在列表只剩 1 个元素时会返回 Map 而非 List
+  /// （search3 早就为此做过局部兼容）。统一收敛成 List，避免 `is List`
+  /// 守卫把单条结果静默丢成空列表。模型层用同一个 `jsonList`。
+  static List<dynamic> _asList(dynamic node) => jsonList(node);
+
+  /// 解码 → `_attributes` 归一化 → status 校验。`_request` 与自建 URL 的写
+  /// 操作（createPlaylist/updatePlaylist）共用，避免归一化只覆盖部分路径。
+  Map<String, dynamic> _decodeSubsonic(dynamic raw) {
+    final data = raw is String ? json.decode(raw) : raw;
+
+    final subsonicResponse = data is Map ? data['subsonic-response'] : null;
+    if (subsonicResponse == null) {
+      throw Exception('Invalid response format');
+    }
+
+    final normalized = _hoistXmlAttributes(subsonicResponse);
+    if (normalized is! Map<String, dynamic>) {
+      throw Exception('Invalid response format');
+    }
+
+    if (normalized['status'] != 'ok') {
+      final error = normalized['error'];
+      final message = error is Map ? error['message'] : null;
+      throw Exception(message ?? 'Unknown error');
+    }
+
+    return normalized;
+  }
+
   Future<Map<String, dynamic>> _request(
     String endpoint, [
     Map<String, String>? params,
@@ -430,23 +612,7 @@ class SubsonicService {
 
     try {
       final response = await _dio.get(url);
-      final data = response.data;
-
-      if (data is String) {
-        return json.decode(data);
-      }
-
-      final subsonicResponse = data['subsonic-response'];
-      if (subsonicResponse == null) {
-        throw Exception('Invalid response format');
-      }
-
-      if (subsonicResponse['status'] != 'ok') {
-        final error = subsonicResponse['error'];
-        throw Exception(error?['message'] ?? 'Unknown error');
-      }
-
-      return subsonicResponse;
+      return _decodeSubsonic(response.data);
     } on DioException catch (e) {
       switch (e.type) {
         case DioExceptionType.connectionTimeout:
@@ -495,8 +661,8 @@ class SubsonicService {
       final response = await _request('ping');
       return PingResult(
         success: true,
-        serverType: response['type'],
-        serverVersion: response['serverVersion'],
+        serverType: response['type']?.toString(),
+        serverVersion: response['serverVersion']?.toString(),
       );
     } catch (e) {
       return PingResult(success: false, error: e.toString());
@@ -508,14 +674,12 @@ class SubsonicService {
       final response = await _request('getMusicFolders');
       final folders = <MusicFolder>[];
 
-      final foldersData = response['musicFolders']?['musicFolder'];
-      if (foldersData is List) {
-        folders.addAll(
-          foldersData.map(
-            (f) => MusicFolder.fromJson(f as Map<String, dynamic>),
-          ),
-        );
-      }
+      final foldersData = _asList(response['musicFolders']?['musicFolder']);
+      folders.addAll(
+        foldersData.whereType<Map>().map(
+              (f) => MusicFolder.fromJson(Map<String, dynamic>.from(f)),
+            ),
+      );
 
       return folders;
     } catch (e) {
@@ -532,6 +696,19 @@ class SubsonicService {
     if (_youtube != null) return _youtube!.getCoverArtUrl(coverArt, size: size);
     if (coverArt == null || _config == null) {
       return '';
+    }
+    // 绝对 URL 防护：持久化队列/歌单里的 coverArt 可能是旧服务器的绝对 URL
+    // （如 Navidrome share/img/eyJ...）。host 与当前服务器一致才原样返回
+    // （LAN↔远程同服可命中），不一致（旧服务器）返回空 → 占位图，
+    // 不再把跨服请求外发（诊断日志 confirmed share/img 404）。
+    if (coverArt.startsWith('http://') || coverArt.startsWith('https://')) {
+      try {
+        final coverHost = Uri.parse(coverArt).host;
+        final activeHost = Uri.parse(activeBaseUrl).host;
+        return coverHost == activeHost ? coverArt : '';
+      } catch (_) {
+        return '';
+      }
     }
     _ensureStableAuthParams();
 
@@ -593,16 +770,13 @@ class SubsonicService {
     final response = await _request('getArtists');
     final artists = <Artist>[];
 
-    final artistsData = response['artists']?['index'];
-    if (artistsData is List) {
-      for (final index in artistsData) {
-        final indexArtists = index['artist'];
-        if (indexArtists is List) {
-          artists.addAll(
-            indexArtists.map((a) => Artist.fromJson(a as Map<String, dynamic>)),
-          );
-        }
-      }
+    for (final index in _asList(response['artists']?['index'])) {
+      if (index is! Map) continue;
+      artists.addAll(
+        _asList(index['artist']).whereType<Map>().map(
+              (a) => Artist.fromJson(Map<String, dynamic>.from(a)),
+            ),
+      );
     }
 
     return artists;
@@ -634,14 +808,11 @@ class SubsonicService {
       'offset': offset.toString(),
     });
 
-    final albumsData = response['albumList2']?['album'];
-    if (albumsData is List) {
-      return albumsData
-          .map((a) => Album.fromJson(a as Map<String, dynamic>))
-          .toList();
-    }
-
-    return [];
+    final albumsData = _asList(response['albumList2']?['album']);
+    return albumsData
+        .whereType<Map>()
+        .map((a) => Album.fromJson(Map<String, dynamic>.from(a)))
+        .toList();
   }
 
   Future<Album> getAlbum(String id) async {
@@ -655,13 +826,11 @@ class SubsonicService {
     if (_jellyfin != null) return _jellyfin!.getAlbumSongs(albumId);
     if (_youtube != null) return _youtube!.getAlbumSongs(albumId);
     final response = await _request('getAlbum', {'id': albumId});
-    final songsData = response['album']?['song'];
-    if (songsData is List) {
-      return songsData
-          .map((s) => Song.fromJson(s as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    final songsData = _asList(response['album']?['song']);
+    return songsData
+        .whereType<Map>()
+        .map((s) => Song.fromJson(Map<String, dynamic>.from(s)))
+        .toList();
   }
 
   Future<List<Album>> getArtistAlbums(String artistId, {Artist? artist}) async {
@@ -673,26 +842,22 @@ class SubsonicService {
       return artist.albums;
     }
     final response = await _request('getArtist', {'id': artistId});
-    final albumsData = response['artist']?['album'];
-    if (albumsData is List) {
-      return albumsData
-          .map((a) => Album.fromJson(a as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    final albumsData = _asList(response['artist']?['album']);
+    return albumsData
+        .whereType<Map>()
+        .map((a) => Album.fromJson(Map<String, dynamic>.from(a)))
+        .toList();
   }
 
   Future<List<Playlist>> getPlaylists() async {
     if (_jellyfin != null) return _jellyfin!.getPlaylists();
     if (_youtube != null) return _youtube!.getPlaylists();
     final response = await _request('getPlaylists');
-    final playlistsData = response['playlists']?['playlist'];
-    if (playlistsData is List) {
-      return playlistsData
-          .map((p) => Playlist.fromJson(p as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    final playlistsData = _asList(response['playlists']?['playlist']);
+    return playlistsData
+        .whereType<Map>()
+        .map((p) => Playlist.fromJson(Map<String, dynamic>.from(p)))
+        .toList();
   }
 
   Future<Playlist> getPlaylist(String id) async {
@@ -728,18 +893,7 @@ class SubsonicService {
 
     try {
       final response = await _dio.get(url);
-      final data = response.data;
-
-      final decoded = data is String ? json.decode(data) : data;
-      final subsonicResponse = decoded['subsonic-response'];
-      if (subsonicResponse == null) {
-        throw Exception('Invalid response format');
-      }
-
-      if (subsonicResponse['status'] != 'ok') {
-        final error = subsonicResponse['error'];
-        throw Exception(error?['message'] ?? 'Unknown error');
-      }
+      _decodeSubsonic(response.data);
     } on DioException catch (e) {
       throw Exception('Network error: ${e.message}');
     }
@@ -774,18 +928,7 @@ class SubsonicService {
 
     try {
       final response = await _dio.get(url);
-      final data = response.data;
-
-      final decoded = data is String ? json.decode(data) : data;
-      final subsonicResponse = decoded['subsonic-response'];
-      if (subsonicResponse == null) {
-        throw Exception('Invalid response format');
-      }
-
-      if (subsonicResponse['status'] != 'ok') {
-        final error = subsonicResponse['error'];
-        throw Exception(error?['message'] ?? 'Unknown error');
-      }
+      _decodeSubsonic(response.data);
 
       debugPrint('updatePlaylist successful');
     } on DioException catch (e) {
@@ -835,36 +978,20 @@ class SubsonicService {
     final searchResult = response['searchResult3'];
     debugPrint('SubsonicService: search3 response: searchResult=$searchResult');
 
-    // Handle both single item and list responses
-    var artistList = searchResult?['artist'];
-    var albumList = searchResult?['album'];
-    var songList = searchResult?['song'];
+    final artists = _asList(searchResult?['artist'])
+        .whereType<Map>()
+        .map((a) => Artist.fromJson(Map<String, dynamic>.from(a)))
+        .toList();
 
-    // Normalize to lists
-    if (artistList != null && artistList is! List) {
-      artistList = [artistList];
-    }
-    if (albumList != null && albumList is! List) {
-      albumList = [albumList];
-    }
-    if (songList != null && songList is! List) {
-      songList = [songList];
-    }
+    final albums = _asList(searchResult?['album'])
+        .whereType<Map>()
+        .map((a) => Album.fromJson(Map<String, dynamic>.from(a)))
+        .toList();
 
-    final artists = (artistList as List?)
-            ?.map((a) => Artist.fromJson(a as Map<String, dynamic>))
-            .toList() ??
-        [];
-
-    final albums = (albumList as List?)
-            ?.map((a) => Album.fromJson(a as Map<String, dynamic>))
-            .toList() ??
-        [];
-
-    final songs = (songList as List?)
-            ?.map((s) => Song.fromJson(s as Map<String, dynamic>))
-            .toList() ??
-        [];
+    final songs = _asList(searchResult?['song'])
+        .whereType<Map>()
+        .map((s) => Song.fromJson(Map<String, dynamic>.from(s)))
+        .toList();
 
     debugPrint(
         'SubsonicService: search3 parsed: ${artists.length} artists, ${albums.length} albums, ${songs.length} songs');
@@ -876,17 +1003,62 @@ class SubsonicService {
       return _jellyfin!.getRandomSongs(size: size, genre: genre);
     if (_youtube != null)
       return _youtube!.getRandomSongs(size: size, genre: genre);
+
+    // ── 道理鱼：自研层 random（Subsonic 层无 getRandomSongs）──────────
+    if (isDaoliyu) {
+      final data = await _apiGet('/api/tracks/random?limit=$size');
+      final items = data?['items'] as List<dynamic>? ?? [];
+      return items
+          .map((e) => _daoliyuTrackToSong(e as Map<String, dynamic>))
+          .whereType<Song>()
+          .toList();
+    }
+
     final params = <String, String>{'size': size.toString()};
     if (genre != null) params['genre'] = genre;
 
     final response = await _request('getRandomSongs', params);
-    final songsData = response['randomSongs']?['song'];
-    if (songsData is List) {
-      return songsData
-          .map((s) => Song.fromJson(s as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    final songsData = _asList(response['randomSongs']?['song']);
+    return songsData
+        .whereType<Map>()
+        .map((s) => Song.fromJson(Map<String, dynamic>.from(s)))
+        .toList();
+  }
+
+  /// 道理鱼自研 track 对象 → Luobo Song 模型。
+  ///
+  /// 字段对照（api_random.body 实测）：id/title、artist{id,name}、album{id,title}、
+  /// durationSeconds→duration、trackNumber→track、bitrate→bitRate、
+  /// genres[]→genre(取首)、coverArt(路径式，见方案 §8 坑，保留原值)。
+  Song? _daoliyuTrackToSong(Map<String, dynamic> t) {
+    final id = t['id']?.toString();
+    if (id == null || id.isEmpty) return null;
+    final artist = t['artist'] as Map<String, dynamic>?;
+    final album = t['album'] as Map<String, dynamic>?;
+    final genres = t['genres'] as List<dynamic>? ?? [];
+    return Song(
+      id: id,
+      title: t['title']?.toString() ?? 'Unknown Title',
+      album: album?['title']?.toString() ?? t['albumTitle']?.toString(),
+      albumId: album?['id']?.toString() ?? t['albumId']?.toString(),
+      artist: artist?['name']?.toString() ?? t['artistName']?.toString(),
+      artistId: artist?['id']?.toString() ?? t['artistId']?.toString(),
+      track: jsonInt(t['trackNumber']) ?? jsonInt(t['track']),
+      genre: genres.isNotEmpty ? genres.first.toString() : null,
+      // 道理鱼自研层 coverArt 是 path 形式（/api/cover?path=...），与 Subsonic
+      // getCoverArt?id=album:alb_xxx 不匹配，直接用会 404。改为专辑 id 前缀，
+      // 与 Subsonic 层封面取法对齐。
+      coverArt: album?['id'] != null ? 'album:${album!['id']}' : t['coverArt']?.toString(),
+      duration: jsonInt(t['durationSeconds']) ?? jsonInt(t['duration']),
+      bitRate: jsonInt(t['bitrate']) ?? jsonInt(t['bitRate']),
+      suffix:
+          t['detectedContainer']?.toString() ?? t['fileFormat']?.toString(),
+      samplingRate: jsonInt(t['sampleRate']),
+      bitDepth: jsonInt(t['bitDepth']),
+      created: t['createdAt'] != null
+          ? DateTime.tryParse(t['createdAt'].toString())
+          : null,
+    );
   }
 
   Future<void> star({String? id, String? albumId, String? artistId}) async {
@@ -934,20 +1106,20 @@ class SubsonicService {
     final response = await _request('getStarred2');
     final starred = response['starred2'];
 
-    final artists = (starred?['artist'] as List?)
-            ?.map((a) => Artist.fromJson(a as Map<String, dynamic>))
-            .toList() ??
-        [];
+    final artists = _asList(starred?['artist'])
+        .whereType<Map>()
+        .map((a) => Artist.fromJson(Map<String, dynamic>.from(a)))
+        .toList();
 
-    final albums = (starred?['album'] as List?)
-            ?.map((a) => Album.fromJson(a as Map<String, dynamic>))
-            .toList() ??
-        [];
+    final albums = _asList(starred?['album'])
+        .whereType<Map>()
+        .map((a) => Album.fromJson(Map<String, dynamic>.from(a)))
+        .toList();
 
-    final songs = (starred?['song'] as List?)
-            ?.map((s) => Song.fromJson(s as Map<String, dynamic>))
-            .toList() ??
-        [];
+    final songs = _asList(starred?['song'])
+        .whereType<Map>()
+        .map((s) => Song.fromJson(Map<String, dynamic>.from(s)))
+        .toList();
 
     return SearchResult(artists: artists, albums: albums, songs: songs);
   }
@@ -993,6 +1165,13 @@ class SubsonicService {
         return result;
       return null;
     }
+
+    // ── 道理鱼优先：自研层歌词（Subsonic 层无 getLyricsBySongId）──────
+    if (isDaoliyu) {
+      final apiLyrics = await _getDaoliyuLyrics(songId);
+      if (apiLyrics != null) return apiLyrics;
+    }
+
     try {
       final response = await _request('getLyricsBySongId', {'id': songId});
       return response['lyricsList'] as Map<String, dynamic>?;
@@ -1001,19 +1180,52 @@ class SubsonicService {
     }
   }
 
+  /// 道理鱼自研歌词：GET /api/tracks/{id}/lyrics，取 effectiveCandidate.lyrics
+  /// （LRC 含中英交错行）。
+  ///
+  /// 直接返回 `{lyrics: <LRC 文本>}` —— 与 Subsonic getLyrics 返回形状一致，
+  /// 消费者（player_provider._loadAndSyncLyrics）走 `lyrics` 字符串分支喂给
+  /// lyricsManager，由既有 LRC 解析器处理时间轴。⚠️ 不要转 structuredLyrics：
+  /// 消费者 _convertStructuredToLrc 读的是 Jellyfin 的 {startTicks, text} 字段，
+  /// 用 {start, value} 会产出空行（此前 bug，真机会话确认）。
+  ///
+  /// 拿不到有效歌词返回 null（走 LRCLIB/网易云兜底）。
+  Future<Map<String, dynamic>?> _getDaoliyuLyrics(String songId) async {
+    final data = await _apiGet('/api/tracks/$songId/lyrics');
+    if (data == null) return null;
+
+    try {
+      final candidates = data['candidates'] as List<dynamic>? ?? [];
+      Map<String, dynamic>? candidate =
+          data['effectiveCandidate'] as Map<String, dynamic>?;
+      if (candidate == null && candidates.isNotEmpty) {
+        candidate = candidates.first as Map<String, dynamic>;
+      }
+      if (candidate == null) return null;
+
+      final lrc = candidate['lyrics'] as String?;
+      if (lrc == null || lrc.isEmpty) return null;
+      return {'lyrics': lrc};
+    } catch (e) {
+      // 服务端返回结构意外（类型/字段变化）时，降级走 LRCLIB/网易云兜底。
+      Log.w('Daoliyu', 'Lyrics parse failed: $e');
+      return null;
+    }
+  }
+
   Future<List<Genre>> getGenres() async {
     if (_jellyfin != null) return _jellyfin!.getGenres();
     if (_youtube != null) return _youtube!.getGenres();
+    // 道理鱼 Subsonic 层无 getGenres → 返回空，由 GenresScreen 本地聚合。
+    if (isDaoliyu) return [];
     final response = await _request('getGenres');
-    final genresData = response['genres']?['genre'];
-    if (genresData is List) {
-      return genresData
-          .map((g) => Genre.fromJson(g as Map<String, dynamic>))
-          .where((g) => g.value.isNotEmpty)
-          .toList()
-        ..sort((a, b) => a.value.compareTo(b.value));
-    }
-    return [];
+    final genresData = _asList(response['genres']?['genre']);
+    return genresData
+        .whereType<Map>()
+        .map((g) => Genre.fromJson(Map<String, dynamic>.from(g)))
+        .where((g) => g.value.isNotEmpty)
+        .toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
   }
 
   Future<List<Song>> getSongsByGenre(
@@ -1030,13 +1242,11 @@ class SubsonicService {
       'count': count.toString(),
       'offset': offset.toString(),
     });
-    final songsData = response['songsByGenre']?['song'];
-    if (songsData is List) {
-      return songsData
-          .map((s) => Song.fromJson(s as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    final songsData = _asList(response['songsByGenre']?['song']);
+    return songsData
+        .whereType<Map>()
+        .map((s) => Song.fromJson(Map<String, dynamic>.from(s)))
+        .toList();
   }
 
   Future<List<Album>> getAlbumsByGenre(
@@ -1055,86 +1265,26 @@ class SubsonicService {
         'size': size.toString(),
         'offset': offset.toString(),
       });
-      final albumsData = response['albumList2']?['album'];
-      if (albumsData is List) {
-        return albumsData
-            .map((a) => Album.fromJson(a as Map<String, dynamic>))
-            .toList();
-      }
-      return [];
+      final albumsData = _asList(response['albumList2']?['album']);
+      return albumsData
+          .whereType<Map>()
+          .map((a) => Album.fromJson(Map<String, dynamic>.from(a)))
+          .toList();
     } catch (e) {
       return [];
     }
   }
 
-  Future<Map<String, dynamic>> jukeboxControl(
-    String action, {
-    int? index,
-    int? offset,
-    List<String>? ids,
-    double? gain,
-  }) async {
-    final params = <String, String>{'action': action};
-    if (index != null) params['index'] = index.toString();
-    if (offset != null) params['offset'] = offset.toString();
-    if (gain != null) params['gain'] = gain.toStringAsFixed(2);
-
-    String url = _buildUrl('jukeboxControl', params);
-    if (ids != null) {
-      for (final id in ids) {
-        url += '&id=${Uri.encodeComponent(id)}';
-      }
-    }
-
-    try {
-      final response = await _dio.get(url);
-      final data = response.data;
-      final sr = data is String
-          ? json.decode(data)['subsonic-response']
-          : data['subsonic-response'];
-      if (sr == null || sr['status'] != 'ok') {
-        throw Exception(sr?['error']?['message'] ?? 'Jukebox error');
-      }
-      return sr['jukeboxStatus'] as Map<String, dynamic>? ??
-          sr['jukeboxPlaylist'] as Map<String, dynamic>? ??
-          {};
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      if (status != null && status >= 500)
-        throw Exception(
-            'Server error ($status). The server failed to process the request.');
-      throw Exception('Network error. Check your connection.');
-    }
-  }
-
-  Future<Map<String, dynamic>> jukeboxGet() => jukeboxControl('get');
-  Future<Map<String, dynamic>> jukeboxStatus() => jukeboxControl('status');
-  Future<Map<String, dynamic>> jukeboxStart() => jukeboxControl('start');
-  Future<Map<String, dynamic>> jukeboxStop() => jukeboxControl('stop');
-  Future<Map<String, dynamic>> jukeboxSkip(int index, {int offset = 0}) =>
-      jukeboxControl('skip', index: index, offset: offset);
-  Future<Map<String, dynamic>> jukeboxAdd(List<String> ids) =>
-      jukeboxControl('add', ids: ids);
-  Future<Map<String, dynamic>> jukeboxClear() => jukeboxControl('clear');
-  Future<Map<String, dynamic>> jukeboxSet(List<String> ids) =>
-      jukeboxControl('set', ids: ids);
-  Future<Map<String, dynamic>> jukeboxShuffle() => jukeboxControl('shuffle');
-  Future<Map<String, dynamic>> jukeboxRemove(int index) =>
-      jukeboxControl('remove', index: index);
-  Future<Map<String, dynamic>> jukeboxSetGain(double gain) =>
-      jukeboxControl('setGain', gain: gain);
-
   Future<List<RadioStation>> getInternetRadioStations() async {
     try {
       final response = await _request('getInternetRadioStations');
-      final stationsData =
-          response['internetRadioStations']?['internetRadioStation'];
-      if (stationsData is List) {
-        return stationsData
-            .map((s) => RadioStation.fromJson(s as Map<String, dynamic>))
-            .toList();
-      }
-      return [];
+      final stationsData = _asList(
+        response['internetRadioStations']?['internetRadioStation'],
+      );
+      return stationsData
+          .whereType<Map>()
+          .map((s) => RadioStation.fromJson(Map<String, dynamic>.from(s)))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -1181,25 +1331,22 @@ class SubsonicService {
         'id': id,
         'count': count.toString(),
       });
-      final songsData = response['similarSongs2']?['song'];
-      if (songsData is List) {
-        return songsData
-            .map((s) => Song.fromJson(s as Map<String, dynamic>))
-            .toList();
-      }
-      return [];
+      final songsData = _asList(response['similarSongs2']?['song']);
+      return songsData
+          .whereType<Map>()
+          .map((s) => Song.fromJson(Map<String, dynamic>.from(s)))
+          .toList();
     } catch (e) {
       try {
         final response = await _request('getSimilarSongs', {
           'id': id,
           'count': count.toString(),
         });
-        final songsData = response['similarSongs']?['song'];
-        if (songsData is List) {
-          return songsData
-              .map((s) => Song.fromJson(s as Map<String, dynamic>))
-              .toList();
-        }
+        final songsData = _asList(response['similarSongs']?['song']);
+        return songsData
+            .whereType<Map>()
+            .map((s) => Song.fromJson(Map<String, dynamic>.from(s)))
+            .toList();
       } catch (_) {}
       return [];
     }
@@ -1222,13 +1369,11 @@ class SubsonicService {
         'artist': resolved.name,
         'count': count.toString(),
       });
-      final songsData = response['topSongs']?['song'];
-      if (songsData is List) {
-        return songsData
-            .map((s) => Song.fromJson(s as Map<String, dynamic>))
-            .toList();
-      }
-      return [];
+      final songsData = _asList(response['topSongs']?['song']);
+      return songsData
+          .whereType<Map>()
+          .map((s) => Song.fromJson(Map<String, dynamic>.from(s)))
+          .toList();
     } catch (e) {
       try {
         final albums = await getArtistAlbums(artistId, artist: artist);

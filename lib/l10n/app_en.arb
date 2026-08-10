@@ -970,6 +970,9 @@
 
   "settingsGroupServer": "Server & Account",
   "settingsServerSettings": "Server Settings",
+  "serverManagement": "Server Management",
+  "noSavedProfiles": "No saved server configurations yet",
+  "connectedSuccessfully": "Connected successfully",
   "settingsGroupPlayback": "Playback & Quality",
   "settingsPlaybackSettings": "Playback Settings",
   "settingsStreamingEntry": "Streaming Quality",
@@ -1772,45 +1775,7 @@
     }
   },
 
-  "@_JUKEBOX": {},
-  "sectionJukebox": "JUKEBOX MODE",
-  "@sectionJukebox": { "description": "Section header for the jukebox settings in the Server tab" },
 
-  "jukeboxMode": "Jukebox Mode",
-  "@jukeboxMode": { "description": "Toggle label for enabling jukebox mode" },
-
-  "jukeboxModeSubtitle": "Play audio through the server instead of this device",
-  "@jukeboxModeSubtitle": { "description": "Subtitle for the jukebox mode toggle" },
-
-  "openJukeboxController": "Open Jukebox Controller",
-  "@openJukeboxController": { "description": "List tile label to navigate to the jukebox controller screen" },
-
-  "jukeboxClearQueue": "Clear Queue",
-  "@jukeboxClearQueue": { "description": "Action label to clear the jukebox playback queue" },
-
-  "jukeboxShuffleQueue": "Shuffle Queue",
-  "@jukeboxShuffleQueue": { "description": "Action label to shuffle the jukebox playback queue" },
-
-  "jukeboxQueueEmpty": "No songs in queue",
-  "@jukeboxQueueEmpty": { "description": "Empty state when the jukebox queue has no songs" },
-
-  "jukeboxNowPlaying": "Now Playing",
-  "@jukeboxNowPlaying": { "description": "Section header for the now-playing area in the jukebox controller" },
-
-  "jukeboxQueue": "Queue",
-  "@jukeboxQueue": { "description": "Section header for the queue list in the jukebox controller" },
-
-  "jukeboxVolume": "Volume",
-  "@jukeboxVolume": { "description": "Label for the volume slider in the jukebox controller" },
-
-  "playOnJukebox": "Play on Jukebox",
-  "@playOnJukebox": { "description": "Option to replace the jukebox queue with this song and start playback" },
-
-  "addToJukeboxQueue": "Add to Jukebox Queue",
-  "@addToJukeboxQueue": { "description": "Option to append a song to the jukebox queue" },
-
-  "jukeboxNotSupported": "Jukebox mode is not supported by this server. Enable it in your server configuration (e.g. EnableJukebox = true in Navidrome).",
-  "@jukeboxNotSupported": { "description": "Error shown when the server returns 501 for jukebox API calls" },
 
   "@_MUSIC_FOLDERS": {},
   "musicFoldersDialogTitle": "Select Music Folders",

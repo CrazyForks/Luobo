@@ -779,6 +779,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsServerSettings => 'Server Settings';
 
   @override
+  String get serverManagement => 'Server Management';
+
+  @override
+  String get noSavedProfiles => 'No saved server configurations yet';
+
+  @override
+  String get connectedSuccessfully => 'Connected successfully';
+
+  @override
   String get settingsGroupPlayback => 'Playback & Quality';
 
   @override
@@ -1725,47 +1734,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String genreTooltip(int songCount, int albumCount) {
     return '$songCount canzoni • $albumCount album';
   }
-
-  @override
-  String get sectionJukebox => 'MODALITÀ JUKEBOX';
-
-  @override
-  String get jukeboxMode => 'Modalità Jukebox';
-
-  @override
-  String get jukeboxModeSubtitle =>
-      'Riproduci l\'audio tramite il server invece di questo dispositivo';
-
-  @override
-  String get openJukeboxController => 'Apri Controller Jukebox';
-
-  @override
-  String get jukeboxClearQueue => 'Cancella la coda';
-
-  @override
-  String get jukeboxShuffleQueue => 'Mescola la coda';
-
-  @override
-  String get jukeboxQueueEmpty => 'Nessuna canzone in coda';
-
-  @override
-  String get jukeboxNowPlaying => 'Riproduzione in corso';
-
-  @override
-  String get jukeboxQueue => 'Coda';
-
-  @override
-  String get jukeboxVolume => 'Volume';
-
-  @override
-  String get playOnJukebox => 'Riproduci su Jukebox';
-
-  @override
-  String get addToJukeboxQueue => 'Aggiungi alla coda di Jukebox';
-
-  @override
-  String get jukeboxNotSupported =>
-      'La modalità Jukebox non è supportata da questo server. Abilitarla nella configurazione del server (ad es. EnableJukebox = true in Navidrome).';
 
   @override
   String get musicFoldersDialogTitle => 'Seleziona Cartelle Musicali';
