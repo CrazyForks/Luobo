@@ -9,8 +9,7 @@ import '../providers/player_provider.dart';
 import '../services/subsonic_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
-import '../widgets/server_qr_dialog.dart';
-import 'login_screen.dart';
+import 'saved_profiles_screen.dart';
 
 class SettingsServerTab extends StatefulWidget {
   const SettingsServerTab({super.key});
@@ -78,7 +77,10 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
           ],
         ),
         const SizedBox(height: 24),
-        _buildSavedProfilesSection(),
+        _buildSection(
+          title: l10n.sectionSavedProfiles,
+          children: [_buildSavedProfilesEntry()],
+        ),
         const SizedBox(height: 24),
         _buildSection(
           title: l10n.sectionMusicFolders,
@@ -117,12 +119,10 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
         ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
+          child: Material(
             color: _isDark ? AppTheme.darkSurface : Colors.white,
             borderRadius: BorderRadius.circular(12),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            clipBehavior: Clip.antiAlias,
             child: Column(children: children),
           ),
         ),
@@ -226,16 +226,6 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
     );
   }
 
-  /// Opens the login screen pre-filled with [profile] so the connected
-  /// server's settings can be edited. The settings page stays on the back
-  /// stack, so the user can return without being logged out.
-  void _openEditProfile(ServerConfig profile) {
-    NavigationHelper.push(
-      context,
-      LoginScreen(initialConfig: profile),
-    );
-  }
-
   Widget _buildLogoutButton() {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -290,189 +280,63 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
     );
   }
 
-  Widget _buildSavedProfilesSection() {
+  /// 已保存配置入口行：`已保存配置 (N) >`，点击进入独立卡片二级页
+  /// （[SavedProfilesScreen]）。原内嵌配置列表已拆出，避免配置多时
+  /// 把服务器管理页拉得过长。
+  Widget _buildSavedProfilesEntry() {
     return FutureBuilder<List<ServerConfig>>(
       future:
           Provider.of<AuthProvider>(context, listen: false).getSavedProfiles(),
       builder: (context, snapshot) {
-        final profiles = snapshot.data ?? [];
-        if (profiles.isEmpty) {
-          // 服务列表页空态：引导用户添加第一个服务器配置。
-          final l10n = AppLocalizations.of(context)!;
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: Text(
-              l10n.noSavedProfiles,
-              style: TextStyle(
-                fontSize: 13,
+        final count = snapshot.data?.length ?? 0;
+        final l10n = AppLocalizations.of(context)!;
+        return ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(
+                alpha: 0.12,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.dns_rounded,
+              color: Theme.of(context).colorScheme.primary,
+              size: 18,
+            ),
+          ),
+          title: Text(
+            l10n.sectionSavedProfiles,
+            style: const TextStyle(fontSize: 16),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (count > 0)
+                Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _isDark
+                        ? AppTheme.darkSecondaryText
+                        : AppTheme.lightSecondaryText,
+                  ),
+                ),
+              const SizedBox(width: 4),
+              Icon(
+                CupertinoIcons.chevron_right,
+                size: 16,
                 color: _isDark
                     ? AppTheme.darkSecondaryText
                     : AppTheme.lightSecondaryText,
               ),
-            ),
-          );
-        }
-
-        final l10n = AppLocalizations.of(context)!;
-        final authProvider = Provider.of<AuthProvider>(context);
-        final currentConfig = authProvider.config;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text(
-                l10n.sectionSavedProfiles,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: _isDark
-                      ? AppTheme.darkSecondaryText
-                      : AppTheme.lightSecondaryText,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: _isDark ? AppTheme.darkSurface : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Column(
-                  children: [
-                    ...profiles.map((profile) {
-                      final isActive =
-                          currentConfig?.serverUrl == profile.serverUrl &&
-                              currentConfig?.username == profile.username;
-                      final label = profile.name?.isNotEmpty == true
-                          ? profile.name!
-                          : '${profile.username}@${Uri.tryParse(profile.serverUrl)?.host ?? profile.serverUrl}';
-
-                      return ListTile(
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 16),
-                        leading: Icon(
-                          isActive
-                              ? CupertinoIcons.checkmark_circle_fill
-                              : CupertinoIcons.person_crop_circle,
-                          color: isActive
-                              ? const Color(0xFF34C759)
-                              : (_isDark
-                                  ? AppTheme.darkSecondaryText
-                                  : AppTheme.lightSecondaryText),
-                        ),
-                        title: Text(
-                          label,
-                          style: TextStyle(
-                            fontWeight:
-                                isActive ? FontWeight.w600 : FontWeight.normal,
-                            color: isActive
-                                ? Theme.of(context).colorScheme.primary
-                                : null,
-                          ),
-                        ),
-                        subtitle: Text(
-                          profile.serverUrl,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: _isDark
-                                ? AppTheme.darkSecondaryText
-                                : AppTheme.lightSecondaryText,
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(CupertinoIcons.qrcode, size: 20),
-                              tooltip: l10n.shareQrCode,
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) =>
-                                      ServerQrDialog(config: profile),
-                                );
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(CupertinoIcons.pencil, size: 20),
-                              tooltip: l10n.edit,
-                              onPressed: () => _openEditProfile(profile),
-                            ),
-                          ],
-                        ),
-                        onTap: isActive
-                            ? () => _openEditProfile(profile)
-                            : () async {
-                                final confirmed = await showDialog<bool>(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: Text(l10n.switchProfile),
-                                    content: Text(
-                                        l10n.switchProfileConfirmation(label)),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(ctx, false),
-                                        child: Text(l10n.cancel),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(ctx, true),
-                                        child: Text(l10n.ok),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirmed == true) {
-                                  if (!mounted) return;
-                                  final playerProvider =
-                                      Provider.of<PlayerProvider>(context,
-                                          listen: false);
-                                  await playerProvider.stop();
-                                  await authProvider.switchProfile(profile);
-                                }
-                              },
-                      );
-                    }),
-                    Divider(
-                        height: 1,
-                        color: _isDark
-                            ? AppTheme.darkDivider
-                            : AppTheme.lightDivider),
-                    ListTile(
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 16),
-                      leading: Icon(
-                        CupertinoIcons.plus_circle,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      title: Text(
-                        l10n.addProfile,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      onTap: () {
-                        // Push the login screen to add a new profile. Unlike
-                        // the previous disconnect() flow, this keeps the
-                        // current connection intact and lets the user return
-                        // to the settings page via the close button / back.
-                        NavigationHelper.push(context, const LoginScreen());
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
+          onTap: () =>
+              NavigationHelper.push(context, const SavedProfilesScreen()),
         );
       },
     );

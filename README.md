@@ -2,7 +2,7 @@
 
 **Luobo**（萝卜）是基于 [Musly](https://github.com/dddevid/Musly) 二次开发的 Navidrome / Subsonic 音乐播放客户端，使用 Flutter 构建，支持 Android 和 iOS。**相比原版 Musly 增加了 Apple Music 风格首页、车载模式、听歌报告、AI 歌单等特色功能，并对设置页、音乐库艺术家页做了重构，以及大规模国际化适配。**
 
-> **当前版本：v1.1.13**（在 Musly v1.0.13 基础上独立迭代）
+> **当前版本：v1.1.14**（在 Musly v1.0.13 基础上独立迭代）
 
 ---
 
@@ -203,7 +203,22 @@
 
 ## 🛠️ 版本历史
 
-**v1.1.13（当前）** — 道理鱼接入、多服务器管理与全量切换、移除 Jukebox：
+**v1.1.14（当前）** — 登录页与服务器管理改版（Apple Music 风两步引导 + 服务器卡片二级页）：
+
+**🔐 登录页改版（Apple Music 视觉风）**
+- ✅ **方案 B 两步引导** — 原一屏「选配置/选协议/填表单/配证书」四件事拆成「填服务器 → 连接」两步，legacy 认证/自签名证书等工程选项折叠进高级项，信息层级清晰
+- ✅ **旧登录页保留回退** — `login_screen.dart` 变为 dispatcher，原实现改 `login_screen_v1.dart` 保留（新建文件替换、可随时回退）
+- ✅ **Apple Music 视觉风** — 浅色 / 分组卡片 / 无边框输入 / 克制排版
+
+**🗂️ 服务器管理二级页**
+- ✅ **已保存配置拆独立二级页** — 设置-服务器页收敛为「已保存配置 (N) >」入口行，配置列表卡片化（`SavedProfilesScreen` + `ServerProfileCard`），编辑 / 分享二维码 / 切换 / 删除
+- ✅ **服务器表单与网关独立** — `ServerFormScreen`（两步引导表单）+ `ServerGatewayScreen`（连接中进度框 + 失败/异常提示）
+- ✅ **扫码失败改预填表单** — 分享二维码导入失败时推预填表单兜底；去重 connected/connecting 文案 key；设置分组卡改 Material、youtube label 修正、barrel 补导出
+
+**🧪 质量**
+- ✅ `flutter analyze` lib 0 error、单测 133 全绿、两轮独立 code review（P1×3 / P2×6 项修复）后收口
+
+**v1.1.13** — 道理鱼接入、多服务器管理与全量切换、移除 Jukebox：
 
 **🐟 道理鱼（daoliyu）接入**
 - ✅ **双协议适配** — `serverFamily='daoliyu'`：Subsonic 兼容层（浏览/搜索/播放/封面/歌单/收藏）+ 自研 `/api` JWT 层（歌词/随机歌/播放控制）；纯客户端适配，道理鱼服务端零改动

@@ -3274,12 +3274,6 @@ abstract class AppLocalizations {
   /// **'Enable repeat'**
   String get enableRepeat;
 
-  /// Tooltip for the cast button when connecting to a device
-  ///
-  /// In en, this message translates to:
-  /// **'Connecting'**
-  String get connecting;
-
   /// Tooltip for the lyrics button when lyrics panel is open
   ///
   /// In en, this message translates to:
@@ -4845,6 +4839,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap a profile to connect • tap × to delete'**
   String get tapProfileToConnect;
+
+  /// Section title on the server gateway screen
+  ///
+  /// In en, this message translates to:
+  /// **'My Servers'**
+  String get myServers;
+
+  /// Entry to add a new server configuration
+  ///
+  /// In en, this message translates to:
+  /// **'Add Server'**
+  String get addServer;
+
+  /// App bar title when editing an existing server configuration
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Server'**
+  String get editServer;
+
+  /// Bottom sheet title for picking the server family
+  ///
+  /// In en, this message translates to:
+  /// **'Select Server Type'**
+  String get selectServerType;
+
+  /// Server family option that auto-detects
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-detect (Recommended)'**
+  String get serverTypeAuto;
+
+  /// Subtitle under the auto-detect server family option
+  ///
+  /// In en, this message translates to:
+  /// **'Subsonic / Jellyfin / 道理鱼'**
+  String get serverTypeAutoSubtitle;
+
+  /// Server family option label
+  ///
+  /// In en, this message translates to:
+  /// **'Subsonic'**
+  String get serverTypeSubsonic;
+
+  /// Server family option label
+  ///
+  /// In en, this message translates to:
+  /// **'Emby / Jellyfin'**
+  String get serverTypeJellyfin;
+
+  /// Server family option label
+  ///
+  /// In en, this message translates to:
+  /// **'道理鱼'**
+  String get serverTypeDaoliyu;
+
+  /// Confirm dialog title when deleting a saved profile
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Profile'**
+  String get deleteProfileTitle;
+
+  /// Confirm dialog body when deleting a saved profile
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"? This cannot be undone.'**
+  String deleteProfileConfirm(String name);
+
+  /// Group title on the server form: server address fields
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get formSectionConnection;
+
+  /// Group title on the server form: credentials fields
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get formSectionAccount;
+
+  /// Progress text shown while switching server profiles
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get connecting;
 
   /// App bar title for theme manager screen
   ///

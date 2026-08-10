@@ -1677,9 +1677,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get enableRepeat => '启用循环';
 
   @override
-  String get connecting => '正在连接';
-
-  @override
   String get closeLyrics => '关闭歌词';
 
   @override
@@ -2545,6 +2542,50 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tapProfileToConnect => '点击账号连接 • 点击 × 删除';
+
+  @override
+  String get myServers => '我的服务器';
+
+  @override
+  String get addServer => '添加服务器';
+
+  @override
+  String get editServer => '编辑服务器';
+
+  @override
+  String get selectServerType => '选择服务器类型';
+
+  @override
+  String get serverTypeAuto => '自动检测（推荐）';
+
+  @override
+  String get serverTypeAutoSubtitle => 'Subsonic / Jellyfin / 道理鱼';
+
+  @override
+  String get serverTypeSubsonic => 'Subsonic';
+
+  @override
+  String get serverTypeJellyfin => 'Emby / Jellyfin';
+
+  @override
+  String get serverTypeDaoliyu => '道理鱼';
+
+  @override
+  String get deleteProfileTitle => '删除配置';
+
+  @override
+  String deleteProfileConfirm(String name) {
+    return '确定删除「$name」吗？';
+  }
+
+  @override
+  String get formSectionConnection => '连接';
+
+  @override
+  String get formSectionAccount => '账号';
+
+  @override
+  String get connecting => '连接中…';
 
   @override
   String get nowPlayingThemesTitle => '正在播放主题';

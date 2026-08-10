@@ -1710,9 +1710,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get enableRepeat => 'Ativar repetição';
 
   @override
-  String get connecting => 'Conectando';
-
-  @override
   String get closeLyrics => 'Fechar Letras';
 
   @override
@@ -2655,6 +2652,50 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get tapProfileToConnect =>
       'Tap a profile to connect • tap × to delete';
+
+  @override
+  String get myServers => 'My Servers';
+
+  @override
+  String get addServer => 'Add Server';
+
+  @override
+  String get editServer => 'Edit Server';
+
+  @override
+  String get selectServerType => 'Select Server Type';
+
+  @override
+  String get serverTypeAuto => 'Auto-detect (Recommended)';
+
+  @override
+  String get serverTypeAutoSubtitle => 'Subsonic / Jellyfin / 道理鱼';
+
+  @override
+  String get serverTypeSubsonic => 'Subsonic';
+
+  @override
+  String get serverTypeJellyfin => 'Emby / Jellyfin';
+
+  @override
+  String get serverTypeDaoliyu => '道理鱼';
+
+  @override
+  String get deleteProfileTitle => 'Delete Profile';
+
+  @override
+  String deleteProfileConfirm(String name) {
+    return 'Delete \"$name\"? This cannot be undone.';
+  }
+
+  @override
+  String get formSectionConnection => 'Connection';
+
+  @override
+  String get formSectionAccount => 'Account';
+
+  @override
+  String get connecting => 'Conectando';
 
   @override
   String get nowPlayingThemesTitle => 'Now Playing Themes';

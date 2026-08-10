@@ -34,6 +34,7 @@ void main() {
       );
 
       await tester.pump();
+      await tester.pump(); // 等待已保存配置的 FutureBuilder 解析
 
       expect(find.text('Musly'), findsWidgets);
       expect(find.text('Connect to your Subsonic server'), findsOneWidget);
@@ -60,6 +61,11 @@ void main() {
       );
 
       await tester.pump();
+      await tester.pump(); // 等待已保存配置的 FutureBuilder 解析
+
+      // 两步引导：第 1 步网关页 → 点「Add Server」进入第 2 步连接表单
+      await tester.tap(find.text('Add Server'));
+      await tester.pumpAndSettle();
 
       expect(find.text('Server URL'), findsOneWidget);
       expect(find.text('Username'), findsOneWidget);
@@ -88,6 +94,10 @@ void main() {
       );
 
       await tester.pump();
+      await tester.pump(); // 等待已保存配置的 FutureBuilder 解析
+
+      await tester.tap(find.text('Add Server'));
+      await tester.pumpAndSettle();
 
       final connectButton = find.text('Connect');
       await tester.ensureVisible(connectButton);
