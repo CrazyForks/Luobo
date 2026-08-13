@@ -722,6 +722,84 @@
     "description": "Radio section label"
   },
 
+  "audiobooks": "Audiobooks",
+  "@audiobooks": {
+    "description": "Audiobooks section label (Daoliyu)"
+  },
+
+  "playedTo": "Played to {position}",
+  "@playedTo": {
+    "description": "Audiobook chapter progress subtitle",
+    "placeholders": {
+      "position": {
+        "type": "String"
+      }
+    }
+  },
+
+  "finished": "Finished",
+  "@finished": {
+    "description": "Audiobook chapter finished label"
+  },
+
+  "chapterCount": "{count} Chapters",
+  "@chapterCount": {
+    "description": "Audiobook chapter count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "chapterX": "Chapter {count}",
+  "@chapterX": {
+    "description": "Audiobook chapter ordinal label (e.g. Chapter 3)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "failedToLoadAudiobooks": "Failed to load audiobooks",
+  "@failedToLoadAudiobooks": {
+    "description": "Error state message on the audiobook list screen"
+  },
+
+  "failedToLoadChapters": "Failed to load chapters, please retry",
+  "@failedToLoadChapters": {
+    "description": "Error state message on the audiobook detail screen"
+  },
+
+  "pageOf": "Page {page} of {total}",
+  "@pageOf": {
+    "description": "Audiobook chapter pagination indicator",
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+
+  "previousPage": "Previous page",
+  "@previousPage": {
+    "description": "Audiobook chapter pagination previous button"
+  },
+
+  "nextPage": "Next page",
+  "@nextPage": {
+    "description": "Audiobook chapter pagination next button"
+  },
+
+  "exitAudiobookFirst": "Please exit the audiobook first",
+  "@exitAudiobookFirst": {
+    "description": "Snackbar when queue operations are attempted while playing an audiobook"
+  },
+
   "changelog": "Changelog",
   "@changelog": {
     "description": "Changelog link label"
@@ -1333,6 +1411,8 @@
 
   "connected": "Connected",
   "@connected": { "description": "Server connection status — connected" },
+  "failedToLoadProfiles": "Failed to load saved servers",
+  "@failedToLoadProfiles": { "description": "Error message when reading saved profiles fails" },
 
   "@_PLAYER_SCREENS": {},
   "noSongPlaying": "No song playing",

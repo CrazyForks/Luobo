@@ -7,6 +7,7 @@ import '../providers/player_provider.dart';
 import '../services/subsonic_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_surface.dart';
+import '../widgets/load_error_view.dart';
 import '../l10n/app_localizations.dart';
 
 class RadioScreen extends StatefulWidget {
@@ -211,40 +212,12 @@ class _RadioScreenState extends State<RadioScreen> {
     }
 
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                CupertinoIcons.exclamationmark_triangle,
-                size: 64,
-                color: Colors.orange,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                AppLocalizations.of(context)!.failedToLoadRadioStations,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _loadStations,
-                icon: const Icon(CupertinoIcons.refresh),
-                label: Text(AppLocalizations.of(context)!.retry),
-              ),
-            ],
-          ),
-        ),
+      // 复用共享 LoadErrorView（R003）。
+      return LoadErrorView(
+        title: AppLocalizations.of(context)!.failedToLoadRadioStations,
+        message: _error,
+        retryLabel: AppLocalizations.of(context)!.retry,
+        onRetry: _loadStations,
       );
     }
 

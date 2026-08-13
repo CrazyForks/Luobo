@@ -21,6 +21,26 @@ class SettingsServerTab extends StatefulWidget {
 class _SettingsServerTabState extends State<SettingsServerTab> {
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
+  // 已保存配置计数：缓存 future，避免每次 build 重建导致 count 闪烁。
+  Future<List<ServerConfig>>? _profilesFuture;
+  bool _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _reloadProfiles();
+    }
+  }
+
+  void _reloadProfiles() {
+    _profilesFuture = Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    ).getSavedProfiles();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -285,8 +305,7 @@ class _SettingsServerTabState extends State<SettingsServerTab> {
   /// 把服务器管理页拉得过长。
   Widget _buildSavedProfilesEntry() {
     return FutureBuilder<List<ServerConfig>>(
-      future:
-          Provider.of<AuthProvider>(context, listen: false).getSavedProfiles(),
+      future: _profilesFuture,
       builder: (context, snapshot) {
         final count = snapshot.data?.length ?? 0;
         final l10n = AppLocalizations.of(context)!;

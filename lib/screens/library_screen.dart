@@ -27,6 +27,7 @@ import 'settings_root_screen.dart';
 import 'library_search_delegate.dart';
 import 'artist_screen.dart';
 import 'radio_screen.dart';
+import 'audiobook_list_screen.dart';
 import 'all_songs_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/album_artwork.dart' show isLocalFilePath;
@@ -532,14 +533,28 @@ class _LibraryScreenState extends State<LibraryScreen>
                 isGradient: false,
                 onTap: () => _navigate(context, const LikedAlbumsScreen()),
               ),
-              // Radio Stations folder
-              _SpotifyLibraryTile(
-                icon: CupertinoIcons.antenna_radiowaves_left_right,
-                iconColor: const Color(0xFF34C759),
-                title: AppLocalizations.of(context)!.radioStations,
-                subtitle: AppLocalizations.of(context)!.internetRadio,
-                isGradient: false,
-                onTap: () => _navigate(context, const RadioScreen()),
+              // Radio Stations folder — 道理鱼下换成「有声书」入口（§7.1）。
+              Selector<AuthProvider, bool>(
+                selector: (_, auth) => auth.config?.serverFamily == 'daoliyu',
+                builder: (context, isDaoliyu, _) => _SpotifyLibraryTile(
+                  icon: isDaoliyu
+                      ? CupertinoIcons.book
+                      : CupertinoIcons.antenna_radiowaves_left_right,
+                  iconColor: const Color(0xFF34C759),
+                  title: isDaoliyu
+                      ? AppLocalizations.of(context)!.audiobooks
+                      : AppLocalizations.of(context)!.radioStations,
+                  subtitle: isDaoliyu
+                      ? AppLocalizations.of(context)!.audiobooks
+                      : AppLocalizations.of(context)!.internetRadio,
+                  isGradient: false,
+                  onTap: () => _navigate(
+                    context,
+                    isDaoliyu
+                        ? const AudiobookListScreen()
+                        : const RadioScreen(),
+                  ),
+                ),
               ),
             ],
           ),

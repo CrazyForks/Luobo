@@ -145,9 +145,10 @@ class _ServerFormScreenState extends State<ServerFormScreen> {
   // ── 登录 ────────────────────────────────────────────────────────────
 
   Future<void> _login() async {
-    final family = _serverFamily;
-    final effectiveFamily =
-        (family == 'auto' || family.isEmpty) ? 'subsonic' : family;
+    // 保持 'auto' 原值传给 login()：按 subsonic 通道登录（Jellyfin 的
+    // subsonic 兼容端点同样接受密码认证），并把 'auto' 落盘——下次编辑仍显示
+    // 「自动检测」，与用户选择一致（未知家族在下游均按 subsonic 处理）。
+    final effectiveFamily = _serverFamily;
 
     // YouTube Music requires no credentials — skip form validation
     if (effectiveFamily != 'youtube') {
@@ -162,13 +163,8 @@ class _ServerFormScreenState extends State<ServerFormScreen> {
             : _serverController.text.trim();
     final localUrl = _localServerController.text.trim();
 
-    // Accept at least one URL (LAN-only without WAN is valid).
-    if (effectiveFamily != 'youtube' &&
-        serverUrl.isEmpty &&
-        localUrl.isEmpty) {
-      setState(() => _loginError = '请至少填写一个服务器地址（远程或局域网）');
-      return;
-    }
+    // 两字段皆空已由服务器地址字段 validator（pleaseEnterServerUrl）拦截，
+    // 无需在此重复处理（旧 login_screen 的硬编码中文兜底为不可达分支，已移除）。
 
     // 仅填局域网地址时，把它同时作为主地址（见旧 login_screen.dart 注释：
     // 保证 LAN-only 配置的「不转码」规则生效，且重存 profile 时两字段一致）。
@@ -225,15 +221,13 @@ class _ServerFormScreenState extends State<ServerFormScreen> {
       // 先取 root messenger，pop 后再显示——避免 SnackBar 因 context 随
       // pop 销毁而被吞。
       final messenger = ScaffoldMessenger.of(context);
-      if (_isEdit) {
-        // 编辑模式：pop 回来源页（设置二级页 / 网关），带回 true 触发列表刷新。
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop(true);
-        } else {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
+      // 统一 pop 回来源页（设置二级页 / 网关），带回 true 触发列表刷新：
+      // - 设置二级页新增：回列表并刷新，不再被 popUntil 甩回首页；
+      // - 网关（根）场景：pop 后 AuthWrapper 已按 state 换成 MainScreen，
+      //   与 popUntil(isFirst) 效果一致。
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop(true);
       } else {
-        // 新增/首次登录：弹到根路由显示首页（AuthWrapper 按 state 切换）。
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
       messenger.showSnackBar(
@@ -260,7 +254,7 @@ class _ServerFormScreenState extends State<ServerFormScreen> {
         allowedExtensions: ['p12', 'pfx', 'pem'],
         dialogTitle: AppLocalizations.of(context)!.selectClientCertificate,
       );
-      if (result != null && result.files.single.path != null) {
+      if (result != null && result.files.single.path != null && mounted) {
         setState(() {
           _clientCertificatePath = result.files.single.path;
           _clientCertificateName = result.files.single.name;
@@ -289,7 +283,7 @@ class _ServerFormScreenState extends State<ServerFormScreen> {
         dialogTitle: AppLocalizations.of(context)!.selectCertificate,
       );
 
-      if (result != null && result.files.single.path != null) {
+      if (result != null && result.files.single.path != null && mounted) {
         setState(() {
           _customCertificatePath = result.files.single.path;
           _customCertificateName = result.files.single.name;
@@ -1054,6 +1048,10 @@ class _ServerFormScreenState extends State<ServerFormScreen> {
             TextField(
               controller: _clientCertPasswordController,
               obscureText: _obscureClientCertPassword,
+              // 与其它输入框一致：resize:false 下聚焦时滚到键盘上方。
+              scrollPadding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+              ),
               decoration: InputDecoration(
                 hintText: l10n.clientCertPassword,
                 prefixIcon: const Icon(CupertinoIcons.lock, size: 20),

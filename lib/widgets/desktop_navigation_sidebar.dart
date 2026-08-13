@@ -7,6 +7,8 @@ import '../models/playlist.dart';
 import '../screens/playlist_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/radio_screen.dart';
+import '../screens/audiobook_list_screen.dart';
+import '../providers/auth_provider.dart';
 import '../screens/settings_root_screen.dart';
 import '../utils/image_cache.dart';
 
@@ -47,6 +49,10 @@ class _DesktopNavigationSidebarState extends State<DesktopNavigationSidebar> {
 
   void _navigateToRadio() {
     _push(MaterialPageRoute(builder: (_) => const RadioScreen()));
+  }
+
+  void _navigateToAudiobooks() {
+    _push(MaterialPageRoute(builder: (_) => const AudiobookListScreen()));
   }
 
   void _navigateToSettings() {
@@ -109,13 +115,18 @@ class _DesktopNavigationSidebarState extends State<DesktopNavigationSidebar> {
             onFavoritesTap: _navigateToFavorites,
             onPlaylistTap: _navigateToPlaylist,
           ),
-          _NavItem(
-            icon: Icons.radio_rounded,
-            activeIcon: Icons.radio_rounded,
-            label: l10n.categoryRadio,
-            isSelected: false,
-            isCollapsed: _isCollapsed,
-            onTap: _navigateToRadio,
+          // 道理鱼下电台入口 → 有声书（§7.1，Selector 监听切服务器即时刷新）。
+          Selector<AuthProvider, bool>(
+            selector: (_, auth) => auth.config?.serverFamily == 'daoliyu',
+            builder: (context, isDaoliyu, _) => _NavItem(
+              icon: isDaoliyu ? Icons.menu_book_rounded : Icons.radio_rounded,
+              activeIcon:
+                  isDaoliyu ? Icons.menu_book_rounded : Icons.radio_rounded,
+              label: isDaoliyu ? l10n.audiobooks : l10n.categoryRadio,
+              isSelected: false,
+              isCollapsed: _isCollapsed,
+              onTap: isDaoliyu ? _navigateToAudiobooks : _navigateToRadio,
+            ),
           ),
           _NavItem(
             icon: Icons.settings_outlined,

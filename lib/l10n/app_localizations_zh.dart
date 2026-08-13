@@ -497,6 +497,47 @@ class AppLocalizationsZh extends AppLocalizations {
   String get radio => '电台';
 
   @override
+  String get audiobooks => '有声书';
+
+  @override
+  String playedTo(String position) {
+    return '已播至 $position';
+  }
+
+  @override
+  String get finished => '已听完';
+
+  @override
+  String chapterCount(int count) {
+    return '$count 章';
+  }
+
+  @override
+  String chapterX(int count) {
+    return '第 $count 章';
+  }
+
+  @override
+  String get failedToLoadAudiobooks => '有声书加载失败';
+
+  @override
+  String get failedToLoadChapters => '章节加载失败，请重试';
+
+  @override
+  String pageOf(int page, int total) {
+    return '第 $page / $total 页';
+  }
+
+  @override
+  String get previousPage => '上一页';
+
+  @override
+  String get nextPage => '下一页';
+
+  @override
+  String get exitAudiobookFirst => '请先退出有声书';
+
+  @override
   String get changelog => '更新日志';
 
   @override
@@ -1312,6 +1353,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connected => '已连接';
+
+  @override
+  String get failedToLoadProfiles => '加载已保存的服务器失败';
 
   @override
   String get noSongPlaying => '当前无歌曲播放';

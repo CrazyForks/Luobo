@@ -126,10 +126,14 @@ class _SavedProfilesScreenState extends State<SavedProfilesScreen> {
 
     // 切换会走 _verifyConnection（网络等待可能数秒）：阻塞式进度框防止
     // 重复点击，失败时给出提示。
+    BuildContext? dialogCtx;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const _ConnectingDialog(),
+      builder: (ctx) {
+        dialogCtx = ctx;
+        return const _ConnectingDialog();
+      },
     );
     try {
       final playerProvider = Provider.of<PlayerProvider>(context, listen: false);
@@ -152,7 +156,13 @@ class _SavedProfilesScreenState extends State<SavedProfilesScreen> {
       }
       return;
     } finally {
-      if (mounted) Navigator.of(context).pop(); // 关闭进度框
+      // 用弹窗自身的 context 关闭（挂在弹窗所在 Navigator 上），不依赖页面
+      // mounted / Navigator.of(context) 的解析结果——切换成功触发页面重建或
+      // 导航时序变化时也能可靠关闭，避免「连接中」弹窗残留。
+      final ctx = dialogCtx;
+      if (ctx != null && ctx.mounted) {
+        Navigator.of(ctx).pop();
+      }
     }
     if (!mounted) return;
 
@@ -186,6 +196,30 @@ class _SavedProfilesScreenState extends State<SavedProfilesScreen> {
       body: FutureBuilder<List<ServerConfig>>(
         future: _profilesFuture,
         builder: (context, snap) {
+          // 读盘异常：展示错误 + 重试，避免永久 spinner。
+          if (snap.hasError) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.failedToLoadProfiles,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _isDark
+                          ? AppTheme.darkSecondaryText
+                          : AppTheme.lightSecondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => setState(_reload),
+                    child: Text(l10n.retry),
+                  ),
+                ],
+              ),
+            );
+          }
           // 数据未就绪时避免闪现空态。
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());

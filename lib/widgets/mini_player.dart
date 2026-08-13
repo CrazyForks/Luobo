@@ -331,10 +331,10 @@ class _MiniPlayerControls extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = isDark ? Colors.white : Colors.black;
 
-    return Selector<PlayerProvider, (bool, bool)>(
-      selector: (_, p) => (p.isPlaying, p.hasNext),
+    return Selector<PlayerProvider, (bool, bool, bool)>(
+      selector: (_, p) => (p.isPlaying, p.hasNext, p.isPlayingAudiobook),
       builder: (context, data, _) {
-        final (isPlaying, hasNext) = data;
+        final (isPlaying, hasNext, isAudiobook) = data;
         final provider = context.read<PlayerProvider>();
         final playerUiSettings = PlayerUiSettingsService();
 
@@ -350,7 +350,9 @@ class _MiniPlayerControls extends StatelessWidget {
                     return Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (showHeart && !isRadio)
+                        // 有声书（B8/B10）：隐藏收藏/shuffle/repeat（章节无收藏语义、
+                        // 强制顺序播放）。
+                        if (showHeart && !isRadio && !isAudiobook)
                           Selector<PlayerProvider, bool>(
                             selector: (_, p) => p.currentSong?.starred == true,
                             builder: (context, isStarred, _) {
@@ -367,7 +369,7 @@ class _MiniPlayerControls extends StatelessWidget {
                             },
                           ),
 
-                        if (showShuffle && !isRadio)
+                        if (showShuffle && !isRadio && !isAudiobook)
                           Selector<PlayerProvider, bool>(
                             selector: (_, p) => p.shuffleEnabled,
                             builder: (context, shuffleEnabled, _) {
@@ -395,7 +397,7 @@ class _MiniPlayerControls extends StatelessWidget {
                           color: color,
                         ),
 
-                        if (showRepeat && !isRadio)
+                        if (showRepeat && !isRadio && !isAudiobook)
                           Selector<PlayerProvider, RepeatMode>(
                             selector: (_, p) => p.repeatMode,
                             builder: (context, repeatMode, _) {

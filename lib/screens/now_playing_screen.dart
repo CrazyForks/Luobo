@@ -168,6 +168,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     if (shouldRunAutoCarModeTimer(
       isPlaying: isPlaying,
       isPlayingRadio: _playerProvider.isPlayingRadio,
+      isPlayingAudiobook: _playerProvider.isPlayingAudiobook,
       appBackgrounded: _appBackgrounded,
       carModeOpen: _carModeOpen,
       lyricsShowing: _showLyrics,
@@ -194,6 +195,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     if (!shouldRunAutoCarModeTimer(
       isPlaying: _playerProvider.isPlaying,
       isPlayingRadio: _playerProvider.isPlayingRadio,
+      isPlayingAudiobook: _playerProvider.isPlayingAudiobook,
       appBackgrounded: _appBackgrounded,
       carModeOpen: _carModeOpen,
       lyricsShowing: _showLyrics,
@@ -2527,10 +2529,14 @@ class _PlayerControlsState extends State<_PlayerControls> {
               if (!showRating) return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Selector<PlayerProvider, Song?>(
-                  selector: (_, p) => p.currentSong,
-                  builder: (context, song, _) {
-                    if (song == null) return const SizedBox.shrink();
+                child: Selector<PlayerProvider, (Song?, bool)>(
+                  selector: (_, p) => (p.currentSong, p.isPlayingAudiobook),
+                  builder: (context, data, _) {
+                    final (song, isAudiobook) = data;
+                    // 有声书（P5）：隐藏评分（章节无评分语义）。
+                    if (song == null || isAudiobook) {
+                      return const SizedBox.shrink();
+                    }
                     return StarRatingWidget(
                       rating: song.userRating ?? 0,
                       onRatingChanged: (rating) {
@@ -2619,6 +2625,11 @@ class _SongInfoState extends State<_SongInfo> {
   Widget build(BuildContext context) {
     if (widget.song == null) return const SizedBox.shrink();
 
+    // 有声书（B8）：章节 id 是 abe_，收藏/加歌单会把章节当歌曲打 Subsonic
+    // 端点 → 无效请求 + 脏数据。隐藏这两颗按钮（歌曲专属操作）。
+    final isAudiobook =
+        Provider.of<PlayerProvider>(context).isPlayingAudiobook;
+
     return Row(
       children: [
         Expanded(
@@ -2682,22 +2693,24 @@ class _SongInfoState extends State<_SongInfo> {
             size: 24,
           ),
         ),
-        IconButton(
-          onPressed: () => _showAddToPlaylistDialog(context),
-          icon: const Icon(
-            CupertinoIcons.plus_circle,
-            color: Colors.white,
-            size: 26,
+        if (!isAudiobook)
+          IconButton(
+            onPressed: () => _showAddToPlaylistDialog(context),
+            icon: const Icon(
+              CupertinoIcons.plus_circle,
+              color: Colors.white,
+              size: 26,
+            ),
           ),
-        ),
-        IconButton(
-          onPressed: () => _toggleFavorite(context),
-          icon: Icon(
-            _isStarred ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
-            color: _isStarred ? AppTheme.appleMusicRed : Colors.white,
-            size: 26,
+        if (!isAudiobook)
+          IconButton(
+            onPressed: () => _toggleFavorite(context),
+            icon: Icon(
+              _isStarred ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+              color: _isStarred ? AppTheme.appleMusicRed : Colors.white,
+              size: 26,
+            ),
           ),
-        ),
       ],
     );
   }
@@ -3333,31 +3346,35 @@ class _PlaybackControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<PlayerProvider, (bool, bool, bool, RepeatMode, bool)>(
+    return Selector<PlayerProvider, (bool, bool, bool, RepeatMode, bool, bool)>(
       selector: (_, p) => (
         p.isPlaying,
         p.shuffleEnabled,
         p.hasNext,
         p.repeatMode,
         p.hasPrevious,
+        p.isPlayingAudiobook,
       ),
       builder: (context, data, _) {
-        final (isPlaying, shuffleEnabled, hasNext, repeatMode, _) = data;
+        final (isPlaying, shuffleEnabled, hasNext, repeatMode, _,
+            isAudiobook) = data;
         final provider = context.read<PlayerProvider>();
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            IconButton(
-              onPressed: provider.toggleShuffle,
-              icon: Icon(
-                CupertinoIcons.shuffle,
-                color: shuffleEnabled
-                    ? AppTheme.appleMusicRed
-                    : Colors.white.withValues(alpha: 0.7),
-                size: 22,
+            // 有声书（B10）：隐藏 shuffle/repeat（强制顺序播放）。
+            if (!isAudiobook)
+              IconButton(
+                onPressed: provider.toggleShuffle,
+                icon: Icon(
+                  CupertinoIcons.shuffle,
+                  color: shuffleEnabled
+                      ? AppTheme.appleMusicRed
+                      : Colors.white.withValues(alpha: 0.7),
+                  size: 22,
+                ),
               ),
-            ),
             IconButton(
               onPressed: provider.skipPrevious,
               icon: Icon(
@@ -3415,18 +3432,20 @@ class _PlaybackControls extends StatelessWidget {
                 size: ScreenHelper.skipButtonIconSize(context),
               ),
             ),
-            IconButton(
-              onPressed: provider.toggleRepeat,
-              icon: Icon(
-                repeatMode == RepeatMode.one
-                    ? CupertinoIcons.repeat_1
-                    : CupertinoIcons.repeat,
-                color: repeatMode != RepeatMode.off
-                    ? AppTheme.appleMusicRed
-                    : Colors.white.withValues(alpha: 0.7),
-                size: 22,
+            // 有声书（B10）：隐藏 repeat。
+            if (!isAudiobook)
+              IconButton(
+                onPressed: provider.toggleRepeat,
+                icon: Icon(
+                  repeatMode == RepeatMode.one
+                      ? CupertinoIcons.repeat_1
+                      : CupertinoIcons.repeat,
+                  color: repeatMode != RepeatMode.off
+                      ? AppTheme.appleMusicRed
+                      : Colors.white.withValues(alpha: 0.7),
+                  size: 22,
+                ),
               ),
-            ),
           ],
         );
       },

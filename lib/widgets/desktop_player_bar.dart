@@ -294,9 +294,13 @@ class _DesktopPlayerBarState extends State<DesktopPlayerBar> {
                     ],
                   ),
                 ),
-                Selector<PlayerProvider, bool>(
-                  selector: (_, p) => p.currentSong?.starred == true,
-                  builder: (context, isStarred, _) {
+                Selector<PlayerProvider, (bool, bool)>(
+                  selector: (_, p) =>
+                      (p.currentSong?.starred == true, p.isPlayingAudiobook),
+                  builder: (context, data, _) {
+                    final (isStarred, isAudiobook) = data;
+                    // 有声书（B8）：隐藏收藏（章节无收藏语义）。
+                    if (isAudiobook) return const SizedBox.shrink();
                     return IconButton(
                       icon: Icon(
                         isStarred
@@ -338,20 +342,28 @@ class _DesktopPlayerBarState extends State<DesktopPlayerBar> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.lyrics_rounded,
-                    size: 20,
-                    color: _lyricsOpen
-                        ? AppTheme.appleMusicRed
-                        : (isDark
-                            ? const Color(0xFFB3B3B3)
-                            : const Color(0xFF6B6B6B)),
-                  ),
-                  onPressed: () => _toggleLyrics(context, currentSong),
-                  tooltip: _lyricsOpen
-                      ? AppLocalizations.of(context)!.closeLyrics
-                      : AppLocalizations.of(context)!.lyrics,
+                // 有声书（B8）：隐藏歌词按钮（无歌词可展示）。
+                // Selector 包裹与收藏按钮保持同模式（R002 修复）。
+                Selector<PlayerProvider, bool>(
+                  selector: (_, p) => p.isPlayingAudiobook,
+                  builder: (context, isAudiobook, _) {
+                    if (isAudiobook) return const SizedBox.shrink();
+                    return IconButton(
+                      icon: Icon(
+                        Icons.lyrics_rounded,
+                        size: 20,
+                        color: _lyricsOpen
+                            ? AppTheme.appleMusicRed
+                            : (isDark
+                                ? const Color(0xFFB3B3B3)
+                                : const Color(0xFF6B6B6B)),
+                      ),
+                      onPressed: () => _toggleLyrics(context, currentSong),
+                      tooltip: _lyricsOpen
+                          ? AppLocalizations.of(context)!.closeLyrics
+                          : AppLocalizations.of(context)!.lyrics,
+                    );
+                  },
                 ),
                 IconButton(
                   icon: const Icon(Icons.queue_music_rounded, size: 20),
@@ -380,35 +392,38 @@ class _PlayerControls extends StatelessWidget {
     final color = isDark ? Colors.white : Colors.black;
     final disabledColor = isDark ? Colors.grey[800] : Colors.grey[300];
 
-    return Selector<PlayerProvider, (bool, bool, bool, bool, RepeatMode)>(
+    return Selector<PlayerProvider, (bool, bool, bool, bool, RepeatMode, bool)>(
       selector: (_, p) => (
         p.isPlaying,
         p.shuffleEnabled,
         p.hasPrevious,
         p.hasNext,
         p.repeatMode,
+        p.isPlayingAudiobook,
       ),
       builder: (context, data, _) {
-        final (isPlaying, shuffleEnabled, hasPrevious, hasNext, repeatMode) =
-            data;
+        final (isPlaying, shuffleEnabled, hasPrevious, hasNext, repeatMode,
+            isAudiobook) = data;
         final provider = context.read<PlayerProvider>();
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            IconButton(
-              icon: Icon(
-                Icons.shuffle_rounded,
-                size: 20,
-                color: shuffleEnabled
-                    ? AppTheme.appleMusicRed
-                    : (isDark
-                        ? const Color(0xFFB3B3B3)
-                        : const Color(0xFF6B6B6B)),
+            // 有声书（B10）：隐藏 shuffle/repeat（强制顺序播放）。
+            if (!isAudiobook)
+              IconButton(
+                icon: Icon(
+                  Icons.shuffle_rounded,
+                  size: 20,
+                  color: shuffleEnabled
+                      ? AppTheme.appleMusicRed
+                      : (isDark
+                          ? const Color(0xFFB3B3B3)
+                          : const Color(0xFF6B6B6B)),
+                ),
+                onPressed: provider.toggleShuffle,
+                tooltip: AppLocalizations.of(context)!.enableShuffle,
               ),
-              onPressed: provider.toggleShuffle,
-              tooltip: AppLocalizations.of(context)!.enableShuffle,
-            ),
             const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.skip_previous_rounded, size: 28),
@@ -447,21 +462,23 @@ class _PlayerControls extends StatelessWidget {
               disabledColor: disabledColor,
             ),
             const SizedBox(width: 8),
-            IconButton(
-              icon: Icon(
-                repeatMode == RepeatMode.one
-                    ? Icons.repeat_one_rounded
-                    : Icons.repeat_rounded,
-                size: 20,
-                color: repeatMode != RepeatMode.off
-                    ? AppTheme.appleMusicRed
-                    : (isDark
-                        ? const Color(0xFFB3B3B3)
-                        : const Color(0xFF6B6B6B)),
+            // 有声书（B10）：隐藏 repeat。
+            if (!isAudiobook)
+              IconButton(
+                icon: Icon(
+                  repeatMode == RepeatMode.one
+                      ? Icons.repeat_one_rounded
+                      : Icons.repeat_rounded,
+                  size: 20,
+                  color: repeatMode != RepeatMode.off
+                      ? AppTheme.appleMusicRed
+                      : (isDark
+                          ? const Color(0xFFB3B3B3)
+                          : const Color(0xFF6B6B6B)),
+                ),
+                onPressed: provider.toggleRepeat,
+                tooltip: AppLocalizations.of(context)!.enableRepeat,
               ),
-              onPressed: provider.toggleRepeat,
-              tooltip: AppLocalizations.of(context)!.enableRepeat,
-            ),
           ],
         );
       },

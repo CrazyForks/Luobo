@@ -10,6 +10,7 @@ void main() {
         shouldRunAutoCarModeTimer(
           isPlaying: true,
           isPlayingRadio: false,
+          isPlayingAudiobook: false,
           appBackgrounded: false,
           carModeOpen: false,
           lyricsShowing: false,
@@ -18,11 +19,12 @@ void main() {
       );
     });
 
-    test('未播放 / 电台播放时不运行', () {
+    test('未播放 / 电台播放 / 有声书播放时不运行', () {
       expect(
         shouldRunAutoCarModeTimer(
           isPlaying: false,
           isPlayingRadio: false,
+          isPlayingAudiobook: false,
           appBackgrounded: false,
           carModeOpen: false,
           lyricsShowing: false,
@@ -33,6 +35,19 @@ void main() {
         shouldRunAutoCarModeTimer(
           isPlaying: true,
           isPlayingRadio: true,
+          isPlayingAudiobook: false,
+          appBackgrounded: false,
+          carModeOpen: false,
+          lyricsShowing: false,
+        ),
+        false,
+      );
+      // 有声书播放中 → 不自动进车载（无歌词联动需求，§10）。
+      expect(
+        shouldRunAutoCarModeTimer(
+          isPlaying: true,
+          isPlayingRadio: false,
+          isPlayingAudiobook: true,
           appBackgrounded: false,
           carModeOpen: false,
           lyricsShowing: false,
@@ -45,6 +60,7 @@ void main() {
       final base = {
         'isPlaying': true,
         'isPlayingRadio': false,
+        'isPlayingAudiobook': false,
         'appBackgrounded': false,
         'carModeOpen': false,
         'lyricsShowing': false,
@@ -65,6 +81,7 @@ void main() {
           shouldRunAutoCarModeTimer(
             isPlaying: args['isPlaying']! as bool,
             isPlayingRadio: args['isPlayingRadio']! as bool,
+            isPlayingAudiobook: args['isPlayingAudiobook']! as bool,
             appBackgrounded: args['appBackgrounded']! as bool,
             carModeOpen: args['carModeOpen']! as bool,
             lyricsShowing: args['lyricsShowing']! as bool,

@@ -35,6 +35,9 @@ class _ServerGatewayScreenState extends State<ServerGatewayScreen> {
   double _scanProgress = 0.0;
   String _scanStatus = '';
 
+  /// 防连点：添加/扫码的页面转场期间置位。
+  bool _opening = false;
+
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
@@ -56,7 +59,13 @@ class _ServerGatewayScreenState extends State<ServerGatewayScreen> {
   // ── 交互 ────────────────────────────────────────────────────────────
 
   Future<void> _openAddServer() async {
-    await NavigationHelper.push(context, const ServerFormScreen());
+    if (_opening) return;
+    _opening = true;
+    try {
+      await NavigationHelper.push(context, const ServerFormScreen());
+    } finally {
+      _opening = false;
+    }
     if (mounted) setState(_reload);
   }
 
@@ -97,10 +106,14 @@ class _ServerGatewayScreenState extends State<ServerGatewayScreen> {
 
     // 切换会走 _verifyConnection（网络等待可能数秒）：阻塞式进度框防止
     // 重复点击，失败时给出提示。
+    BuildContext? dialogCtx;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const _ConnectingDialog(),
+      builder: (ctx) {
+        dialogCtx = ctx;
+        return const _ConnectingDialog();
+      },
     );
     try {
       final playerProvider = Provider.of<PlayerProvider>(context, listen: false);
@@ -123,7 +136,13 @@ class _ServerGatewayScreenState extends State<ServerGatewayScreen> {
       }
       return;
     } finally {
-      if (mounted) Navigator.of(context).pop(); // 关闭进度框
+      // 用弹窗自身的 context 关闭（挂在弹窗所在 Navigator 上），不依赖页面
+      // mounted / Navigator.of(context) 的解析结果——切换成功触发页面重建或
+      // 导航时序变化时也能可靠关闭，避免「连接中」弹窗残留。
+      final ctx = dialogCtx;
+      if (ctx != null && ctx.mounted) {
+        Navigator.of(ctx).pop();
+      }
     }
     if (!mounted) return;
 
@@ -150,6 +169,17 @@ class _ServerGatewayScreenState extends State<ServerGatewayScreen> {
   }
 
   Future<void> _scanQrCode() async {
+    // 防连点：扫码页转场期间忽略重复点击。
+    if (_opening) return;
+    _opening = true;
+    try {
+      await _scanQrCodeInner();
+    } finally {
+      _opening = false;
+    }
+  }
+
+  Future<void> _scanQrCodeInner() async {
     final config = await Navigator.push<ServerConfig>(
       context,
       MaterialPageRoute(builder: (_) => const QrScannerScreen()),
@@ -323,6 +353,33 @@ class _ServerGatewayScreenState extends State<ServerGatewayScreen> {
                     child: FutureBuilder<List<ServerConfig>>(
                       future: _profilesFuture,
                       builder: (context, snap) {
+                        // 读盘异常：展示错误 + 重试，避免永久 spinner。
+                        if (snap.hasError) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 48),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    l10n.failedToLoadProfiles,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: _isDark
+                                          ? AppTheme.darkSecondaryText
+                                          : AppTheme.lightSecondaryText,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextButton(
+                                    onPressed: () => setState(_reload),
+                                    child: Text(l10n.retry),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
                         // 数据未就绪时避免闪现空态：先显示轻量 loading，
                         // 有已保存配置的用户不会先看到「大 logo + 添加按钮」。
                         if (!snap.hasData) {

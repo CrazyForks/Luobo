@@ -1,6 +1,8 @@
 export 'artist.dart';
 export 'artist_ref.dart';
 export 'album.dart';
+export 'audiobook.dart';
+export 'audiobook_chapter.dart';
 export 'song.dart';
 export 'playlist.dart';
 export 'server_config.dart';

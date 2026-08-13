@@ -799,6 +799,8 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView>
             onUserScroll: () {
               setState(() => _showReturnButton = true);
             },
+            onFlingDownClose: widget.onClose,
+            enableFlingDownClose: !_isDesktop && !kIsWeb,
             fontSize: isFullscreen ? 38.0 : (_isDesktop ? 32.0 : 30.0),
             lineGap: isFullscreen ? 34.0 : 26.0,
             enableBlur: true,
@@ -1047,6 +1049,13 @@ class AMLLLyricsWidget extends StatefulWidget {
   final bool enableBlur;
   final double alignPosition; // 0.0-1.0, where active line sits vertically
 
+  /// 快速下滑关闭歌词页（列表顶部 + 下拉越界 + 甩动速度超阈值时触发）。
+  /// 可选：内嵌精简歌词（CompactLyricsView）不传则不启用。
+  final VoidCallback? onFlingDownClose;
+
+  /// 是否启用快速下滑关闭（仅移动端开启，桌面触控板快速甩动易误触）。
+  final bool enableFlingDownClose;
+
   const AMLLLyricsWidget({
     super.key,
     required this.controller,
@@ -1056,6 +1065,8 @@ class AMLLLyricsWidget extends StatefulWidget {
     this.lineGap = 20.0,
     this.enableBlur = false,
     this.alignPosition = 0.5,
+    this.onFlingDownClose,
+    this.enableFlingDownClose = false,
   });
 
   @override
@@ -1064,6 +1075,10 @@ class AMLLLyricsWidget extends StatefulWidget {
 
 class _AMLLLyricsWidgetState extends State<AMLLLyricsWidget>
     with TickerProviderStateMixin {
+  /// 快速下滑关闭的速度阈值（px/s，负值=向下甩动）。约等于常见 fling 判定，
+  /// 慢速下拉（读歌词）与列表内滚动都不会达到。
+  static const double _kFlingCloseVelocity = -700.0;
+
   final ScrollController _scrollController = ScrollController();
   final Map<int, GlobalKey> _lineKeys = {};
 
@@ -1201,6 +1216,16 @@ class _AMLLLyricsWidgetState extends State<AMLLLyricsWidget>
           if (n is ScrollUpdateNotification && n.dragDetails != null) {
             _onUserScrollStart();
           }
+        }
+        // 快速下滑关闭：列表已滚到顶部 + 下拉越界（overscroll<0）+ 甩动速度
+        // 超阈值。只观察滚动通知、不参与手势竞技场，与歌词滚动天然不冲突；
+        // BouncingScrollPhysics 保证全平台产生 overscroll 通知。
+        if (widget.enableFlingDownClose &&
+            n is OverscrollNotification &&
+            n.metrics.pixels <= 0 &&
+            n.overscroll < 0 &&
+            n.velocity < _kFlingCloseVelocity) {
+          widget.onFlingDownClose?.call();
         }
         return false;
       },

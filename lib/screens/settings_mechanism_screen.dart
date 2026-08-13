@@ -210,18 +210,18 @@ const List<MechanismItem> _storageItems = [
         '_getSongPath 一律存 {songId}.mp3（内容为服务端原始格式，不转码）+ {songId}.jpg（300px）+ {songId}.lyrics.json；并发 1-5（parallel_downloads_count，默认 3）；WakelockPlus 保持常亮；已下载清单存 prefs offline_downloaded_songs；播放时 getPlayableUrl 命中即返回 file://。\n依据：offline_service.dart:53-249,420-493',
   ),
   MechanismItem(
-    title: '在线播放缓存',
+    title: '在线播放与进度定位',
     summary:
-        '在线播放时会边播边把音频写进系统临时目录（musly_stream_*.tmp），总上限 2GB，满了自动从最旧的开始清理。缓存的意义是让「拖进度条」更顺滑（服务器不支持断点读取时也能 seek）。但临时目录系统随时可能清掉，缓存不保证长期保留——清掉后重新在线播放即可。',
+        '在线播放的流由 ExoPlayer 直接处理（不落本地缓存）：拖动进度条时播放器向服务器发起 HTTP Range 分段请求来定位，服务器支持断点读取时 seek 即点即到。局域网（不转码）与远程转码流都走同一裸流路径，保证各网络环境下进度条行为一致、不会从头重放。',
     details:
-        'LockCachingAudioSource 边播边写；每首播完 StreamingCacheCleaner.prune() 按 mtime 从旧到新删到 ≤2GB。开转码时不缓存（转码流走裸流，见「转码原理」）。\n依据：player_provider.dart:1855-1877,1610、streaming_cache_cleaner.dart:10-62',
+        'playSong/_prepareCurrentSong/_buildAudioSourceForSong 对远程流统一用 AudioSource.uri 裸流直连 ExoPlayer，不再包 LockCachingAudioSource——后者在服务器不带 Accept-Ranges 头（局域网常见）时会把 seek 降级为完整 200 响应，导致进度条回 0:00 重播。旧缓存文件由 StreamingCacheCleaner.prune() 按 mtime 清理。\n依据：player_provider.dart:1888-1912、streaming_cache_cleaner.dart:10-62',
   ),
   MechanismItem(
     title: '转码（音质 / 流量）原理',
     summary:
-        '「转码」是在你的服务器（Navidrome）上完成的，App 只负责告诉服务器要什么码率和格式（mp3 / opus / aac 或原始直出）。连接局域网时一定不转码（强制原始音质，规则 1）；非局域网才按设置判断：开启「智能模式」后连 WiFi 用高码率（音质好）、走蜂窝数据用低码率（省流量），网络切换自动换档。注意：开启转码时在线播放不落本地缓存——因为转码流拖动定位更可靠，这是刻意设计。',
+        '「转码」是在你的服务器上完成的，App 只负责告诉服务器要什么码率和格式（mp3 / opus / aac 或原始直出）。连接局域网时一定不转码（强制原始音质，规则 1）；其余按设置判断：开启「智能模式」后连 WiFi 用高码率（音质好）、走蜂窝数据用低码率（省流量），网络切换自动换档。道理鱼下转码照常生效（规则 2 已取消）——转码流的快进由 App 走自研 /api 层 timeOffset 重起流实现（见详情），局域网/无损仍用 format=raw 直出 + Range 原生拖动。注意：开启转码时在线播放不落本地缓存——因为转码流拖动定位更可靠，这是刻意设计。',
     details:
-        'getStreamUrl 拼 maxBitRate/format 参数到 /rest/stream；TranscodingService 监听系统网络切换（net.switch 埋点）并在 WiFi/移动网间切换生效码率。局域网覆盖（规则 1）：currentBitRate 在 isUsingLocalUrl 为 true 时强制 original(0)、getCurrentFormat 返回 null → 不拼转码参数；地址切换（启动探测/后台探测/网络变化 forceProbe）经 onActiveUrlChanged 通知转码层刷新。\n依据：subsonic_service.dart:571-588,232、transcoding_service.dart:89-99,244-257',
+        'getStreamUrl 拼 maxBitRate/format 参数到 /rest/stream；TranscodingService 监听系统网络切换（net.switch 埋点）并在 WiFi/移动网间切换生效码率。局域网覆盖（规则 1）：currentBitRate 在 isUsingLocalUrl 为 true 时强制 original(0)、getCurrentFormat 返回 null → 不拼转码参数；道理鱼（原规则 2 已取消）：无转码参数时 getStreamUrl 强制 format=raw 直出（有 Content-Length + Range 可精确 seek），有转码参数时透传转码——但 Subsonic 转码流是 chunked（无 Content-Length，ExoPlayer 解析不出时长 → 拖动后从 0:00 重播）且不认 Range，所以道理鱼转码场景（_isDaoliyuTranscodeRequested）播放/seek 都改走自研 /api/tracks/{id}/stream?token=<JWT>[&timeOffset=<秒>]：播放起流、seek 重发带 timeOffset 的新流（WebUI 同款机制，2026-08-11 实测），进度/歌词按基准偏移换算；该场景强制单曲模式（不走无缝 concat）。地址切换（启动探测/后台探测/网络变化 forceProbe）经 onActiveUrlChanged 通知转码层刷新。\n依据：subsonic_service.dart:748-805、transcoding_service.dart:76-104,226-250、player_provider.dart seek/_restartDaoliyuStream/playSong/_prepareCurrentSong、main.dart:264-267',
   ),
   MechanismItem(
     title: '封面图片缓存',

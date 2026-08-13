@@ -751,17 +751,64 @@ class SubsonicService {
           .getStreamUrl(songId, maxBitRate: maxBitRate, format: format);
     if (_youtube != null) return _youtube!.getStreamUrl(songId);
     final params = <String, String>{'id': songId};
-    if (maxBitRate != null) {
-      params['maxBitRate'] = maxBitRate.toString();
+    if (isDaoliyu) {
+      // 道理鱼 Subsonic 兼容层：
+      // - 无转码参数时默认会转码 AAC 192k（chunked 无 Content-Length，
+      //   ExoPlayer 解析不出时长 → 拖动进度条后从 0:00 重播）。LAN/无损场景
+      //   必须显式 format=raw 直出，才有 Content-Length + Range 可精确 seek。
+      // - 明确请求转码（maxBitRate/format）时透传转码参数；转码流不支持
+      //   Range，seek 由 PlayerProvider 走自研 /api/tracks/{id}/stream
+      //   的 timeOffset 重起流（见 getDaoliyuApiStreamUrl，2026-08-11 WebUI 实测）。
+      if (maxBitRate == null && format == null) {
+        params['format'] = 'raw';
+      } else {
+        if (maxBitRate != null) {
+          params['maxBitRate'] = maxBitRate.toString();
+        }
+        if (format != null) {
+          params['format'] = format;
+        }
+      }
+    } else {
+      if (maxBitRate != null) {
+        params['maxBitRate'] = maxBitRate.toString();
+      }
+      if (format != null) {
+        params['format'] = format;
+      }
+      // Ask Navidrome (and other OpenSubsonic servers) to estimate the
+      // Content-Length of on-the-fly transcoded streams. Without it the player
+      // can't resolve the track duration nor seek reliably (issue #170).
+      params['estimateContentLength'] = 'true';
     }
-    if (format != null) {
-      params['format'] = format;
-    }
-    // Ask Navidrome (and other OpenSubsonic servers) to estimate the
-    // Content-Length of on-the-fly transcoded streams. Without it the player
-    // can't resolve the track duration nor seek reliably (issue #170).
-    params['estimateContentLength'] = 'true';
     return _buildUrl('stream', params);
+  }
+
+  /// 道理鱼自研流端点：`GET /api/tracks/{id}/stream?token=<JWT>[&timeOffset=<秒>]`。
+  ///
+  /// Subsonic 兼容层的转码流是 chunked（无 Content-Length）且服务端不认
+  /// HTTP Range，ExoPlayer 无法按字节 seek（durationMs=null → 从头重播）。
+  /// 自研层支持「时间起点」参数（`timeOffset`/`startTime`/`offset`，WebUI
+  /// 实测三选一生效），服务端 ffmpeg 直接从指定秒数重转码——WebUI 的 seek
+  /// 正是靠重发带 timeOffset 的新流实现（2026-08-11 实测）。
+  ///
+  /// 转码播放与 seek 兼得时：首次播放传 timeOffset=0，seek 时重发带目标秒数的
+  /// 新流即可。JWT 登录失败（无法走自研层）返回 null，调用方降级为 Subsonic
+  /// 转码 URL（此时 seek 大概率仍不可用，但不比现状更差）。
+  Future<String?> getDaoliyuApiStreamUrl(String songId,
+      {int timeOffsetSeconds = 0}) async {
+    if (!await loginToApi()) return null;
+    final params = <String, String>{
+      'token': _apiJwt ?? '',
+      if (timeOffsetSeconds > 0) 'timeOffset': timeOffsetSeconds.toString(),
+    };
+    final queryString = params.entries
+        .map(
+          (e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+        )
+        .join('&');
+    return '$activeBaseUrl/api/tracks/$songId/stream?$queryString';
   }
 
   Future<List<Artist>> getArtists() async {
@@ -1058,6 +1105,66 @@ class SubsonicService {
       created: t['createdAt'] != null
           ? DateTime.tryParse(t['createdAt'].toString())
           : null,
+    );
+  }
+
+  // ── 有声书（道理鱼自研 /api 层，见 docs/有声书接入技术方案.md §5）─────────
+  // 道理鱼有声书业务在 /Music2 源，不在 Subsonic 音乐索引里（search3 搜不到），
+  // 入口统一走自研层。播放复用 Subsonic：章节 id（abe_）直接喂 /rest/stream。
+
+  /// 有声书列表。GET /api/library/audiobooks?limit=100
+  /// → {"items":[...], "skip":0, "take":100, "total":N}
+  Future<List<Audiobook>> getAudiobooks() async {
+    if (!isDaoliyu) return [];
+    final data = await _apiGet('/api/library/audiobooks?limit=100');
+    final items = data?['items'] as List<dynamic>? ?? [];
+    return items
+        .map((e) => Audiobook.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// 章节列表（服务端分页）。GET /api/library/audiobooks/{id}/episodes?limit=&skip=
+  /// → {"chapters":[...], "count":N}（episodeItems 与 chapters 重复，取 chapters；
+  /// ⚠️ 必须带 library/ 前缀，无前缀 → NOT_FOUND）
+  ///
+  /// ⚠️ Bug1：响应 `count` 是**当页返回条数**（实测取 2 章 → count:2），不是总
+  /// 章节数；总章节数在列表项的 `episodeCount`（实测 120 章）。分页 total 必须
+  /// 用 Audiobook.episodeCount，调用方（详情页）据此计算 totalPages——否则
+  /// 100+ 章永远只有 1 页无法翻页。此处 total 仅作 fallback（无 episodeCount 时）。
+  Future<AudiobookChapterPage> getAudiobookChapters(
+    String audiobookId, {
+    int skip = 0,
+    int take = 50,
+  }) async {
+    final data = await _apiGet(
+      '/api/library/audiobooks/$audiobookId/episodes?limit=$take&skip=$skip');
+    final chapters = data?['chapters'] as List<dynamic>? ?? [];
+    return AudiobookChapterPage(
+      chapters: chapters
+          .map((e) => AudiobookChapter.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      // count 是当页条数，非总数；仅作无 episodeCount 时的兜底。
+      total: jsonInt(data?['count']) ?? 0,
+    );
+  }
+
+  /// 章节对象 → Song 模型（复用现有播放栈）。
+  ///
+  /// id = 章节 id（abe_，直接喂 Subsonic /rest/stream，明文认证、m4a 直出）；
+  /// album/artist = 有声书 title（播放页天然显示书名）；track = 章节 order
+  /// （1-based，进度记忆按此索引）；albumId/artistId 置 null（避免播放页点
+  /// 专辑/艺人名跳转不存在的专辑页）；coverArt 置空 → 占位图。
+  Song audiobookChapterToSong(Audiobook book, AudiobookChapter chapter) {
+    return Song(
+      id: chapter.id,
+      title: chapter.title,
+      album: book.title,
+      artist: book.title,
+      albumId: null,
+      artistId: null,
+      track: chapter.order,
+      duration: chapter.durationSeconds,
+      coverArt: null,
     );
   }
 

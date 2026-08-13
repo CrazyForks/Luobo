@@ -24,6 +24,7 @@ import 'widgets/glass_surface.dart';
 import 'widgets/privacy_policy_dialog.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
+import 'screens/audiobook_detail_screen.dart' show audiobookRouteObserver;
 import 'package:dynamic_color/dynamic_color.dart';
 import 'theme/theme.dart';
 import 'utils/image_cache.dart';
@@ -32,7 +33,7 @@ import 'utils/image_cache.dart';
 
 /// 运行时上报的应用版本，写入诊断导出 meta.json；
 /// 与 pubspec.yaml `version` 保持一致，发版时同步更新。
-const String kAppVersion = '1.1.14+9';
+const String kAppVersion = '1.1.15+10';
 
 /// Shows the privacy policy dialog on first launch
 Future<void> _showPrivacyPolicyIfNeeded() async {
@@ -408,6 +409,8 @@ class MuslyApp extends StatelessWidget {
           navigatorObservers: [
             AnalyticsNavigatorObserver(),
             DiagnosticsRouteObserver(),
+            // 有声书详情页 RouteAware 依赖此全局实例收到路由事件（C004）。
+            audiobookRouteObserver,
           ],
         );
       },

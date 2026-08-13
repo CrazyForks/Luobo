@@ -1054,6 +1054,72 @@ abstract class AppLocalizations {
   /// **'Radio'**
   String get radio;
 
+  /// Audiobooks section label (Daoliyu)
+  ///
+  /// In en, this message translates to:
+  /// **'Audiobooks'**
+  String get audiobooks;
+
+  /// Audiobook chapter progress subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Played to {position}'**
+  String playedTo(String position);
+
+  /// Audiobook chapter finished label
+  ///
+  /// In en, this message translates to:
+  /// **'Finished'**
+  String get finished;
+
+  /// Audiobook chapter count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Chapters'**
+  String chapterCount(int count);
+
+  /// Audiobook chapter ordinal label (e.g. Chapter 3)
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter {count}'**
+  String chapterX(int count);
+
+  /// Error state message on the audiobook list screen
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load audiobooks'**
+  String get failedToLoadAudiobooks;
+
+  /// Error state message on the audiobook detail screen
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load chapters, please retry'**
+  String get failedToLoadChapters;
+
+  /// Audiobook chapter pagination indicator
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} of {total}'**
+  String pageOf(int page, int total);
+
+  /// Audiobook chapter pagination previous button
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get previousPage;
+
+  /// Audiobook chapter pagination next button
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get nextPage;
+
+  /// Snackbar when queue operations are attempted while playing an audiobook
+  ///
+  /// In en, this message translates to:
+  /// **'Please exit the audiobook first'**
+  String get exitAudiobookFirst;
+
   /// Changelog link label
   ///
   /// In en, this message translates to:
@@ -2583,6 +2649,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connected'**
   String get connected;
+
+  /// Error message when reading saved profiles fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load saved servers'**
+  String get failedToLoadProfiles;
 
   /// Placeholder when no song is loaded in the player
   ///

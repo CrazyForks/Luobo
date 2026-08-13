@@ -133,6 +133,11 @@ class AuthProvider extends ChangeNotifier {
     } else {
       debugPrint('[Auth] Ping failed: ${pingResult.error}');
 
+      // 记录失败原因：切换配置失败时，网关/设置页据此展示准确文案
+      //（此前 _verifyConnection 不写 _error，切失败后要么 null 要么是
+      // 上一次表单登录遗留的旧错误）。
+      _error = pingResult.error ?? 'Failed to connect to server';
+
       final offlineService = OfflineService();
       await offlineService.initialize();
       _hasOfflineContent = offlineService.getDownloadedCount() > 0;
@@ -251,7 +256,12 @@ class AuthProvider extends ChangeNotifier {
       final authResp = await jf.authenticate(username, password);
       if (authResp == null) {
         _error = 'Jellyfin authentication failed. Check your credentials.';
-        _state = AuthState.error;
+        // 已登录时添加配置失败：恢复原状态（MainScreen 不被替换），
+        // 与下方 ping 失败/catch 路径一致（见 login() 开头注释）——
+        // 否则设置页添加 Jellyfin 失败会把整个设置栈换成登录页。
+        _state = prevState == AuthState.authenticated
+            ? prevState
+            : AuthState.error;
         notifyListeners();
         return false;
       }
@@ -260,7 +270,9 @@ class AuthProvider extends ChangeNotifier {
       jellyfinUserId = user?['Id'] as String?;
       if (jellyfinToken == null || jellyfinUserId == null) {
         _error = 'Jellyfin returned an unexpected response.';
-        _state = AuthState.error;
+        _state = prevState == AuthState.authenticated
+            ? prevState
+            : AuthState.error;
         notifyListeners();
         return false;
       }
@@ -443,29 +455,33 @@ class AuthProvider extends ChangeNotifier {
     final prevConfig = _config;
     final switched = prevConfig?.serverUrl != profile.serverUrl ||
         prevConfig?.username != profile.username;
+    _error = null;
     _config = profile;
-    await _storageService.saveServerConfig(profile);
-    await _subsonicService.configure(profile);
-    await _subsonicService.resolveActiveUrl();
-    await _verifyConnection();
-    // 切换失败（服务器不可达/认证失败）：回滚到旧配置并恢复会话，
-    // 与 login() 的失败处理一致——否则用户被踢到 serverUnreachable 屏，
-    // 且 _notifyServerSwitched 还会清空当前服务器的队列与音乐库。
-    if (!isAuthenticated && prevConfig != null) {
-      debugPrint('[Auth] switchProfile failed — rolling back to ${prevConfig.serverUrl}');
-      _config = prevConfig;
-      await _storageService.saveServerConfig(prevConfig);
-      await _subsonicService.configure(prevConfig);
+    try {
+      await _storageService.saveServerConfig(profile);
+      await _subsonicService.configure(profile);
       await _subsonicService.resolveActiveUrl();
-      // 封面缓存 key 命名空间跟随回滚后的服务器，避免用新 serverId 拼 key。
-      registerCoverCacheServerId(_subsonicService.coverCacheServerId);
-      _state = AuthState.authenticated;
-      notifyListeners();
+      await _verifyConnection();
+    } catch (e) {
+      // 仿 login()：中途异常（saveServerConfig/configure/离线服务）时回滚，
+      // 避免 config / 服务层 / 持久化三者不一致（_verifyConnection 内部
+      // offlineService.initialize 等无兜底）。
+      debugPrint('[Auth] switchProfile threw: $e');
+      _error = _formatError(e);
+      await _rollbackSwitch(prevConfig);
+      return;
+    }
+    // 切换失败（服务器不可达/认证失败）：回滚并恢复会话，与 login() 的失败
+    // 处理一致——否则用户被踢到 serverUnreachable 屏，且 _notifyServerSwitched
+    // 还会清空当前服务器的队列与音乐库。
+    if (!isAuthenticated) {
+      debugPrint('[Auth] switchProfile failed — rolling back');
+      await _rollbackSwitch(prevConfig);
       return;
     }
     // 道理鱼：切换 profile 也要登录自研 /api 层拿 JWT（歌词/随机歌依赖）。
     // 登录成功后才算完整切换到该服务器；失败不阻塞，仅歌词/随机降级。
-    if (profile.serverFamily == 'daoliyu' && isAuthenticated) {
+    if (profile.serverFamily == 'daoliyu') {
       final apiOk = await _subsonicService.loginToApi();
       debugPrint('[Auth] switchProfile 道理鱼 API login: $apiOk');
       final updated = _config!.copyWith(
@@ -476,7 +492,28 @@ class AuthProvider extends ChangeNotifier {
       await _storageService.saveServerConfig(updated);
       await _storageService.saveProfile(updated);
     }
-    if (switched && isAuthenticated) _notifyServerSwitched();
+    if (switched) _notifyServerSwitched();
+  }
+
+  /// switchProfile 失败回滚：恢复旧会话；未登录（prevConfig==null，网关场景）
+  /// 时清掉失败配置回到未登录态——否则失败的 profile 已被写盘并作为活跃配置，
+  /// 下次冷启动会永久楔进 serverUnreachable，且失败原因无处展示。
+  Future<void> _rollbackSwitch(ServerConfig? prevConfig) async {
+    if (prevConfig != null) {
+      _config = prevConfig;
+      await _storageService.saveServerConfig(prevConfig);
+      await _subsonicService.configure(prevConfig);
+      await _subsonicService.resolveActiveUrl();
+      // 封面缓存 key 命名空间跟随回滚后的服务器，避免用新 serverId 拼 key。
+      registerCoverCacheServerId(_subsonicService.coverCacheServerId);
+      _state = AuthState.authenticated;
+    } else {
+      _config = null;
+      await _storageService.clearServerConfig();
+      registerCoverCacheServerId('');
+      _state = AuthState.unauthenticated;
+    }
+    notifyListeners();
   }
 
   Future<void> updateSelectedMusicFolderIds(List<String> ids) async {

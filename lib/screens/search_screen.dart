@@ -17,6 +17,8 @@ import 'made_for_you_screen.dart';
 import 'top_rated_screen.dart';
 import 'favorites_screen.dart';
 import 'radio_screen.dart';
+import 'audiobook_list_screen.dart';
+import '../providers/auth_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../services/player_ui_settings_service.dart';
 
@@ -344,6 +346,9 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildBrowseCategories() {
+    // 道理鱼下电台入口 → 有声书（§7.1；listen 监听切服务器即时刷新）。
+    final isDaoliyu =
+        Provider.of<AuthProvider>(context).config?.serverFamily == 'daoliyu';
     final categories = [
       _CategoryItem(
         AppLocalizations.of(context)!.categoryMadeForYou,
@@ -377,10 +382,15 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux)
         _CategoryItem(
-          AppLocalizations.of(context)!.categoryRadio,
-          Icons.radio_rounded,
+          isDaoliyu
+              ? AppLocalizations.of(context)!.audiobooks
+              : AppLocalizations.of(context)!.categoryRadio,
+          isDaoliyu ? Icons.menu_book_rounded : Icons.radio_rounded,
           [Colors.blue, Colors.indigo],
-          () => NavigationHelper.push(context, const RadioScreen()),
+          () => NavigationHelper.push(
+            context,
+            isDaoliyu ? const AudiobookListScreen() : const RadioScreen(),
+          ),
         ),
     ];
 

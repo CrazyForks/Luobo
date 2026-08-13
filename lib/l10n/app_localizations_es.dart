@@ -500,6 +500,47 @@ class AppLocalizationsEs extends AppLocalizations {
   String get radio => 'Radio';
 
   @override
+  String get audiobooks => 'Audiobooks';
+
+  @override
+  String playedTo(String position) {
+    return 'Played to $position';
+  }
+
+  @override
+  String get finished => 'Finished';
+
+  @override
+  String chapterCount(int count) {
+    return '$count Chapters';
+  }
+
+  @override
+  String chapterX(int count) {
+    return 'Chapter $count';
+  }
+
+  @override
+  String get failedToLoadAudiobooks => 'Failed to load audiobooks';
+
+  @override
+  String get failedToLoadChapters => 'Failed to load chapters, please retry';
+
+  @override
+  String pageOf(int page, int total) {
+    return 'Page $page of $total';
+  }
+
+  @override
+  String get previousPage => 'Previous page';
+
+  @override
+  String get nextPage => 'Next page';
+
+  @override
+  String get exitAudiobookFirst => 'Please exit the audiobook first';
+
+  @override
   String get changelog => 'Historial de actualizaciones';
 
   @override
@@ -1331,6 +1372,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get connected => 'Conectado';
+
+  @override
+  String get failedToLoadProfiles => 'Failed to load saved servers';
 
   @override
   String get noSongPlaying => 'No se está reproduciendo ninguna canción';

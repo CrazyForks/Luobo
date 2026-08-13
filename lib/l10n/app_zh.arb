@@ -581,6 +581,85 @@
   "@radio": {
     "description": "Radio section label"
   },
+
+  "audiobooks": "有声书",
+  "@audiobooks": {
+    "description": "Audiobooks section label (Daoliyu)"
+  },
+
+  "playedTo": "已播至 {position}",
+  "@playedTo": {
+    "description": "Audiobook chapter progress subtitle",
+    "placeholders": {
+      "position": {
+        "type": "String"
+      }
+    }
+  },
+
+  "finished": "已听完",
+  "@finished": {
+    "description": "Audiobook chapter finished label"
+  },
+
+  "chapterCount": "{count} 章",
+  "@chapterCount": {
+    "description": "Audiobook chapter count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "chapterX": "第 {count} 章",
+  "@chapterX": {
+    "description": "Audiobook chapter ordinal label (e.g. Chapter 3)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "failedToLoadAudiobooks": "有声书加载失败",
+  "@failedToLoadAudiobooks": {
+    "description": "Error state message on the audiobook list screen"
+  },
+
+  "failedToLoadChapters": "章节加载失败，请重试",
+  "@failedToLoadChapters": {
+    "description": "Error state message on the audiobook detail screen"
+  },
+
+  "pageOf": "第 {page} / {total} 页",
+  "@pageOf": {
+    "description": "Audiobook chapter pagination indicator",
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+
+  "previousPage": "上一页",
+  "@previousPage": {
+    "description": "Audiobook chapter pagination previous button"
+  },
+
+  "nextPage": "下一页",
+  "@nextPage": {
+    "description": "Audiobook chapter pagination next button"
+  },
+
+  "exitAudiobookFirst": "请先退出有声书",
+  "@exitAudiobookFirst": {
+    "description": "Snackbar when queue operations are attempted while playing an audiobook"
+  },
+
   "changelog": "更新日志",
   "@changelog": {
     "description": "Changelog link label"
@@ -1074,6 +1153,8 @@
   "@connected": {
     "description": "Server connection status — connected"
   },
+  "failedToLoadProfiles": "加载已保存的服务器失败",
+  "@failedToLoadProfiles": { "description": "读取已保存配置失败时的错误提示" },
   "@_PLAYER_SCREENS": {},
   "noSongPlaying": "当前无歌曲播放",
   "@noSongPlaying": {
