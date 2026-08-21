@@ -2553,8 +2553,12 @@ class _PlayerControlsState extends State<_PlayerControls> {
               );
             },
           ),
+          // 用 effectiveDuration 而非 duration：转码流（chunked、无
+          // Content-Length）播放器解析不出时长（duration 恒 0），进度条
+          // 总时长标签会留空；effectiveDuration 会回退到服务端元数据
+          //（song.duration），道理鱼曲目元数据带 durationSeconds。
           Selector<PlayerProvider, Duration>(
-            selector: (_, p) => p.duration,
+            selector: (_, p) => p.effectiveDuration,
             builder: (context, duration, _) {
               final provider = context.read<PlayerProvider>();
               return StreamBuilder<Duration>(

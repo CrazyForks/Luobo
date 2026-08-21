@@ -99,6 +99,10 @@ class DiagnosticsService extends ChangeNotifier {
       // 会话 id 覆盖主写入者，导致下次启动会话分叉。
       if (!_secondaryInstance) {
         await prefs.setString(_appSessionKey, _appSessionId);
+        // 立即固化对账后的 seq：快速引擎重建（双实例窗口）时，新实例若只
+        // 依赖每 50 条的节流持久化，可能在旧实例尚未停写时复用重复 seq，
+        // 导致导出按 seq 去重丢事件。对账完成即落盘，缩小重叠窗口。
+        await _saveSeq(_seq);
       }
       if (lock == WriterLockResult.staleTakenOver) {
         // 前序实例崩溃残留：轮转隔离可能仍持有旧句柄的僵尸写入者，
@@ -354,22 +358,38 @@ class DiagnosticsService extends ChangeNotifier {
   // ---- 导出 / 清空 / 剪贴板 ----
 
   /// 最近 [maxLines] 条事件的可读文本（诊断页/剪贴板用）。
-  /// 统一为可读格式，并按 seq 去重（文件侧 JSONL 解析后与 ring 合并）。
+  /// 统一为可读格式，并按「appSessionId#seq」去重（文件侧 JSONL 解析后与
+  /// ring 合并）。
+  ///
+  /// 加固说明：双实例（进程/引擎重建）可能产生重复 seq（诊断日志实证：
+  /// restore.end 两次 seq=56406，分属 as-6cc54e05 / as-915146f0）。按 seq 单键
+  /// 去重会把不同实例的事件互相覆盖、导出静默丢事件。复合键让同实例的
+  /// 文件/ring 副本正常去重（ring 后写覆盖），不同实例的重复 seq 两条都保留。
   Future<String> readableText({int maxLines = 500}) async {
-    final bySeq = <int, String>{};
+    final byKey = <String, ({int seq, String text})>{};
+    void add(DiagnosticEvent ev) {
+      byKey['${ev.appSessionId}#${ev.seq}'] =
+          (seq: ev.seq, text: ev.toReadable());
+    }
+
     try {
       final fileText = await _store.readEventLines(maxLines: maxLines * 2);
       for (final line in fileText.split('\n')) {
         if (line.trim().isEmpty) continue;
         final ev = DiagnosticEvent.fromJsonLine(line);
-        if (ev != null) bySeq[ev.seq] = ev.toReadable();
+        if (ev != null) add(ev);
       }
     } catch (_) {}
     for (final ev in _ring) {
-      bySeq[ev.seq] = ev.toReadable();
+      add(ev);
     }
-    final seqs = bySeq.keys.toList()..sort();
-    final lines = seqs.map((s) => bySeq[s]!).toList();
+    final entries = byKey.values.toList()
+      ..sort((a, b) {
+        final c = a.seq.compareTo(b.seq);
+        if (c != 0) return c;
+        return a.text.compareTo(b.text);
+      });
+    final lines = entries.map((e) => e.text).toList();
     if (lines.length > maxLines) {
       return lines.sublist(lines.length - maxLines).join('\n');
     }
@@ -397,6 +417,10 @@ class DiagnosticsService extends ChangeNotifier {
   /// 手选路径保存。release 下 adb 无法访问 app 私有目录，需走系统
   /// 保存对话框（SAF）才能把日志取出来。
   Future<String> exportReadableText() async {
+    // 先 flush：sink 中可能有未落盘的缓冲，直接读文件会缺失最近事件，
+    // 导致 raw 尾部与可读文本时间线不一致（曾见 raw 尾部停在 11:28:47、
+    // 可读文本已到 11:29:28）。
+    await _store.flush();
     final text = await readableText(maxLines: 2000);
     final meta = _meta();
     // 原始 JSONL 尾部：供核对 seq/appSessionId/写穿——可读文本是解析产物，

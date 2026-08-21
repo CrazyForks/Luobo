@@ -2000,7 +2000,8 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
           await _audioPlayer.setAudioSource(youtubeSource);
           await _applyReplayGain(song);
           await _ensureAudioFocus();
-          await _audioPlayer.play();
+          // play() Future 要等播放停止才完成：不 await（见 play() 注释）。
+          _startPlayback();
         } else if (_subsonicService.isYoutube) {
           // All songs are YouTube — can't build ConcatenatingAudioSource easily
           final String playUrl;
@@ -2017,7 +2018,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
           await _audioPlayer.setUrl(playUrl);
           await _applyReplayGain(song);
           await _ensureAudioFocus();
-          await _audioPlayer.play();
+          _startPlayback();
         } else if (_gaplessEnabled && !_isDaoliyuTranscodeRequested) {
           // Build ConcatenatingAudioSource for gapless playback
           try {
@@ -2038,7 +2039,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
           }
           await _applyReplayGain(song);
           await _ensureAudioFocus();
-          await _audioPlayer.play();
+          _startPlayback();
         } else {
           // Gapless disabled — single-song mode
           final String playUrl;
@@ -2078,18 +2079,25 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
           }
           await _applyReplayGain(song);
           await _ensureAudioFocus();
-          await _audioPlayer.play();
+          _startPlayback();
         }
       }
 
-      // P0 修复：有声书续播必须真正 seek 到恢复位置。resumePositionMs 只写入
-      // _position 只影响 UI 显示，播放器不会自动 seek；本地播放四分支都是
-      // setAudioSource/setUrl + play()，从不执行 _audioPlayer.seek，音频实际
-      // 从 0 播（随后 positionStream 把 _position 覆盖回 0）。cast/UPnP 远程
-      // 播放本地播放器已 stop，seek 不生效（B14 一期接受）。
+      // 有声书续播：seek 到恢复位置。必须在这里（播放发起后立即）执行——
+      // 此前 _audioPlayer.play() 被 await，本块延迟到暂停/停止时才运行，
+      // 实际播放始终从 0:00 开始（这就是「有声书点了从 0s 播」的根因）。
+      // 走 provider seek() 而非 _audioPlayer.seek()：道理鱼转码流无
+      // Content-Length、字节 seek 无效，seek() 内部会带 timeOffset 重起流。
+      // cast/UPnP 远程播放本地播放器已 stop，seek 不生效（B14 一期接受）。
       if (audiobook && resumePositionMs != null && resumePositionMs > 0) {
         try {
-          await _audioPlayer.seek(Duration(milliseconds: resumePositionMs));
+          await seek(Duration(milliseconds: resumePositionMs));
+          // 道理鱼转码续播：seek 重起了一条带 timeOffset 的新流，但重起流只在
+          // _isPlaying 为真时自动续播；此刻播放态标志可能尚未由
+          // playerStateStream 置位，这里显式确保新流处于播放态（幂等）。
+          if (isActiveStreamTranscoded && _subsonicService.isDaoliyu) {
+            _startPlayback();
+          }
         } catch (e) {
           debugPrint('[Player] Audiobook resume seek failed: $e');
         }
@@ -2371,7 +2379,17 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       await _audioPlayer.setVolume(_volume);
 
       await _ensureAudioFocus();
-      await _audioPlayer.play();
+      // play() Future 要等播放停止才完成：不 await，否则下面的
+      // _updateSystemServicesForRadio（车载/通知栏电台状态）永远不会执行。
+      // play 失败不抛出（_startPlayback 吞错）→ 通过 onError 复位电台状态，
+      // 避免流启动失败时 UI 卡在"播放中"（Review P2）。
+      _startPlayback(onError: (e) {
+        debugPrint('Error playing radio station: $e');
+        _isPlaying = false;
+        _isPlayingRadio = false;
+        _currentRadioStation = null;
+        notifyListeners();
+      });
 
       _updateSystemServicesForRadio(station);
     } catch (e) {
@@ -2496,6 +2514,17 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
+  /// 发起播放但不阻塞。just_audio/media_kit 的 play() Future 在播放「停止」
+  /// 时才完成（见 play() 注释），绝不能 await；且平台播放请求失败会在该
+  /// Future 上抛错，fire-and-forget 必须吞掉，避免未捕获异步异常。
+  /// [onError] 供调用方感知 play 失败（如电台失败复位状态）。
+  void _startPlayback({void Function(Object error)? onError}) {
+    unawaited(_audioPlayer.play().catchError((Object e) {
+      debugPrint('[Player] play() error (ignored): $e');
+      onError?.call(e);
+    }));
+  }
+
   Future<void> play() async {
     DiagnosticsService.instance.beginPlaybackSession();
     DiagnosticsService.instance.record(
@@ -2547,9 +2576,18 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
             restorePos > Duration.zero) {
           await _audioPlayer.seek(restorePos);
         }
+      } else if (_audioPlayer.processingState == ProcessingState.completed) {
+        // 队列播完/单曲播完后再点播放：媒体停在曲末，play() 不会自动重播。
+        // seek(0) 归零（道理鱼转码流会走 timeOffset 重起流），再 play 从头播。
+        await seek(Duration.zero);
       }
       await _ensureAudioFocus();
-      await _audioPlayer.play();
+      // 关键修复：just_audio/media_kit 的 play() Future 在播放「停止」时才完成，
+      // 绝不能 await——否则后面的 _fadeIn/_checkSilentPlayback/play 会话快照全部
+      // 延迟到暂停/切歌时才执行（2026-08-11 诊断日志实证：action=play 在
+      // 11:28:47.332，play 会话快照却在 11:28:58.423 用户暂停后才落盘）。无声
+      // 自愈因此永远测的是暂停态，位置停滞类无声从不被恢复。
+      _startPlayback();
       await _fadeIn();
       // 无声检测：play 后 1.5s 内 playing 但位置未前进 → 疑似无声；
       // 同时无条件记录一次会话快照，覆盖「位置前进但无声」场景。
@@ -2564,11 +2602,17 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// 派生检测器：play 后无声音输出（状态 playing 但 position 停滞）。
   /// 同时无条件记录一次会话快照（postPlayCheck）：覆盖与停滞相反的另一类
   /// 无声——位置在前进但输出管线未重建（退后台回前台后首次 play 的典型症状）。
+  ///
+  /// 修复说明（2026-08-20）：此前 _audioPlayer.play() 被 await，本检测延迟到
+  /// 暂停/切歌时才执行，测的是暂停态（playing=false 直接 return），从来自愈
+  /// 不生效。现在 play() 不再 await play Future，本检测在播放发起后立即执行：
+  /// 1.5s 后仍未进入播放态 / 源回 idle / ready 但位置停滞 → 重载音源自愈。
+  /// pause/seek/切歌都会自增 _silentCheckToken 使本次检测失效，能走到判定
+  /// 说明用户没有干预，属于播放未生效。
   Future<void> _checkSilentPlayback() async {
     final token = ++_silentCheckToken; // 只让最新一次 play 的检测生效
     final songId = _currentSong?.id;
     final startPos = _audioPlayer.position;
-    final startPlaying = _audioPlayer.playing;
     await Future.delayed(const Duration(milliseconds: 1500));
     if (token != _silentCheckToken) return; // 已被更新的 play/pause/seek 取代
     try {
@@ -2587,52 +2631,47 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
                 advancedMs >= 500 &&
                 _audioPlayer.volume > 0.01,
       });
-      if (startPlaying != _audioPlayer.playing) return; // 用户已暂停/切歌
-      if (!_audioPlayer.playing) return;
       if (_currentSong?.id != songId) return; // 已切歌，不误报
-      // 自愈：play 后 1.5s 仍处于 idle → 源陈旧/输出管线未重建（退后台回前台
-      // 首次 play 的无声场景，日志确认的根因），自动重载音源替代用户手动
-      // 暂停-播放。re-prepare 会重建整个输出管线。radio（_currentSong==null）
-      // 不在此列，源掉线由其自身路径处理。
-      if (_audioPlayer.processingState == ProcessingState.idle &&
-          _currentSong != null) {
-        DiagnosticsService.instance.record(
-          EventType.audioSilentPlayback,
-          LogLevel.warn,
-          {
-            'posBeforeMs': startPos.inMilliseconds,
-            'posAfterMs': nowPos.inMilliseconds,
-            'route': DiagnosticsService.instance.currentRoute,
-            'songId': songId,
-            'recovery': 'reprepare',
-          },
-        );
-        try {
-          await _prepareCurrentSong();
-          if (token != _silentCheckToken) return; // 重载期间用户已暂停/切歌
-          // 重载从头建源：恢复到触发时位置，避免从 0:00 重放。
-          if (startPos > Duration.zero) {
-            await _audioPlayer.seek(startPos);
-          }
-          await _audioPlayer.play();
-          unawaited(_recordAudioSessionState('selfHeal'));
-        } catch (e) {
-          debugPrint('[Player] Self-heal re-prepare failed: $e');
+      if (_currentSong == null) return; // radio（_currentSong==null）不在此列
+      // 已切到 Cast/UPnP 远端播放：本地播放器被有意暂停/停止，不干预，避免
+      // 自愈强行本地重播形成双路音频（Review P2）。
+      if (_isRenderingRemotely) return;
+
+      // 无声判定：未进入播放态 / 源回 idle / ready 但位置停滞（<500ms）。
+      // buffering/loading 不算（网络慢属正常等待，不是无声）。completed 不在此列：
+      // 1.5s 内自然播完（短曲/曲末点播）是正常完成而非无声，由 _onSongComplete
+      // 接管，不应从 0 重播一次（Review P3）。
+      final stuck = !_audioPlayer.playing ||
+          _audioPlayer.processingState == ProcessingState.idle ||
+          (_audioPlayer.processingState == ProcessingState.ready &&
+              advancedMs < 500);
+      if (!stuck) return;
+
+      DiagnosticsService.instance.record(
+        EventType.audioSilentPlayback,
+        LogLevel.warn,
+        {
+          'posBeforeMs': startPos.inMilliseconds,
+          'posAfterMs': nowPos.inMilliseconds,
+          'route': DiagnosticsService.instance.currentRoute,
+          'songId': songId,
+          'recovery': 'reprepare',
+        },
+      );
+      try {
+        // 重载音源重建整个输出管线（退后台回前台首次 play 的无声根因）。
+        await _prepareCurrentSong();
+        if (token != _silentCheckToken) return; // 重载期间用户已暂停/切歌
+        // 重载从头建源：恢复到触发时位置，避免从 0:00 重放。道理鱼转码流
+        // 由 _prepareCurrentSong 内部按 timeOffset 起播（_streamBaseOffsetMs
+        // 已置位），无需再 seek。
+        if (startPos > Duration.zero && _streamBaseOffsetMs == 0) {
+          await _audioPlayer.seek(startPos);
         }
-        return;
-      }
-      if (_audioPlayer.processingState != ProcessingState.ready) return;
-      if (advancedMs < 500) {
-        DiagnosticsService.instance.record(
-          EventType.audioSilentPlayback,
-          LogLevel.error,
-          {
-            'posBeforeMs': startPos.inMilliseconds,
-            'posAfterMs': nowPos.inMilliseconds,
-            'route': DiagnosticsService.instance.currentRoute,
-            'songId': songId,
-          },
-        );
+        _startPlayback();
+        unawaited(_recordAudioSessionState('selfHeal'));
+      } catch (e) {
+        debugPrint('[Player] Self-heal re-prepare failed: $e');
       }
     } catch (_) {
       // 播放器已释放等异常：忽略本次检测
@@ -2895,7 +2934,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     // 流加载成功后才设基准：避免旧源被替换前发出的位置 tick 被加上新基准
     // （短暂错位）。
     _streamBaseOffsetMs = position.inMilliseconds;
-    if (_isPlaying) await _audioPlayer.play(); // 用当前态而非入口快照
+    if (_isPlaying) _startPlayback(); // 用当前态而非入口快照；不 await（play Future 播放停止才完成，否则下方歌词重同步被延迟到暂停时）
 
     // 重起流后播放器位置从 0 计起：锁屏歌词同步到「流位置 + 基准」才正确。
     _lyricsService.stopSync();
@@ -3748,7 +3787,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
         if (_currentSong != null && !_audioPlayer.playing) {
           debugPrint(
               '[Player] iOS: Resuming playback after audio session reactivation (song: ${_currentSong!.title})');
-          await _audioPlayer.play();
+          _startPlayback();
           _isPlaying = true;
           notifyListeners();
           _updateAllServices();
@@ -3888,6 +3927,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
     if (_castService.isConnected) {
       _audioPlayer.pause();
+      _silentCheckToken++; // 使挂起的无声检测失效：切远端后不误触发本地自愈
       _androidSystemService.setRemotePlayback(isRemote: true, volume: 50);
       if (_currentSong != null) {
         final song = _currentSong!;
@@ -3916,6 +3956,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       _upnpWasConnected = true;
       _upnpWasPlaying = false;
       if (_audioPlayer.playing) _audioPlayer.pause();
+      _silentCheckToken++; // 使挂起的无声检测失效：切远端后不误触发本地自愈
       final vol = _upnpService.volume;
 
       if (vol >= 0) _volume = vol / 100.0;

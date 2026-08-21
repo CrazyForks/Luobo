@@ -2,7 +2,7 @@
 
 **Luobo**（萝卜）是基于 [Musly](https://github.com/dddevid/Musly) 二次开发的 Navidrome / Subsonic 音乐播放客户端，使用 Flutter 构建，支持 Android 和 iOS。**相比原版 Musly 增加了 Apple Music 风格首页、车载模式、听歌报告、AI 歌单等特色功能，并对设置页、音乐库艺术家页做了重构，以及大规模国际化适配。**
 
-> **当前版本：v1.1.15**（在 Musly v1.0.13 基础上独立迭代）
+> **当前版本：v1.1.16**（在 Musly v1.0.13 基础上独立迭代）
 
 ---
 
@@ -203,7 +203,17 @@
 
 ## 🛠️ 版本历史
 
-**v1.1.15（当前）** — 道理鱼有声书接入与歌词页快速下滑关闭：
+**v1.1.16（当前）** — 播放核心时序修复（play() 不再阻塞后续逻辑）：
+
+**🐛 播放核心 bug 修复（诊断日志驱动）**
+- ✅ **play() Future 不再 await** — just_audio/media_kit 的 play() 要等播放停止才完成，此前 await 导致无声自愈 / play 会话快照 / 电台状态更新 / 有声书续播 seek 全部延迟到暂停时才执行；统一改为 fire-and-forget `_startPlayback()`（吞错 + onError 回调复位电台状态）
+- ✅ **无声自愈真正生效** — 自愈检测在播放发起后立即执行，判定收敛为「未进播放态 / 源回 idle / ready 但位置停滞 <500ms」，排除 buffering（网络慢）、completed（短曲自然播完）、Cast/UPnP（本地暂停防双路音频）
+- ✅ **有声书续播 seek 修复** — 续播 seek 走 provider seek()（道理鱼转码流 timeOffset 重起流）并显式续播，修复「点了从 0s 播」
+- ✅ **队列播完再点播放** — completed 态 seek(0) 再 play，不再停在曲末
+- ✅ **进度条总时长兜底** — 转码流（chunked 无 Content-Length）duration 恒 0 时回退 `effectiveDuration`（服务端元数据）
+- ✅ **诊断加固** — 对账后立即固化 seq、去重复合键 `appSessionId#seq`（双实例重复 seq 不互相覆盖丢事件）、导出前 flush sink（raw 尾部与可读文本时间线一致）
+
+**v1.1.15** — 道理鱼有声书接入与歌词页快速下滑关闭：
 
 **🎧 有声书（道理鱼 /api 层）**
 - ✅ **列表与详情页** — `GET /api/library/audiobooks` 接入：列表（书名 / 朗读者 / 章节数 / 总时长，API 无封面字段 → 占位图兜底）+ 详情页章节播放
