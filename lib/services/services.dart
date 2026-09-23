@@ -13,6 +13,7 @@ export 'bpm_analyzer_service.dart';
 export 'recommendation_service.dart';
 export 'knowledge_recommendation_engine.dart';
 export 'home_recommendation_service.dart';
+export 'recommended_history_store.dart';
 export 'playback_context_tracker.dart';
 export 'auto_dj_service.dart';
 export 'player_ui_settings_service.dart';

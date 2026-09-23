@@ -1,0 +1,14 @@
+# https://dart.dev/guides/libraries/private-files
+.dart_tool/
+
+# Flutter/Dart/Pub
+build/
+.pub-cache/
+.pub/
+.packages
+
+# Don't commit package locks for library packages (example app lock stays).
+# If you publish to pub.dev you may keep it locally.
+
+# macOS
+.DS_Store

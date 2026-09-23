@@ -17,11 +17,29 @@ object AndroidAutoPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private const val METHOD_CHANNEL = "com.devid.musly/android_auto"
     private const val EVENT_CHANNEL = "com.devid.musly/android_auto_events"
 
+    /** Max car commands buffered while Flutter has not subscribed to the event channel yet. */
+    private const val MAX_PENDING_COMMANDS = 32
+
+    /** Buffered command lifetime; older entries are dropped so stale keys are never replayed. */
+    private const val PENDING_COMMAND_TTL_MS = 5_000L
+
     private var methodChannel: MethodChannel? = null
     private var eventChannel: EventChannel? = null
     private var eventSink: EventChannel.EventSink? = null
     private var context: Context? = null
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    /** A car command waiting to be replayed (event payload + enqueue time). */
+    private data class PendingCommand(
+        val command: String,
+        val arguments: Map<String, Any>?,
+        val queuedAtMs: Long,
+    )
+
+    /** Car commands buffered while Dart is not listening, see [sendCommand]. */
+
+    private val pendingCommands = ArrayDeque<PendingCommand>()
+
 
     // Buffers for library data sent before MusicService finishes starting.
     private var pendingRecentSongs: List<Map<String, Any>>? = null
@@ -39,7 +57,11 @@ object AndroidAutoPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         eventChannel?.setStreamHandler(object : EventChannel.StreamHandler {
             override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
                 eventSink = events
+                Log.d(TAG, "Flutter subscribed to event channel, replaying buffered commands")
+                flushPendingCommands()
+
             }
+
 
             override fun onCancel(arguments: Any?) {
                 eventSink = null
@@ -218,11 +240,50 @@ object AndroidAutoPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     }
     
     fun sendCommand(command: String, arguments: Map<String, Any>?) {
+        val sink = eventSink
+        if (sink == null) {
+            // Flutter is not subscribed yet (service started before the engine/subscription,
+            // or the engine is being recreated). Dropping silently made car buttons look dead
+            // with no trace, so buffer briefly and replay once the subscription is ready.
+            pendingCommands.addLast(PendingCommand(command, arguments, System.currentTimeMillis()))
+            while (pendingCommands.size > MAX_PENDING_COMMANDS) {
+                pendingCommands.removeFirst()
+            }
+            Log.w(TAG, "sendCommand($command): Flutter not listening, buffered (${pendingCommands.size} pending)")
+            return
+        }
+        Log.d(TAG, "sendCommand($command) -> Flutter")
+        sink.success(buildPayload(command, arguments))
+    }
+
+    /** Replays buffered commands once Flutter subscribes; entries past the TTL are dropped. */
+
+    private fun flushPendingCommands() {
+        val sink = eventSink ?: return
+        if (pendingCommands.isEmpty()) return
+
+        val now = System.currentTimeMillis()
+        var sent = 0
+        var expired = 0
+        while (pendingCommands.isNotEmpty()) {
+            val pending = pendingCommands.removeFirst()
+            if (now - pending.queuedAtMs > PENDING_COMMAND_TTL_MS) {
+                expired++
+                continue
+            }
+            sink.success(buildPayload(pending.command, pending.arguments))
+            sent++
+        }
+        Log.d(TAG, "flushPendingCommands: replayed $sent, dropped $expired expired")
+
+    }
+
+    private fun buildPayload(command: String, arguments: Map<String, Any>?): Map<String, Any> {
         val data = mutableMapOf<String, Any>("command" to command)
         arguments?.let { data.putAll(it) }
-        
-        eventSink?.success(data)
+        return data
     }
+
     
     /** Request library data from Flutter. Called when MusicService is ready but has no data yet. */
     fun requestLibraryData() {

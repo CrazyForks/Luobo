@@ -1,7 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:fluid_mesh_background/fluid_mesh_background.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/diagnostics/diagnostics.dart';
 import '../theme/app_theme.dart';
+import '../utils/image_cache.dart';
 import '../widgets/album_artwork.dart';
 import '../widgets/pressable_scale.dart';
 import '../widgets/section_header.dart';
@@ -12,10 +16,17 @@ class MixCardData {
   final String title;
   final String? subtitle;
   final String? coverArt;
-  final List<String>? coverArts;
 
-  /// 是否圆形封面；[coverArts] 拼贴（≥2 张）时为方形圆角。
+  /// 流体渐变背景的取色源（封面 URL）。[useFluidGradient] 为 true 时生效。
+  final String? imageUrl;
+
+  /// 是否圆形封面。仅在不使用流体渐变时生效（流体恒为方形圆角）。
   final bool round;
+
+  /// 用「封面取色流体渐变」替代封面图（2026-09-23：为你制作 4 卡由 2×2
+  /// 拼贴改为流体）。无 [imageUrl] 时回落到默认深色 mesh。
+  final bool useFluidGradient;
+
   final VoidCallback? onTap;
 
   /// 占位态（如 Mix 暂无内容）：灰态封面 + 「生成中」，不可点击。
@@ -25,15 +36,19 @@ class MixCardData {
     required this.title,
     this.subtitle,
     this.coverArt,
-    this.coverArts,
+    this.imageUrl,
     this.round = true,
+    this.useFluidGradient = false,
     this.onTap,
     this.disabled = false,
   });
 }
 
 /// 2 列网格段落（标题 + 查看全部 + 网格卡片），替代旧首页的纵向文字行列表。
-class MixGridSection extends StatelessWidget {
+///
+/// 内部用 [FluidBackgroundScope] 包住整个网格，让 4 张卡的流体背景**共用一个
+/// 时钟**（一个 Ticker 而非四个）。
+class MixGridSection extends StatefulWidget {
   final String title;
   final List<MixCardData> cards;
   final VoidCallback? onSeeAllTap;
@@ -50,38 +65,79 @@ class MixGridSection extends StatelessWidget {
   });
 
   @override
+  State<MixGridSection> createState() => _MixGridSectionState();
+}
+
+class _MixGridSectionState extends State<MixGridSection> {
+  bool _modeRecorded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _recordModeOnce();
+  }
+
+  /// 记录本段用了哪种流体背景。
+  ///
+  /// 用途：`frame.jank` / `frame.slow` 事件只带 `route`，而首页有多种背景模式，
+  /// 无法归属。着色器**是否可用**另有一条 `fluidMeshShader` 事件（来自
+  /// `fluid_mesh_background` 包的 `FluidBackgroundEvents`），两条合起来即可判断
+  /// 本次运行的实际渲染路径。
+  void _recordModeOnce() {
+    if (_modeRecorded || widget.cards.isEmpty) return;
+    _modeRecorded = true;
+    final cards = widget.cards.length;
+    // 放到帧后，确保 route observer 已写入当前路由。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DiagnosticsService.instance.record(
+        EventType.animActive,
+        LogLevel.info,
+        {
+          'anim': 'mixCardFluidBackground',
+          'cards': cards,
+          'clock': 'monotonic',
+        },
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = HomeV2Tokens.of(context);
     final l10n = AppLocalizations.of(context)!;
-    if (cards.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPad),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeader(
-            title: title,
-            actionText: onSeeAllTap != null ? l10n.seeAll : null,
-            onActionTap: onSeeAllTap,
-          ),
-          const SizedBox(height: 4),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: columns,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 16,
-              childAspectRatio: columns == 2 ? 0.74 : 0.9,
+    if (widget.cards.isEmpty) return const SizedBox.shrink();
+    return FluidBackgroundScope(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: widget.hPad),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SectionHeader(
+              title: widget.title,
+              actionText: widget.onSeeAllTap != null ? l10n.seeAll : null,
+              onActionTap: widget.onSeeAllTap,
             ),
-            itemCount: cards.length,
-            itemBuilder: (context, index) => _MixCard(
-              data: cards[index],
-              tokens: tokens,
+            const SizedBox(height: 4),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: widget.columns,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 16,
+                childAspectRatio: widget.columns == 2 ? 0.74 : 0.9,
+              ),
+              itemCount: widget.cards.length,
+              itemBuilder: (context, index) => _MixCard(
+                data: widget.cards[index],
+                tokens: tokens,
+                // 每张卡一套不同的流动图案（45° 方向步进 + 不同噪声区域）
+                seed: FluidBackground.seedForIndex(index),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -91,7 +147,14 @@ class _MixCard extends StatelessWidget {
   final MixCardData data;
   final HomeV2Tokens tokens;
 
-  const _MixCard({required this.data, required this.tokens});
+  /// 本卡的流体 seed（见 `FluidBackground.seedForIndex`）：决定流动图案。
+  final double seed;
+
+  const _MixCard({
+    required this.data,
+    required this.tokens,
+    required this.seed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -111,9 +174,23 @@ class _MixCard extends StatelessWidget {
           color: tokens.secondaryText,
         ),
       );
-    } else if (data.coverArts != null && data.coverArts!.isNotEmpty) {
-      // 2×2 封面拼贴（Spotify Daily Mix 风格），方形圆角。
-      cover = CoverCollage(coverArts: data.coverArts!);
+    } else if (data.useFluidGradient) {
+      // 封面取色的「流沙」流体场（`fluid_mesh_background` 包），替代 2×2 拼贴封面。
+      // 时钟来自上层 FluidBackgroundScope；着色器不可用时包内自动回落。
+      // 传 CachedNetworkImageProvider 是为了复用 App 的封面磁盘/内存缓存，
+      // 避免为背景再下载一次同一张封面。
+      final url = data.imageUrl;
+      cover = FluidBackground(
+        imageProvider: url == null || url.isEmpty
+            ? null
+            : CachedNetworkImageProvider(
+                url,
+                cacheManager: coverCacheManager,
+                cacheKey: coverArtCacheKeyFromUrl(url),
+              ),
+        borderRadius: 12,
+        seed: seed,
+      );
     } else {
       cover = data.round
           ? ClipOval(

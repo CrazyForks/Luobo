@@ -523,7 +523,16 @@ class _MainScreenState extends State<MainScreen> {
                       return MaterialPageRoute(
                         builder: (_) => IndexedStack(
                           index: _currentIndex,
-                          children: _screens,
+                          // IndexedStack 内部用 `Visibility(maintainAnimation:
+                          // true)` 包住未选中项，TickerMode 不会被关掉——不额外
+                          // 包一层的话，首页流体背景等动画在切走后仍会逐帧产帧。
+                          children: [
+                            for (var i = 0; i < _screens.length; i++)
+                              TickerMode(
+                                enabled: _currentIndex == i,
+                                child: _screens[i],
+                              ),
+                          ],
                         ),
                       );
                     },

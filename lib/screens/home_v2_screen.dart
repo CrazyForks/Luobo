@@ -38,7 +38,7 @@ class HomeV2Screen extends StatefulWidget {
 
 class _HomeV2ScreenState extends State<HomeV2Screen> {
   HomeFeed? _cachedFeed;
-  String _lastRandomKey = '';
+  String _lastFeedKey = '';
 
   bool get _isDesktop {
     if (kIsWeb) return false;
@@ -53,7 +53,7 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
     return l10n.goodEvening;
   }
 
-  String _computeRandomKey(List<Song> songs) =>
+  String _computeSongsKey(List<Song> songs) =>
       songs.isEmpty ? '' : songs.map((s) => s.id).join('|');
 
   void _play(
@@ -148,18 +148,24 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
                 final allSongs = libraryProvider.cachedAllSongs.isNotEmpty
                     ? libraryProvider.cachedAllSongs
                     : libraryProvider.randomSongs;
-                final key = _computeRandomKey(allSongs);
+                // feed 门控 = 曲库 id 串 + 推荐服务的 feedRevision：曲库没变但
+                // 服务内部缓存失效（收藏变化 / 知识库重建）时同样要重建 feed，
+                // 否则「点了喜欢推荐跟着变」永远不生效（§3.4）。
+                final songsKey = _computeSongsKey(allSongs);
+                final feedKey = songsKey.isEmpty
+                    ? ''
+                    : '$songsKey#${homeRecommendation.feedRevision}';
 
-                if (recommendationService.enabled && key.isNotEmpty) {
-                  if (key != _lastRandomKey) {
+                if (recommendationService.enabled && feedKey.isNotEmpty) {
+                  if (feedKey != _lastFeedKey) {
                     _cachedFeed = homeRecommendation.generateFeed(
                       allSongs: allSongs,
                     );
-                    _lastRandomKey = key;
+                    _lastFeedKey = feedKey;
                   }
                 } else {
                   _cachedFeed = null;
-                  _lastRandomKey = '';
+                  _lastFeedKey = '';
                 }
 
                 final feed = _cachedFeed;
@@ -356,9 +362,10 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
       final coverUrl = _firstCoverUrl(libraryProvider, songs);
       return MixCardData(
         title: title,
-        // 2×2 拼贴封面（≤4 张不同封面），避免多个 Mix 撞同一封面。
-        coverArts:
-            songs.isEmpty ? null : _collageCovers(libraryProvider, songs),
+        // 封面取色的「流沙」流体场（2026-09-23：替代原 2×2 拼贴封面）。
+        // 取色源 = 该 Mix 列表里第一首有封面的歌；取不到则回落默认深色 mesh。
+        imageUrl: coverUrl,
+        useFluidGradient: true,
         disabled: songs.isEmpty,
         onTap: songs.isEmpty
             ? null
@@ -409,20 +416,6 @@ class _HomeV2ScreenState extends State<HomeV2Screen> {
         ),
       ],
     );
-  }
-
-  /// 取最多 4 张不同封面用于 Mix 拼贴。
-  List<String> _collageCovers(LibraryProvider p, List<Song> songs) {
-    final seen = <String>{};
-    final out = <String>[];
-    for (final song in songs.take(10)) {
-      final cover = p.effectiveCoverArt(song);
-      if (cover != null && cover.isNotEmpty && seen.add(cover)) {
-        out.add(cover);
-        if (out.length == 4) break;
-      }
-    }
-    return out;
   }
 
   /// 列表第一首有封面的歌的封面 URL（二级页 hero 取色用）。

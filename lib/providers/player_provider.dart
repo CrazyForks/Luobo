@@ -547,8 +547,8 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _initializeAndroidAuto() {
-    _androidAutoService.initialize();
-
+    // 先接线回调、再订阅事件通道：initialize() 会订阅 EventChannel 并拉起
+    // MusicService，车机按键可能在订阅建立的瞬间到达，回调未就绪会被丢弃。
     _androidAutoService.onPlay = play;
     _androidAutoService.onPause = pause;
     _androidAutoService.onStop = stop;
@@ -564,6 +564,8 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
     _androidAutoService.onSearch = _searchForAndroidAuto;
     _androidAutoService.onPlayFromSearch = _playFromSearchForAndroidAuto;
     _androidAutoService.onRequestLibraryData = _onRequestLibraryData;
+
+    _androidAutoService.initialize();
   }
 
   void _onRequestLibraryData() {

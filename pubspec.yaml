@@ -11,7 +11,7 @@ publish_to: 'none'
 # Read more about Android versioning at https://developer.android.com/studio/publish/versioning
 # In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
 # In Windows, build-name is used as the major, minor, and patch parts
-version: 1.1.17+12
+version: 1.1.18+13
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -26,7 +26,11 @@ dependencies:
   intl: any
 
   cupertino_icons: ^1.0.8
-  
+
+  # 首页「为你制作」的流沙流体背景（本地子包，按开源包标准独立维护）
+  fluid_mesh_background:
+    path: packages/fluid_mesh_background
+
   provider: ^6.1.2
   
   dio: ^5.4.0

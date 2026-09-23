@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:luobo/models/song.dart';
 import 'package:luobo/services/home_recommendation_service.dart';
 import 'package:luobo/services/recommendation_service.dart';
+import 'package:luobo/services/recommended_history_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Song _song(
@@ -267,6 +268,191 @@ void main() {
       service.rebuildKnowledge(_tagsFor(songs, '流行,快乐'));
       final after = service.dailyRecommendation(allSongs: songs, now: now);
       expect(after, isNot(same(before)));
+    });
+
+    // ──────────────────────────────────────────────────────────────────────
+    // 探索配额 / 跨天冷却 / 收藏即时反馈
+    // （`docs/每日推荐探索配额与冷却技术方案.md`）
+    // ──────────────────────────────────────────────────────────────────────
+
+    test('配额：每日推荐固定留出探索槽给未听过的歌', () async {
+      // 听过的歌足够多且歌手分散 → 旧逻辑（单路融合分排序）会占满 30 个名额。
+      final heard = List.generate(
+          40, (i) => _song('h$i', artist: 'HA$i', albumId: 'hal$i'));
+      final unheard = List.generate(
+          10, (i) => _song('u$i', artist: 'UB$i', albumId: 'ubl$i'));
+      for (final s in heard) {
+        await play(s);
+      }
+      service.rebuildKnowledge(_tagsFor([...heard, ...unheard], '摇滚,深夜'));
+      service.refreshUserPref();
+
+      final daily = service.dailyRecommendation(
+        allSongs: [...heard, ...unheard],
+        limit: 30,
+      );
+
+      // 熟悉槽 20 + 探索槽 10（dailyDiscoverRatio = 1/3）。
+      expect(daily.where((s) => s.id.startsWith('h')).length, 20);
+      expect(daily.where((s) => s.id.startsWith('u')).length, 10);
+      // 熟悉在前、探索在后。
+      expect(daily.take(20).every((s) => s.id.startsWith('h')), isTrue);
+      expect(daily.skip(20).every((s) => s.id.startsWith('u')), isTrue);
+    });
+
+    test('配额：探索槽数量随 limit 缩放', () {
+      expect(HomeRecommendationService.dailyDiscoverQuota(30), 10);
+      expect(HomeRecommendationService.dailyDiscoverQuota(3), 1);
+      expect(HomeRecommendationService.dailyDiscoverQuota(0), 0);
+    });
+
+    test('冷却：次日推荐与首日无交集', () async {
+      SharedPreferences.setMockInitialValues({});
+      final history = RecommendedHistoryStore();
+      await history.initialize();
+      final svc = HomeRecommendationService(
+        behavior: behavior,
+        history: history,
+      );
+
+      // 库要足够大，否则冷却安全阀会整体忽略冷却（见下一条测试）。
+      final heard = List.generate(
+          200, (i) => _song('h$i', artist: 'HA$i', albumId: 'hal$i'));
+      final unheard = List.generate(
+          20, (i) => _song('u$i', artist: 'UB$i', albumId: 'ubl$i'));
+      for (final s in heard) {
+        await play(s);
+      }
+      svc.rebuildKnowledge(_tagsFor([...heard, ...unheard], '摇滚,深夜'));
+      svc.refreshUserPref();
+
+      final all = [...heard, ...unheard];
+      final day1 = DateTime(2026, 9, 23, 10);
+      final first = svc.dailyRecommendation(allSongs: all, now: day1);
+      expect(first.length, 30);
+
+      final second = svc.dailyRecommendation(
+        allSongs: all,
+        now: day1.add(const Duration(days: 1)),
+      );
+      expect(second.length, 30);
+      final overlap = first
+          .map((s) => s.id)
+          .toSet()
+          .intersection(second.map((s) => s.id).toSet());
+      expect(overlap, isEmpty);
+    });
+
+    test('冷却安全阀：候选不足以凑满 limit 时忽略冷却（不推空）', () async {
+      SharedPreferences.setMockInitialValues({});
+      final history = RecommendedHistoryStore();
+      await history.initialize();
+      final svc = HomeRecommendationService(
+        behavior: behavior,
+        history: history,
+      );
+
+      // 小库：首日把大部分歌都推过了，次日必须仍能凑满而不是推空。
+      final songs = List.generate(
+          35, (i) => _song('h$i', artist: 'HA$i', albumId: 'hal$i'));
+      for (final s in songs) {
+        await play(s);
+      }
+      svc.rebuildKnowledge(_tagsFor(songs, '摇滚,深夜'));
+      svc.refreshUserPref();
+
+      final day1 = DateTime(2026, 9, 23, 10);
+      final first = svc.dailyRecommendation(allSongs: songs, now: day1);
+      expect(first.length, 30);
+
+      final second = svc.dailyRecommendation(
+        allSongs: songs,
+        now: day1.add(const Duration(days: 1)),
+      );
+      expect(second.length, 30);
+    });
+
+    test('冷却：同日重算不整批换歌（当日已推荐的不算冷却）', () async {
+      SharedPreferences.setMockInitialValues({});
+      final history = RecommendedHistoryStore();
+      await history.initialize();
+      final svc = HomeRecommendationService(
+        behavior: behavior,
+        history: history,
+      );
+
+      final heard = List.generate(
+          40, (i) => _song('h$i', artist: 'HA$i', albumId: 'hal$i'));
+      for (final s in heard) {
+        await play(s);
+      }
+      svc.rebuildKnowledge(_tagsFor(heard, '摇滚,深夜'));
+      svc.refreshUserPref();
+
+      final now = DateTime(2026, 9, 23, 10);
+      final first = svc.dailyRecommendation(allSongs: heard, now: now);
+      svc.clearCaches(); // 模拟收藏变化导致当日缓存失效
+      final again = svc.dailyRecommendation(allSongs: heard, now: now);
+
+      expect(again.map((s) => s.id).toList(), first.map((s) => s.id).toList());
+    });
+
+    test('收藏变化即时失效当日推荐；纯播放不重排', () async {
+      SharedPreferences.setMockInitialValues({});
+      final svc = HomeRecommendationService(
+        behavior: behavior,
+        prefDebounce: const Duration(milliseconds: 1),
+      );
+      final heard = List.generate(
+          40, (i) => _song('h$i', artist: 'HA$i', albumId: 'hal$i'));
+      for (final s in heard) {
+        await play(s);
+      }
+      svc.rebuildKnowledge(_tagsFor(heard, '摇滚,深夜'));
+      svc.refreshUserPref();
+
+      final now = DateTime(2026, 9, 23, 10);
+      final before = svc.dailyRecommendation(allSongs: heard, now: now);
+      final revBefore = svc.feedRevision;
+
+      // 纯播放 → 不重排当日列表、feedRevision 不变。
+      await play(heard.first);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(svc.feedRevision, revBefore);
+      expect(svc.dailyRecommendation(allSongs: heard, now: now), same(before));
+
+      // 收藏变化 → feedRevision 自增 + 当日缓存失效。
+      await behavior.trackStarred(heard.last, true);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(svc.feedRevision, greaterThan(revBefore));
+      expect(
+        svc.dailyRecommendation(allSongs: heard, now: now),
+        isNot(same(before)),
+      );
+    });
+
+    test('去重上限跨熟悉/探索两路共享：同歌手≤2、同专辑≤1', () async {
+      // 歌手 X 同时有听过的和未听过的歌 → 若两路各自计数，X 会超过 2 首。
+      final heard = List.generate(
+          4, (i) => _song('h$i', artist: 'X', albumId: 'hal$i'));
+      final unheard = List.generate(
+          6, (i) => _song('u$i', artist: 'X', albumId: 'ubl$i'));
+      final others = List.generate(
+          20, (i) => _song('o$i', artist: 'O$i', albumId: 'ol$i'));
+      for (final s in [...heard, ...others]) {
+        await play(s);
+      }
+      service.rebuildKnowledge(
+          _tagsFor([...heard, ...unheard, ...others], '摇滚,深夜'));
+      service.refreshUserPref();
+
+      final daily = service.dailyRecommendation(
+        allSongs: [...heard, ...unheard, ...others],
+        limit: 30,
+      );
+
+      expect(daily.where((s) => s.artist == 'X').length, lessThanOrEqualTo(2));
+      expect(daily.map((s) => s.albumId).toSet().length, daily.length);
     });
   });
 }

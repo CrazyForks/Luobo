@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:fluid_mesh_background/fluid_mesh_background.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
@@ -149,6 +150,17 @@ void main() async {
   MetricsCollector.milestone(
       'engineInitialized', startupSw.elapsedMilliseconds);
 
+  // ── 流体背景包的事件 → 诊断系统 ──
+  // 包本身不依赖任何日志系统，只抛结构化事件；在此接到 DiagnosticsService，
+  // 这样 frame.jank / frame.slow 才能归属到实际渲染路径（流沙 / 回落）。
+  FluidBackgroundEvents.onEvent = (event, payload) {
+    DiagnosticsService.instance.record(
+      EventType.animActive,
+      LogLevel.info,
+      {'anim': event, ...payload},
+    );
+  };
+
   // 进程退出前 flush 诊断缓冲（崩溃/被杀场景由 GlobalErrorHandler 兜底）
   AppLifecycleListener(onDetach: () => unawaited(diag.disposeAsync()));
 
@@ -207,14 +219,22 @@ void main() async {
     debugPrint('Failed to initialize recommendation service: $e');
   });
 
-  // 新首页推荐编排服务（P3 图谱接入）：注入知识库缓存，行为监听自动接线。
+  // 新首页推荐编排服务（P3 图谱接入）：注入知识库缓存 + 跨天冷却记录，
+  // 行为监听自动接线。
   final songKnowledgeCache = SongKnowledgeCache();
   songKnowledgeCache.initialize().catchError((e) {
     debugPrint('Failed to initialize song knowledge cache: $e');
   });
+  // 每日推荐跨天冷却记录（`docs/每日推荐探索配额与冷却技术方案.md` §3.3）：
+  // 需在首次生成 feed 前就绪，故 await（单次 prefs 读取）。
+  final recommendedHistoryStore = RecommendedHistoryStore();
+  await recommendedHistoryStore.initialize().catchError((e) {
+    debugPrint('Failed to initialize recommended history store: $e');
+  });
   final homeRecommendationService = HomeRecommendationService(
     behavior: recommendationService,
     knowledgeCache: songKnowledgeCache,
+    history: recommendedHistoryStore,
   );
 
   // 播放来源追踪：最近播放的歌单/收藏列表（首页「最近播放」混合区）。

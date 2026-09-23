@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import 'knowledge_recommendation_engine.dart';
 import 'recommendation_service.dart';
+import 'recommended_history_store.dart';
 import 'song_knowledge_cache.dart';
 
 /// 场景 Mix 类型（§4.7）。
@@ -43,21 +44,26 @@ class HomeFeed {
 /// 职责：把「用户行为（[RecommendationService]）」与「知识图谱内容
 /// （[KnowledgeRecommendationEngine]）」融合成首页各模块数据：
 /// - 融合打分 finalScore = α·行为分 + (1-α)·内容分，α=0.7（§4.4）
-/// - 熟悉/探索分层：每日推荐按融合分从全库取（熟悉优先、未听过补足），场景 Mix
+/// - 熟悉/探索分层：每日推荐按**配额**分熟悉槽 / 探索槽两路召回（熟悉为主、
+///   探索补新，见 `docs/每日推荐探索配额与冷却技术方案.md` §3.2），场景 Mix
 ///   仍以熟悉层为主，探索发现只推未听过的（§4.5）
 /// - 跨模块全局去重 + 同歌手≤2 首 / 同专辑≤1 首（§4.6）
-/// - 每日推荐 / 探索发现均按日固定（key=日期，§4.8 / §8-10）
+/// - 每日推荐 / 探索发现均按日固定（key=日期，§4.8 / §8-10）；每日推荐另有
+///   跨天冷却（§3.3）与收藏变化即时失效（§3.4）
 /// - 无图谱 / 无行为自动退化（§4.4）
 class HomeRecommendationService extends ChangeNotifier {
   HomeRecommendationService({
     required RecommendationService behavior,
     KnowledgeRecommendationEngine? engine,
     SongKnowledgeCache? knowledgeCache,
+    RecommendedHistoryStore? history,
     Duration prefDebounce = const Duration(milliseconds: 800),
   })  : _behavior = behavior,
         _engine = engine ?? KnowledgeRecommendationEngine(),
         _knowledgeCache = knowledgeCache,
+        _history = history,
         _prefDebounce = prefDebounce {
+    _lastStarredSignature = _starredSignature();
     // 行为数据变化（播放/评分/收藏）后防抖重建用户标签偏好向量（§4.8 时序 2）。
     _behavior.addListener(_onBehaviorChanged);
   }
@@ -69,6 +75,9 @@ class HomeRecommendationService extends ChangeNotifier {
   static const int mixLimit = 20;
   static const int discoverLimit = 20;
 
+  /// 每日推荐里「探索槽」的占比：limit=30 时熟悉 20 + 探索 10（§3.2）。
+  static const double dailyDiscoverRatio = 1 / 3;
+
   /// 探索层一跳邻居的最小相似度（§8-2 已确认 Jaccard>0.25）。
   static const double discoverMinSimilarity = 0.25;
 
@@ -78,14 +87,25 @@ class HomeRecommendationService extends ChangeNotifier {
   final RecommendationService _behavior;
   final KnowledgeRecommendationEngine _engine;
   final SongKnowledgeCache? _knowledgeCache;
+  final RecommendedHistoryStore? _history;
   final Duration _prefDebounce;
 
   DateTime? _syncedCacheTime;
   Timer? _prefDebounceTimer;
+  String _lastStarredSignature = '';
+
+  /// 防抖窗口内是否发生过收藏变化（累积，见 [_onBehaviorChanged]）。
+  bool _starredDirty = false;
 
   /// 知识库版本号：重建后 +1，缓存仅在同一版本内命中
   /// （避免一次性脏标记在多模块间串扰，见 P0 单测暴露的问题）。
   int _knowledgeVersion = 0;
+
+  /// feed 修订号：服务内部缓存失效（知识库重建 / 收藏变化 / 清缓存）时 +1。
+  /// 首页据此判断「曲库没变但推荐该重建」（§3.4）——否则曲库 id 串不变时
+  /// 即使清了缓存，首页也感知不到。
+  int _feedRevision = 0;
+
   Map<String, _CacheEntry> _dailyCache = {};
   Map<String, _CacheEntry> _discoverCache = {};
 
@@ -95,6 +115,13 @@ class HomeRecommendationService extends ChangeNotifier {
   bool get hasBehavior =>
       _behavior.profiles.isNotEmpty || _behavior.starredSongIds.isNotEmpty;
 
+  /// 见 [_feedRevision]。
+  int get feedRevision => _feedRevision;
+
+  /// 每日推荐「探索槽」数量（按比例缩放，§3.2）。
+  static int dailyDiscoverQuota(int limit) =>
+      (limit * dailyDiscoverRatio).round();
+
   // ──────────────────────────────────────────────────────────────────────────
   // 数据入口（§4.8 时序）
   // ──────────────────────────────────────────────────────────────────────────
@@ -103,6 +130,7 @@ class HomeRecommendationService extends ChangeNotifier {
   void rebuildKnowledge(Map<String, String> tagsBySongId) {
     _engine.rebuild(tagsBySongId);
     _knowledgeVersion++;
+    _feedRevision++;
     notifyListeners();
   }
 
@@ -117,9 +145,29 @@ class HomeRecommendationService extends ChangeNotifier {
     _syncedCacheTime = updated;
   }
 
+  /// 收藏集合签名（排序拼串），用于识别「收藏是否变化」。
+  String _starredSignature() {
+    final ids = _behavior.starredSongIds.toList()..sort();
+    return ids.join(',');
+  }
+
   void _onBehaviorChanged() {
+    // 收藏是显式强意图 → 立即失效当日推荐（§3.4）；纯播放 / 跳过只重建偏好
+    // 向量（影响次日与探索发现），不重排当日列表，避免听歌过程中列表乱跳。
+    // 用累积标记而非一次性局部变量：防抖窗口内先收藏、后播放时不会丢掉收藏。
+    final signature = _starredSignature();
+    if (signature != _lastStarredSignature) {
+      _lastStarredSignature = signature;
+      _starredDirty = true;
+    }
     _prefDebounceTimer?.cancel();
-    _prefDebounceTimer = Timer(_prefDebounce, refreshUserPref);
+    _prefDebounceTimer = Timer(_prefDebounce, () {
+      refreshUserPref();
+      if (_starredDirty) {
+        _starredDirty = false;
+        clearCaches();
+      }
+    });
   }
 
   /// 从行为数据重建用户标签偏好向量。播放 / 评分 / 收藏等行为变化后调用。
@@ -178,16 +226,23 @@ class HomeRecommendationService extends ChangeNotifier {
   /// 按 [score]（默认融合分）降序选歌，应用「同歌手≤2 / 同专辑≤1」上限与
   /// 排除集合，并把选中的歌写入 [exclude]（跨模块全局去重，§4.6）。
   /// 未传入 [exclude] 时使用内部可变集合，不对外暴露。
+  ///
+  /// [artistCounts] / [albumCounts] 传入时跨多次调用**共享计数**，用于把
+  /// 「同歌手≤2 / 同专辑≤1」的上限约束到多路召回的并集上（§3.5）；不传则
+  /// 各自新建，单次调用行为不变。
   List<Song> _selectWithDedup(
     List<Song> candidates, {
     required int limit,
     Set<String>? exclude,
     double Function(Song)? score,
+    Map<String, int>? artistCounts,
+    Map<String, int>? albumCounts,
   }) {
+    if (limit <= 0) return const [];
     final ex = exclude ?? <String>{};
     final sortScore = score ?? _fusionScore;
-    final artistCount = <String, int>{};
-    final albumCount = <String, int>{};
+    final artists = artistCounts ?? <String, int>{};
+    final albums = albumCounts ?? <String, int>{};
     final sorted = [...candidates]
       ..sort((a, b) => sortScore(b).compareTo(sortScore(a)));
     final result = <Song>[];
@@ -195,13 +250,13 @@ class HomeRecommendationService extends ChangeNotifier {
       if (result.length >= limit) break;
       if (ex.contains(song.id)) continue;
       final artist = song.artist;
-      if (artist != null && (artistCount[artist] ?? 0) >= 2) continue;
+      if (artist != null && (artists[artist] ?? 0) >= 2) continue;
       final albumId = song.albumId;
-      if (albumId != null && (albumCount[albumId] ?? 0) >= 1) continue;
+      if (albumId != null && (albums[albumId] ?? 0) >= 1) continue;
       result.add(song);
       ex.add(song.id);
-      if (artist != null) artistCount[artist] = (artistCount[artist] ?? 0) + 1;
-      if (albumId != null) albumCount[albumId] = (albumCount[albumId] ?? 0) + 1;
+      if (artist != null) artists[artist] = (artists[artist] ?? 0) + 1;
+      if (albumId != null) albums[albumId] = (albums[albumId] ?? 0) + 1;
     }
     return result;
   }
@@ -210,28 +265,95 @@ class HomeRecommendationService extends ChangeNotifier {
   // 首页各模块（§6 数据契约）
   // ──────────────────────────────────────────────────────────────────────────
 
-  /// 每日推荐：全库按融合分 Top30——行为分让听过的歌优先，去重上限卡满后由
-  /// 未听过的歌（内容分）补足，避免熟悉池过小/集中时推不满 30 首；当日固定
-  /// （key=日期）。
+  /// 每日推荐：**配额化两路召回** + 跨天冷却，当日固定（key=日期）。
+  ///
+  /// - 熟悉路：听过的歌按融合分取 `limit - 探索配额`
+  /// - 探索路：未听过的歌按融合分取 `探索配额`（limit=30 时 20 + 10，§3.2）
+  /// - 补足路：两路都不足时按融合分从全库补，保证条数不缩水（§8-7 修复成果）
+  /// - 冷却：窗口内已推荐过的不再进池（安全阀：过滤后不足 limit 则忽略，§3.3）
+  ///
+  /// 设计背景见 `docs/每日推荐探索配额与冷却技术方案.md`。
   List<Song> dailyRecommendation({
     required List<Song> allSongs,
     int limit = dailyLimit,
     DateTime? now,
     Set<String>? exclude,
   }) {
-    final day = _dayKey(now ?? DateTime.now());
-    final cached = _dailyCache[day];
+    final day = now ?? DateTime.now();
+    final dayKey = _dayKey(day);
+    final cached = _dailyCache[dayKey];
     if (cached != null && cached.version == _knowledgeVersion) {
       return cached.songs;
     }
 
-    final list = _selectWithDedup(
-      allSongs,
+    final list = _composeDaily(
+      allSongs: allSongs,
       limit: limit,
-      exclude: exclude,
+      day: day,
+      exclude: exclude ?? <String>{},
     );
-    _dailyCache[day] = _CacheEntry(_knowledgeVersion, list);
+    _dailyCache[dayKey] = _CacheEntry(_knowledgeVersion, list);
+    _history?.markRecommended(list.map((s) => s.id), now: day);
     return list;
+  }
+
+  /// 每日推荐的两路召回 + 补足（§3.1）；三路共享歌手/专辑计数，去重上限
+  /// 在整批 30 首范围内生效（§3.5）。
+  List<Song> _composeDaily({
+    required List<Song> allSongs,
+    required int limit,
+    required DateTime day,
+    required Set<String> exclude,
+  }) {
+    final pool = _applyCooldown(allSongs, day: day, limit: limit);
+    final artistCounts = <String, int>{};
+    final albumCounts = <String, int>{};
+    final discoverQuota = dailyDiscoverQuota(limit);
+
+    final familiar = _selectWithDedup(
+      pool.where(_isHeard).toList(),
+      limit: limit - discoverQuota,
+      exclude: exclude,
+      artistCounts: artistCounts,
+      albumCounts: albumCounts,
+    );
+    final discover = _selectWithDedup(
+      pool.where((s) => !_isHeard(s)).toList(),
+      limit: discoverQuota,
+      exclude: exclude,
+      artistCounts: artistCounts,
+      albumCounts: albumCounts,
+    );
+
+    final result = [...familiar, ...discover];
+    if (result.length < limit) {
+      // 冷启动 / 小库 / 冷却过滤过狠 → 按融合分从全库补足（可回捞冷却中的歌）。
+      result.addAll(_selectWithDedup(
+        allSongs,
+        limit: limit - result.length,
+        exclude: exclude,
+        artistCounts: artistCounts,
+        albumCounts: albumCounts,
+      ));
+    }
+    return result;
+  }
+
+  /// 冷却过滤：窗口内推荐过的歌不进候选池。
+  ///
+  /// 安全阀：过滤后候选不足以凑满 [limit] 时**忽略冷却**（小库 / 新库 / 单测
+  /// 小数据集不会推空，退化为原行为）。
+  List<Song> _applyCooldown(
+    List<Song> allSongs, {
+    required DateTime day,
+    required int limit,
+  }) {
+    final history = _history;
+    if (history == null) return allSongs;
+    final cooling = history.coolingDownIds(now: day);
+    if (cooling.isEmpty) return allSongs;
+    final filtered = allSongs.where((s) => !cooling.contains(s.id)).toList();
+    return filtered.length >= limit ? filtered : allSongs;
   }
 
   static const Map<SceneMix, List<String>> _sceneKeywords = {
@@ -396,10 +518,11 @@ class HomeRecommendationService extends ChangeNotifier {
     );
   }
 
-  /// 清空每日/每周缓存（行为数据大幅变化或手动刷新时调用）。
+  /// 清空每日/每周缓存（收藏变化、知识库重建或手动刷新时调用）。
   void clearCaches() {
     _dailyCache = {};
     _discoverCache = {};
+    _feedRevision++;
     notifyListeners();
   }
 

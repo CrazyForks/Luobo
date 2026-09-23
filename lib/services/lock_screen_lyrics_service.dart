@@ -34,6 +34,13 @@ class LockScreenLyricsService {
   /// Whether Windows notification lyrics are supported
   bool get supportsWindowsNotification => !kIsWeb && Platform.isWindows;
 
+  /// Whether Android 通知栏副标题 / 车机（蓝牙、CarLife）第二行歌词 are supported.
+  ///
+  /// 用 [defaultTargetPlatform] 而非 `Platform.isAndroid`：语义等价，且单测可用
+  /// `debugDefaultTargetPlatformOverride` 覆盖到 Android 分支。
+  bool get supportsAndroidNotification =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
   /// Initialize the service
   Future<void> initialize() async {
     if (kIsWeb) {
@@ -44,6 +51,7 @@ class LockScreenLyricsService {
     debugPrint('[Lyrics] Initializing lock screen lyrics service...');
     debugPrint('[Lyrics] Platform: ${Platform.operatingSystem}');
     debugPrint('[Lyrics] Live Activities supported: $supportsLiveActivities');
+    debugPrint('[Lyrics] Android notification supported: $supportsAndroidNotification');
     debugPrint('[Lyrics] Windows notification supported: $supportsWindowsNotification');
 
     // Live Activities initialization removed for iOS 15 compatibility
@@ -77,6 +85,10 @@ class LockScreenLyricsService {
     _currentLyrics = LyricsManager.parse(lrcContent);
     _lastSentLine = null;
 
+    // 换歌：先清掉上一首残留在原生侧的歌词行（Android 通知栏/车机副标题），
+    // 新行由 startSync 随播放位置推送，避免旧歌词挂到新歌上。
+    await _clearNativeLyrics();
+
     // Live Activity creation removed for iOS 15 compatibility
     // if (supportsLiveActivities && _currentLyrics!.hasLyrics) {
     //   try {
@@ -102,9 +114,25 @@ class LockScreenLyricsService {
     // }
     // _activityId = null;
 
+    // Clear Android 通知栏副标题 / 车机第二行歌词
+    await _clearNativeLyrics();
+
     // Clear Windows notification
     if (supportsWindowsNotification) {
       await _windowsService.clearLyrics();
+    }
+  }
+
+  /// 清掉原生侧已显示的歌词行（Android 通知栏副标题 / 车机第二行）。
+  ///
+  /// 原生 `LyricsPlugin.clearLyrics` → `MusicService.clearLyrics()` 会把副标题
+  /// 还原为歌手名并刷新通知；非 Android 平台为空操作。
+  Future<void> _clearNativeLyrics() async {
+    if (!supportsAndroidNotification) return;
+    try {
+      await _platform.invokeMethod('clearLyrics');
+    } catch (e) {
+      debugPrint('[Lyrics] Failed to clear native lyrics: $e');
     }
   }
 
@@ -175,6 +203,19 @@ class LockScreenLyricsService {
     //   return;
     // }
 
+    // Update Android 通知栏副标题 / 车机（蓝牙、CarLife）第二行歌词。
+    // 原生 LyricsPlugin 把这一行写进 MediaMetadata 的 DISPLAY_SUBTITLE，
+    // 车机读的就是该副标题字段。
+    if (supportsAndroidNotification) {
+      try {
+        // 参数名 `currentLine` 与原生 LyricsPlugin 约定一致，勿改。
+        await _platform.invokeMethod('updateLyrics', {'currentLine': line});
+      } catch (e) {
+        debugPrint('[Lyrics] Failed to push lyrics to native: $e');
+      }
+      return;
+    }
+
     // Update Windows notification lyrics
     if (supportsWindowsNotification) {
       await _windowsService.updateLyrics(line);
@@ -211,22 +252,12 @@ class LockScreenLyricsService {
   }
 
   /// Clear all lyrics displays
+  ///
+  /// 统一走 [_clearLyrics]：清 Windows + 原生（Android 通知栏/车机副标题），
+  /// 并复位 `_currentLyrics` / `_lastSentLine`，避免残留歌词行被重新推上去。
   Future<void> clearAllLyrics() async {
     if (kIsWeb) return;
-
-    // Clear Windows notification lyrics
-    if (supportsWindowsNotification) {
-      await _windowsService.clearLyrics();
-    }
-
-    // Clear native lyrics (Android/iOS)
-    try {
-      await _platform.invokeMethod('clearLyrics');
-    } catch (e) {
-      debugPrint('[Lyrics] Failed to clear native lyrics: $e');
-    }
-
-    _lastSentLine = null;
+    await _clearLyrics();
   }
 
   /// Update lyrics for Android media notification

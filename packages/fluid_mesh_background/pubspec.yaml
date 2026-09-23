@@ -1,0 +1,29 @@
+name: fluid_mesh_background
+description: >-
+  A palette-extracted, continuously flowing "fluid mesh" background for Flutter,
+  driven by a fragment shader. Drop-in animated background for cards, hero
+  headers and full-screen players.
+version: 0.1.0
+repository: https://github.com/chengsitom/Luobo
+issue_tracker: https://github.com/chengsitom/Luobo/issues
+license: MIT
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  palette_generator: ^0.3.3+4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  # 包内 shader 的路径必须带 `packages/<包名>/` 前缀，消费方才能用
+  # FragmentProgram.fromAsset('packages/fluid_mesh_background/shaders/fluid_mesh.frag') 加载。
+  shaders:
+    - packages/fluid_mesh_background/shaders/fluid_mesh.frag

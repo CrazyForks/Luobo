@@ -53,4 +53,6 @@ app.*.map.json
 # 构建产物（此前被误跟踪，v1.1.17 起清理）
 **/android/build/
 **/.gradle/
+# 子包（packages/*）的构建产物
+**/build/
 
