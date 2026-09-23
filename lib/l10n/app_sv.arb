@@ -1,7 +1,7 @@
 {
   "@@locale": "sv",
   "@@last_modified": "2026-02-07T16:10:00Z",
-  "appName": "Musly",
+  "appName": "Luobo",
   "@appName": {
     "description": "Application name"
   },
@@ -262,10 +262,6 @@
   "@version": {
     "description": "Version info label"
   },
-  "madeBy": "Gjord av dddevid",
-  "@madeBy": {
-    "description": "Developer credit"
-  },
   "githubRepository": "Github Repository",
   "@githubRepository": {
     "description": "GitHub repository link label"
@@ -273,10 +269,6 @@
   "reportIssue": "Rapportera Problem",
   "@reportIssue": {
     "description": "Report issue link label"
-  },
-  "joinDiscord": "Gå med Discord Community:t",
-  "@joinDiscord": {
-    "description": "Discord community link label"
   },
   "unknownArtist": "Okänd Artist",
   "@unknownArtist": {
@@ -501,14 +493,6 @@
   "systemDefault": "Systemets Standard",
   "@systemDefault": {
     "description": "System default language option"
-  },
-  "communityTranslations": "Översättningar av Community:t",
-  "@communityTranslations": {
-    "description": "Community translations credit label"
-  },
-  "communityTranslationsSubtitle": "Hjälp översätta Musly på Crowdin",
-  "@communityTranslationsSubtitle": {
-    "description": "Community translations credit subtitle"
   },
   "@_LIBRARY": {},
   "yourLibrary": "Ditt Bibliotek",
@@ -1167,7 +1151,7 @@
   "@updateAvailable": {
     "description": "Title of the update available dialog"
   },
-  "updateAvailableSubtitle": "En ny version av Musly finns tillgänglig!",
+  "updateAvailableSubtitle": "En ny version av Luobo finns tillgänglig!",
   "@updateAvailableSubtitle": {
     "description": "Subtitle in the update dialog"
   },
@@ -1484,7 +1468,7 @@
   "@discordRpcStyleSong": {
     "description": "Discord RPC state style option: show song title"
   },
-  "discordRpcStyleApp": "Appnamn (Musly)",
+  "discordRpcStyleApp": "Appnamn (Luobo)",
   "@discordRpcStyleApp": {
     "description": "Discord RPC state style option: show app name"
   },
@@ -1655,11 +1639,11 @@
   "@aboutPlatform": {
     "description": "About screen platform row title"
   },
-  "aboutMadeBy": "Gjord av dddevid",
+  "aboutMadeBy": "Gjord av chengsitom",
   "@aboutMadeBy": {
     "description": "Developer credit text in the about tab"
   },
-  "aboutGitHub": "github.com/dddevid",
+  "aboutGitHub": "github.com/chengsitom",
   "@aboutGitHub": {
     "description": "Developer GitHub handle shown as subtitle"
   },
@@ -1674,10 +1658,6 @@
   "aboutLinkReportIssue": "Rapportera Problem",
   "@aboutLinkReportIssue": {
     "description": "Link tile title for reporting a bug"
-  },
-  "aboutLinkDiscord": "Gå med Discord-communityn",
-  "@aboutLinkDiscord": {
-    "description": "Link tile title for the Discord server"
   },
 
   "lyricsSection": "LYRICS",

@@ -1,7 +1,7 @@
 {
   "@@locale": "de",
   "@@last_modified": "2026-02-07T16:10:00Z",
-  "appName": "Musly",
+  "appName": "Luobo",
   "@appName": {
     "description": "Application name"
   },
@@ -262,10 +262,6 @@
   "@version": {
     "description": "Version info label"
   },
-  "madeBy": "Hergestellt von dddevid",
-  "@madeBy": {
-    "description": "Developer credit"
-  },
   "githubRepository": "GitHub Bibliothek",
   "@githubRepository": {
     "description": "GitHub repository link label"
@@ -273,10 +269,6 @@
   "reportIssue": "Problem melden",
   "@reportIssue": {
     "description": "Report issue link label"
-  },
-  "joinDiscord": "Trete der Discord-Community bei",
-  "@joinDiscord": {
-    "description": "Discord community link label"
   },
   "unknownArtist": "Unbekannte*r Künstler*in",
   "@unknownArtist": {
@@ -501,14 +493,6 @@
   "systemDefault": "Standardeinstellung",
   "@systemDefault": {
     "description": "System default language option"
-  },
-  "communityTranslations": "Übersetzungen von der Community",
-  "@communityTranslations": {
-    "description": "Community translations credit label"
-  },
-  "communityTranslationsSubtitle": "Hilf Musly bei der Übersetzung auf Crowdin",
-  "@communityTranslationsSubtitle": {
-    "description": "Community translations credit subtitle"
   },
   "@_LIBRARY": {},
   "yourLibrary": "Deine Bibliothek",
@@ -1165,7 +1149,7 @@
   "@updateAvailable": {
     "description": "Title of the update available dialog"
   },
-  "updateAvailableSubtitle": "Eine neue Version von Musly ist verfügbar!",
+  "updateAvailableSubtitle": "Eine neue Version von Luobo ist verfügbar!",
   "@updateAvailableSubtitle": {
     "description": "Subtitle in the update dialog"
   },

@@ -12,7 +12,7 @@ const platforms = [
         status: 'available',
         badge: 'APK Direct',
         description: 'Android 6.0+',
-        link: 'https://github.com/dddevid/Musly/releases/latest',
+        link: 'https://github.com/chengsitom/Luobo/releases/latest',
     },
     {
         name: 'Windows',
@@ -20,7 +20,7 @@ const platforms = [
         status: 'available',
         badge: 'Installer',
         description: 'Windows 10/11',
-        link: 'https://github.com/dddevid/Musly/releases/latest',
+        link: 'https://github.com/chengsitom/Luobo/releases/latest',
     },
     {
         name: 'iOS',
@@ -28,7 +28,7 @@ const platforms = [
         status: 'available',
         badge: 'IPA',
         description: 'iOS 14+',
-        link: 'https://github.com/dddevid/Musly/releases/latest',
+        link: 'https://github.com/chengsitom/Luobo/releases/latest',
     },
     {
         name: 'macOS',
@@ -36,7 +36,7 @@ const platforms = [
         status: 'available',
         badge: 'DMG',
         description: 'macOS 11+',
-        link: 'https://github.com/dddevid/Musly/releases/latest',
+        link: 'https://github.com/chengsitom/Luobo/releases/latest',
     },
     {
         name: 'Linux',
@@ -44,7 +44,7 @@ const platforms = [
         status: 'available',
         badge: 'AppImage / deb',
         description: 'Ubuntu, Arch, etc.',
-        link: 'https://github.com/dddevid/Musly/releases/latest',
+        link: 'https://github.com/chengsitom/Luobo/releases/latest',
     },
 ]
 
@@ -123,7 +123,7 @@ export default function DownloadSection() {
                             </div>
                         </div>
                         <a
-                            href="https://github.com/dddevid/Musly"
+                            href="https://github.com/chengsitom/Luobo"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="btn btn-secondary"

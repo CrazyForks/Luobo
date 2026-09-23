@@ -1,4 +1,4 @@
-import { Github, MessageCircle, Coffee, Heart, ExternalLink } from 'lucide-react'
+import { Github, Heart, ExternalLink } from 'lucide-react'
 import logo from '../assets/logo.png'
 import './Footer.css'
 
@@ -9,23 +9,16 @@ const sections = {
             { label: 'Features', href: '#features' },
             { label: 'Screenshots', href: '#screenshots' },
             { label: 'Download', href: '#download' },
-            { label: 'Changelog', href: 'https://github.com/dddevid/Musly/blob/master/CHANGELOG.md', ext: true },
+            { label: 'Changelog', href: 'https://github.com/chengsitom/Luobo/blob/master/CHANGELOG.md', ext: true },
         ]
     },
     resources: {
         title: 'Resources',
         links: [
-            { label: 'GitHub', href: 'https://github.com/dddevid/Musly', ext: true },
-            { label: 'Issues', href: 'https://github.com/dddevid/Musly/issues', ext: true },
-            { label: 'Releases', href: 'https://github.com/dddevid/Musly/releases', ext: true },
-            { label: 'License', href: 'https://github.com/dddevid/Musly/blob/master/LICENSE', ext: true },
-        ]
-    },
-    community: {
-        title: 'Community',
-        links: [
-            { label: 'Discord', href: 'https://discord.gg/k9FqpbT65M', ext: true },
-            { label: 'Buy Me a Coffee', href: 'https://buymeacoffee.com/devidd', ext: true },
+            { label: 'GitHub', href: 'https://github.com/chengsitom/Luobo', ext: true },
+            { label: 'Issues', href: 'https://github.com/chengsitom/Luobo/issues', ext: true },
+            { label: 'Releases', href: 'https://github.com/chengsitom/Luobo/releases', ext: true },
+            { label: 'License', href: 'https://github.com/chengsitom/Luobo/blob/master/LICENSE', ext: true },
         ]
     },
     compatible: {
@@ -58,14 +51,14 @@ export default function Footer({ onPrivacyClick }) {
                             The best free Navidrome &amp; Subsonic client with an Apple Music-inspired interface.
                         </p>
                         <div className="footer-socials">
-                            <a href="https://github.com/dddevid/Musly" target="_blank" rel="noopener noreferrer" className="footer-social" aria-label="GitHub">
+                            <a
+                                href="https://github.com/chengsitom/Luobo"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="footer-social"
+                                aria-label="GitHub"
+                            >
                                 <Github size={18} />
-                            </a>
-                            <a href="https://discord.gg/k9FqpbT65M" target="_blank" rel="noopener noreferrer" className="footer-social" aria-label="Discord">
-                                <MessageCircle size={18} />
-                            </a>
-                            <a href="https://buymeacoffee.com/devidd" target="_blank" rel="noopener noreferrer" className="footer-social" aria-label="Buy Me a Coffee">
-                                <Coffee size={18} />
                             </a>
                         </div>
                     </div>

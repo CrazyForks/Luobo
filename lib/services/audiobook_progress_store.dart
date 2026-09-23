@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/json_coerce.dart';
 
@@ -165,6 +166,8 @@ class AudiobookProgressStore {
     };
     SharedPreferences.getInstance().then((prefs) {
       prefs.setString('$_keyPrefix$serverKey', jsonEncode(json));
+    }).catchError((Object e) {
+      debugPrint('AudiobookProgressStore: persist failed – $e');
     });
   }
 }

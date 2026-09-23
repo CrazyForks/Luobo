@@ -38,7 +38,7 @@ class PrivacyPolicyDialog extends StatefulWidget {
 
 class _PrivacyPolicyDialogState extends State<PrivacyPolicyDialog> {
   Future<void> _openPrivacyPolicy() async {
-    final uri = Uri.parse('https://musly.devid.lol/privacy');
+    final uri = Uri.parse('https://github.com/chengsitom/Luobo');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

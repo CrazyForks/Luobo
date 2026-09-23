@@ -124,6 +124,10 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       AudiobookProgressStore.instance;
   String? _audiobookServerKey;
 
+  /// 上次真正落盘的有声书位置（ms）。seek 落盘去抖用：进度条拖拽期间
+  /// onChanged 会连续调 seek，位移不足 1s 时不重复写整表快照（§9.2-1）。
+  int? _lastSavedAudiobookPositionMs;
+
   bool _hasPlayedOnce = false;
 
   SharedPreferences? _prefs;
@@ -1467,6 +1471,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     Duration? lastNotified;
     Duration? lastSystemUpdate;
+    Duration? lastAudiobookSave;
     _positionSub = _audioPlayer.positionStream.listen(
       (position) {
         // In remote-playback mode the local player sits idle at position zero;
@@ -1500,9 +1505,17 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
           lastSystemUpdate = effective;
           _updateAllServices();
           _saveQueueState();
-          // 有声书进度写入（位置流 1s 节流，§9.2-1）——顺手存 chapterOrder/
+          // 有声书进度写入（位置流 5s 节流，§9.2-1）——顺手存 chapterOrder/
           // chapterId；positionMs > 本章时长×95% 时推进 chapterOrder。
-          _saveAudiobookProgress();
+          // 单独用比 _saveQueueState 更长的间隔：进度存的是整表快照，1s 粒度
+          // 会造成持续磁盘写放大；暂停/退后台/切章/播完另有写入路径，5s 不丢进度。
+          if (lastAudiobookSave == null ||
+              (effective.inMilliseconds - lastAudiobookSave!.inMilliseconds)
+                      .abs() >
+                  5000) {
+            lastAudiobookSave = effective;
+            _saveAudiobookProgress();
+          }
         }
       },
       onError: (error) {
@@ -2161,21 +2174,27 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// - 全量拉取失败（P4）：返回 false，不清当前播放状态。
   ///
   /// 返回 true 表示已开始播放；false 表示章节拉取失败（UI 弹 snackbar）。
+  ///
+  /// [chaptersComplete] 由调用方声明 [chapters] 是否为全书章节（详情页/搜索页
+  /// 都是 take:10000 的全量列表，传 true）；为 false 时退化为按条数启发式判断。
   Future<bool> playAudiobookChapter(
     Audiobook book,
     List<AudiobookChapter> chapters,
     int index, {
     int? resumePositionMs,
+    bool chaptersComplete = false,
   }) async {
     // 先保存上一本的进度（切书/切歌都不丢，§9.2-2）。
     if (_isPlayingAudiobook) {
       _saveAudiobookProgress();
     }
 
-    // 同一本书内切章：复用现有队列。
+    // 同一本书内切章：复用现有队列（chapters 为空则落入下方全量拉取路径，
+    // 避免对空调用方列表取下标 RangeError，P3 修复）。
     if (_isPlayingAudiobook &&
         _currentAudiobook?.id == book.id &&
-        _queue.isNotEmpty) {
+        _queue.isNotEmpty &&
+        chapters.isNotEmpty) {
       final order = chapters[index].order;
       var targetIndex = _queue.indexWhere((s) => s.track == order);
       if (targetIndex == -1) targetIndex = 0;
@@ -2191,19 +2210,34 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       return true;
     }
 
-    // 新书/从歌曲切来：拉全量章节（P4：失败不清当前播放状态）。
-    final AudiobookChapterPage fullPage;
-    try {
-      fullPage = await _subsonicService.getAudiobookChapters(
-        book.id,
-        skip: 0,
-        take: 10000,
-      );
-    } catch (e) {
-      debugPrint('[Player] Failed to load audiobook chapters: $e');
-      return false;
+    // 新书/从歌曲切来：优先复用调用方已持有的全量章节（详情页一次全量拉取
+    // 后直接传入，避免同会话重复 take:10000，M001）；入参为空或未声明完整
+    // （如外部深链）才回退到服务端全量拉取（P4：失败不清当前播放状态）。
+    //
+    // 条数启发式（chapters.length >= book.episodeCount）只作兜底：episodeCount
+    // 可能过期偏高（服务端已删章节），会让其实已全量的列表被误判为不全而重复
+    // 发起 take:10000；因此以调用方显式声明 [chaptersComplete] 为准。
+    List<AudiobookChapter> fullChapters;
+    if (chapters.isNotEmpty &&
+        (chaptersComplete ||
+            book.episodeCount <= 0 ||
+            chapters.length >= book.episodeCount)) {
+      fullChapters = chapters;
+    } else {
+      final AudiobookChapterPage fullPage;
+      try {
+        fullPage = await _subsonicService.getAudiobookChapters(
+          book.id,
+          skip: 0,
+          take: 10000,
+        );
+      } catch (e) {
+        debugPrint('[Player] Failed to load audiobook chapters: $e');
+        return false;
+      }
+      if (fullPage.chapters.isEmpty) return false;
+      fullChapters = fullPage.chapters;
     }
-    if (fullPage.chapters.isEmpty) return false;
 
     // 强制顺序播放（B6）：保存当前设置，退出恢复。
     _savedShuffleBeforeAudiobook ??= _shuffleEnabled;
@@ -2221,10 +2255,13 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       await _audiobookProgressStore.ensureLoaded(_audiobookServerKey!);
     }
 
-    final songs = fullPage.chapters
+    final songs = fullChapters
         .map((c) => _subsonicService.audiobookChapterToSong(book, c))
         .toList();
-    final order = chapters[index].order;
+    // M001 修复：回退分支（入参 chapters 为空）下不能对调用方列表取下标，
+    // 从 fullChapters 取目标章，避免 RangeError。
+    final order =
+        (chapters.isEmpty ? fullChapters.first : chapters[index]).order;
     var targetIndex = songs.indexWhere((s) => s.track == order);
     if (targetIndex == -1) targetIndex = 0;
 
@@ -2253,7 +2290,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   /// 保存当前有声书进度（多路兜底，§9.2）。
   ///
-  /// 位置流 1s 节流 / 切歌 / 暂停退后台 / 章节播完 四路都会调这里；
+  /// 位置流 5s 节流 / 切歌 / 暂停 / seek / 退后台 / 章节播完 多路都会调这里；
   /// store 内部内存缓存防读-改-写竞态（P2）。
   void _saveAudiobookProgress() {
     final book = _currentAudiobook;
@@ -2276,6 +2313,9 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       chapterOrder = order + 1;
       positionMs = 0;
     }
+
+    // 记录真正落盘的位置，供 seek 去抖判断（见 seek()）。
+    _lastSavedAudiobookPositionMs = positionMs;
 
     _audiobookProgressStore.save(
       serverKey,
@@ -2712,6 +2752,9 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       _updateAndroidAuto();
       unawaited(_recordAudioSessionState('pause'));
     }
+    // 暂停后位置流停止输出，5s 节流窗口内的最后位置不会被写入；暂停即落盘，
+    // 避免暂停后进程被强杀时进度最多回退 5s（stop()/退后台另有保存路径）。
+    if (_isPlayingAudiobook) _saveAudiobookProgress();
   }
 
   Future<void> stop() async {
@@ -2876,6 +2919,16 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       await _restartDaoliyuStream(position);
     } else {
       await _audioPlayer.seek(position);
+    }
+    // seek 后位置流的下一个 tick 可能被 5s 节流吞掉，若紧接着暂停/强杀会恢复回
+    // seek 前位置；seek 即落盘（§9.2-1）。但进度条拖拽期间 onChanged 会连续调
+    // seek，每次都写整表快照会造成写放大——位移不足 1s 时跳过，交给位置流
+    // 5s 节流或 pause/stop/退后台的即时写兜底。
+    if (_isPlayingAudiobook &&
+        (_lastSavedAudiobookPositionMs == null ||
+            (position.inMilliseconds - _lastSavedAudiobookPositionMs!).abs() >=
+                1000)) {
+      _saveAudiobookProgress();
     }
   }
 
@@ -3862,7 +3915,7 @@ class PlayerProvider extends ChangeNotifier with WidgetsBindingObserver {
       case 'song_title':
         return _currentSong?.title ?? 'Unknown Song';
       case 'app_name':
-        return 'Musly';
+        return 'Luobo';
       case 'artist':
       default:
         return _currentSong?.artist ?? 'Unknown Artist';

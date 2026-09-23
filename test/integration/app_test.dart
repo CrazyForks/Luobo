@@ -36,7 +36,7 @@ void main() {
       await tester.pump();
       await tester.pump(); // 等待已保存配置的 FutureBuilder 解析
 
-      expect(find.text('Musly'), findsWidgets);
+      expect(find.text('Luobo'), findsWidgets);
       expect(find.text('Connect to your Subsonic server'), findsOneWidget);
     });
 

@@ -46,7 +46,7 @@ class WindowsSystemService {
 
         // Initialize local notifier for lyrics
         await localNotifier.setup(
-          appName: 'Musly',
+          appName: 'Luobo',
           shortcutPolicy: ShortcutPolicy.requireNoCreate,
         );
 

@@ -1,7 +1,7 @@
 {
   "@@locale": "ru",
   "@@last_modified": "2026-02-07T16:10:00Z",
-  "appName": "Musly",
+  "appName": "Luobo",
   "@appName": {
     "description": "Application name"
   },
@@ -262,10 +262,6 @@
   "@version": {
     "description": "Version info label"
   },
-  "madeBy": "Сделано dddevid",
-  "@madeBy": {
-    "description": "Developer credit"
-  },
   "githubRepository": "Репозиторий на GitHub",
   "@githubRepository": {
     "description": "GitHub repository link label"
@@ -273,10 +269,6 @@
   "reportIssue": "Сообщить о проблеме",
   "@reportIssue": {
     "description": "Report issue link label"
-  },
-  "joinDiscord": "Присоединяйтесь к Discord сообществу",
-  "@joinDiscord": {
-    "description": "Discord community link label"
   },
   "unknownArtist": "Неизвестный исполнитель",
   "@unknownArtist": {
@@ -501,14 +493,6 @@
   "systemDefault": "Системный по умолчанию",
   "@systemDefault": {
     "description": "System default language option"
-  },
-  "communityTranslations": "Переведено сообществом",
-  "@communityTranslations": {
-    "description": "Community translations credit label"
-  },
-  "communityTranslationsSubtitle": "Помогите перевести Musly на Crowdin",
-  "@communityTranslationsSubtitle": {
-    "description": "Community translations credit subtitle"
   },
   "@_LIBRARY": {},
   "yourLibrary": "Ваша библиотека",
@@ -1167,7 +1151,7 @@
   "@updateAvailable": {
     "description": "Title of the update available dialog"
   },
-  "updateAvailableSubtitle": "Доступна новая версия Musly!",
+  "updateAvailableSubtitle": "Доступна новая версия Luobo!",
   "@updateAvailableSubtitle": {
     "description": "Subtitle in the update dialog"
   },
@@ -1492,7 +1476,7 @@
   "@discordRpcStyleSong": {
     "description": "Discord RPC state style option: show song title"
   },
-  "discordRpcStyleApp": "Название приложения (Musly)",
+  "discordRpcStyleApp": "Название приложения (Luobo)",
   "@discordRpcStyleApp": {
     "description": "Discord RPC state style option: show app name"
   },
@@ -1663,11 +1647,11 @@
   "@aboutPlatform": {
     "description": "About screen platform row title"
   },
-  "aboutMadeBy": "Сделано dddevid",
+  "aboutMadeBy": "Сделано chengsitom",
   "@aboutMadeBy": {
     "description": "Developer credit text in the about tab"
   },
-  "aboutGitHub": "github.com/dddevid",
+  "aboutGitHub": "github.com/chengsitom",
   "@aboutGitHub": {
     "description": "Developer GitHub handle shown as subtitle"
   },
@@ -1682,10 +1666,6 @@
   "aboutLinkReportIssue": "Сообщить о проблеме",
   "@aboutLinkReportIssue": {
     "description": "Link tile title for reporting a bug"
-  },
-  "aboutLinkDiscord": "Присоединяйтесь к Discord сообществу",
-  "@aboutLinkDiscord": {
-    "description": "Link tile title for the Discord server"
   },
 
   "lyricsSection": "LYRICS",

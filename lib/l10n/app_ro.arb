@@ -1,7 +1,7 @@
 {
   "@@locale": "ro",
   "@@last_modified": "2026-02-07T16:10:00Z",
-  "appName": "Musly",
+  "appName": "Luobo",
   "@appName": {
     "description": "Application name"
   },
@@ -258,10 +258,6 @@
   "@version": {
     "description": "Version info label"
   },
-  "madeBy": "Creat de ddddevid",
-  "@madeBy": {
-    "description": "Developer credit"
-  },
   "githubRepository": "Repozitoriu GitHub",
   "@githubRepository": {
     "description": "GitHub repository link label"
@@ -269,10 +265,6 @@
   "reportIssue": "Raportează o problemă",
   "@reportIssue": {
     "description": "Report issue link label"
-  },
-  "joinDiscord": "Alătură-te comunității Discord",
-  "@joinDiscord": {
-    "description": "Discord community link label"
   },
   "unknownArtist": "Artist Necunoscut",
   "@unknownArtist": {

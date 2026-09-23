@@ -196,7 +196,7 @@ Future<MuslyAudioHandler> initAudioService() async {
       builder: () => MuslyAudioHandler(),
       config: const AudioServiceConfig(
         androidNotificationChannelId: 'com.devid.musly.channel.audio',
-        androidNotificationChannelName: 'Musly',
+        androidNotificationChannelName: 'Luobo',
         androidNotificationOngoing: true,
         androidStopForegroundOnPause: true,
         preloadArtwork: false,

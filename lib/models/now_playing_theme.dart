@@ -590,7 +590,7 @@ class NowPlayingTheme {
     return NowPlayingTheme(
       id: 'default',
       themeName: 'Default',
-      author: 'Musly',
+      author: 'Luobo',
       version: '1.0.0',
       createdAt: DateTime.now(),
       background: const BackgroundConfig(

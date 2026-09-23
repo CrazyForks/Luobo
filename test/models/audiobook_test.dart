@@ -36,6 +36,26 @@ void main() {
       expect(book.sourcePath, '/Music2/guichuideng');
       expect(book.status, 'PUBLISHED');
       expect(book.playCount, 42);
+      expect(book.categories, isEmpty);
+      expect(book.tags, isEmpty);
+    });
+
+    test('解析 categories/tags（类型感知导航用）', () {
+      final json = {
+        'id': 'abk_9',
+        'title': '郭德纲相声',
+        'episodeCount': 200,
+        'categories': ['相声', '曲艺'],
+        'tags': ['相声'],
+      };
+
+      final book = Audiobook.fromJson(json);
+
+      expect(book.categories, ['相声', '曲艺']);
+      expect(book.tags, ['相声']);
+      // toJson 往返一致
+      expect(Audiobook.fromJson(book.toJson()).categories, ['相声', '曲艺']);
+      expect(Audiobook.fromJson(book.toJson()).tags, ['相声']);
     });
 
     test('narratorDisplayName 为 null 时回退 narrators[0]', () {

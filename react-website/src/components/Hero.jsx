@@ -55,7 +55,7 @@ export default function Hero() {
                                 Download Free
                             </motion.a>
                             <motion.a
-                                href="https://github.com/dddevid/Musly"
+                                href="https://github.com/chengsitom/Luobo"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="btn btn-secondary"

@@ -1,7 +1,7 @@
 {
   "@@locale": "sq",
   "@@last_modified": "2026-02-07T16:10:00Z",
-  "appName": "Musly",
+  "appName": "Luobo",
   "@appName": {
     "description": "Application name"
   },
@@ -262,10 +262,6 @@
   "@version": {
     "description": "Version info label"
   },
-  "madeBy": "Krijuar nga dddevid",
-  "@madeBy": {
-    "description": "Developer credit"
-  },
   "githubRepository": "Depoja në GitHub",
   "@githubRepository": {
     "description": "GitHub repository link label"
@@ -273,10 +269,6 @@
   "reportIssue": "Raporto një problem",
   "@reportIssue": {
     "description": "Report issue link label"
-  },
-  "joinDiscord": "Bashkohu në komunitetin Discord",
-  "@joinDiscord": {
-    "description": "Discord community link label"
   },
   "unknownArtist": "Artist i panjohur",
   "@unknownArtist": {
@@ -501,14 +493,6 @@
   "systemDefault": "Parazgjedhja e sistemit",
   "@systemDefault": {
     "description": "System default language option"
-  },
-  "communityTranslations": "Përkthimet nga komuniteti",
-  "@communityTranslations": {
-    "description": "Community translations credit label"
-  },
-  "communityTranslationsSubtitle": "Ndihmoni në përkthimin e Musly në Crowdin",
-  "@communityTranslationsSubtitle": {
-    "description": "Community translations credit subtitle"
   },
   "@_LIBRARY": {},
   "yourLibrary": "Libraria juaj",

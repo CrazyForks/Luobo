@@ -156,10 +156,7 @@ function PrivacyPolicy({ onBack }) {
             Questions about privacy? Contact us:
           </p>
           <div className="contact-options">
-            <a href="https://discord.gg/RrcFvFPdRU" className="contact-link">
-              Discord Community
-            </a>
-            <a href="https://github.com/dddevid/Musly/issues" className="contact-link">
+            <a href="https://github.com/chengsitom/Luobo/issues" className="contact-link">
               GitHub Issues
             </a>
           </div>
@@ -174,7 +171,7 @@ function PrivacyPolicy({ onBack }) {
             Musly is 100% open source. You can verify every line of code that handles your data:
           </p>
           <a 
-            href="https://github.com/dddevid/Musly" 
+            href="https://github.com/chengsitom/Luobo"
             className="github-link"
             target="_blank"
             rel="noopener noreferrer"

@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
-import 'package:url_launcher/url_launcher.dart';
 import '../services/recommendation_service.dart';
 import '../services/player_ui_settings_service.dart';
 import '../services/theme_service.dart';
@@ -86,11 +85,7 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
         const SizedBox(height: 24),
         _buildSection(
           title: AppLocalizations.of(context)!.language.toUpperCase(),
-          children: [
-            _buildLanguageSelector(),
-            _buildDivider(),
-            _buildTranslationCredit(),
-          ],
+          children: [_buildLanguageSelector()],
         ),
         const SizedBox(height: 24),
         _buildSection(
@@ -1172,47 +1167,6 @@ class _SettingsDisplayTabState extends State<SettingsDisplayTab> {
         );
       },
     );
-  }
-
-  Widget _buildTranslationCredit() {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: const Color(0xFF5AC8FA).withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(
-          CupertinoIcons.heart_fill,
-          color: Color(0xFFFF3B30),
-          size: 18,
-        ),
-      ),
-      title: Text(
-        AppLocalizations.of(context)!.communityTranslations,
-        style: const TextStyle(fontSize: 16),
-      ),
-      subtitle: Text(
-        AppLocalizations.of(context)!.communityTranslationsSubtitle,
-        style: TextStyle(
-          fontSize: 13,
-          color: _isDark
-              ? AppTheme.darkSecondaryText
-              : AppTheme.lightSecondaryText,
-        ),
-      ),
-      trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-      onTap: () => _launchUrl('https://crowdin.com/project/musly'),
-    );
-  }
-
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 
   void _showLanguagePicker(BuildContext context, LocaleService localeService) {

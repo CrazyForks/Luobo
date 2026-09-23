@@ -104,11 +104,11 @@ Section "Musly" SecMain
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Musly" \
                    "DisplayIcon" "$INSTDIR\musly.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Musly" \
-                   "Publisher" "dddevid"
+                   "Publisher" "chengsitom"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Musly" \
-                   "DisplayVersion" "1.0.13"
+                   "DisplayVersion" "1.1.17"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Musly" \
-                   "URLInfoAbout" "https://github.com/dddevid/Musly"
+                   "URLInfoAbout" "https://github.com/chengsitom/Luobo"
   
   ; Calculate and write size
   ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2

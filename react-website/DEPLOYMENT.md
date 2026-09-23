@@ -5,7 +5,7 @@ Il sito React è stato configurato per il deployment automatico su GitHub Pages!
 ## Cosa è stato fatto
 
 1. ✅ Creato workflow GitHub Actions (`.github/workflows/deploy-website.yml`)
-2. ✅ Configurato Vite con base path `/Musly/`
+2. ✅ Configurato Vite con base path `/`
 3. ✅ Committato e pushato tutto su GitHub
 
 ## Come abilitare GitHub Pages
@@ -15,7 +15,7 @@ Per completare il deployment, devi abilitare GitHub Pages nelle impostazioni del
 ### Passaggi
 
 1. **Vai su GitHub**
-   - Apri https://github.com/dddevid/Musly
+   - Apri https://github.com/chengsitom/Luobo
 
 2. **Settings → Pages**
    - Nel menu laterale, clicca su **Settings**
@@ -32,7 +32,7 @@ Per completare il deployment, devi abilitare GitHub Pages nelle impostazioni del
    - Vai nella tab **Actions** per vedere il workflow in esecuzione
    - Una volta completato (circa 1-2 minuti), il sito sarà disponibile a:
    
-   **https://dddevid.github.io/Musly/**
+   **https://chengsitom.github.io/Luobo/**
 
 ## Deployment Automatico
 
@@ -43,7 +43,7 @@ Ogni volta che fai push di modifiche nella cartella `react-website/`, il sito ve
 Puoi controllare lo stato del deployment:
 - Tab **Actions** su GitHub
 - Badge verde = deployment riuscito
-- Il sito sarà live su: https://dddevid.github.io/Musly/
+- Il sito sarà live su: https://chengsitom.github.io/Luobo/
 
 ## Troubleshooting
 

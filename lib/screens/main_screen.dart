@@ -12,11 +12,9 @@ import '../services/local_music_service.dart';
 import '../services/recommendation_service.dart';
 import '../services/theme_service.dart';
 import '../services/update_service.dart';
-import '../services/usage_time_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/navigation_helper.dart';
 import '../widgets/widgets.dart';
-import '../widgets/support_dialog.dart';
 import '../l10n/app_localizations.dart';
 import 'home_v2_screen.dart';
 import 'library_screen.dart';
@@ -44,12 +42,6 @@ class _MainScreenState extends State<MainScreen> {
     LibraryScreen(),
     SearchScreen(),
   ];
-
-  @override
-  void dispose() {
-    UsageTimeService().disposeService();
-    super.dispose();
-  }
 
   @override
   void initState() {
@@ -100,39 +92,10 @@ class _MainScreenState extends State<MainScreen> {
         libraryProvider.initialize();
       }
 
-      // Initialize usage time tracking for donation dialog
-      UsageTimeService().initialize();
-
-      // Check periodically if we should show the support dialog (every 2 minutes)
-      _startUsageTimeChecker();
-
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) _checkForUpdate();
       });
     });
-  }
-
-  void _startUsageTimeChecker() {
-    // Check every 2 minutes if we should show the support dialog
-    Future.delayed(const Duration(minutes: 2), () {
-      if (!mounted) return;
-
-      final usageService = UsageTimeService();
-      if (usageService.shouldShowDialog) {
-        _showSupportDialog();
-      } else {
-        // Continue checking
-        _startUsageTimeChecker();
-      }
-    });
-  }
-
-  void _showSupportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => const SupportDialog(),
-      barrierDismissible: true,
-    );
   }
 
   Future<void> _checkForUpdate() async {

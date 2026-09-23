@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/cover_palette.dart';
 
 /// 艺术家封面渐变占位：主题色低饱和渐变 + 首字母大字。
 /// 封面解析链路第 5 级兜底（docs/音乐库艺术家页改版技术方案.md §4.2），
@@ -30,14 +31,6 @@ class ArtistPlaceholder extends StatelessWidget {
     [Color(0xFF8F9A6B), Color(0xFF4E5D3A)], // 橄榄
   ];
 
-  static int _hash(String seed) {
-    var hash = 0;
-    for (final c in seed.codeUnits) {
-      hash = (hash * 31 + c) & 0x7fffffff;
-    }
-    return hash;
-  }
-
   @override
   Widget build(BuildContext context) {
     final content = _buildContent();
@@ -57,7 +50,7 @@ class ArtistPlaceholder extends StatelessWidget {
   }
 
   Widget _buildContent() {
-    final colors = _palettes[_hash(name) % _palettes.length];
+    final colors = _palettes[coverPaletteIndex(name, _palettes.length)];
     final initial = name.isEmpty ? '?' : name[0].toUpperCase();
     return Container(
       decoration: BoxDecoration(

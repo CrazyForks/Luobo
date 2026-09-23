@@ -360,16 +360,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get version => '版本';
 
   @override
-  String get madeBy => '由 dddevid 开发';
-
-  @override
   String get githubRepository => 'GitHub 仓库';
 
   @override
   String get reportIssue => '报告问题';
-
-  @override
-  String get joinDiscord => '加入我们的 Discord';
 
   @override
   String get unknownArtist => '未知歌手';
@@ -524,18 +518,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get failedToLoadChapters => '章节加载失败，请重试';
 
   @override
-  String pageOf(int page, int total) {
-    return '第 $page / $total 页';
-  }
-
-  @override
-  String get previousPage => '上一页';
-
-  @override
-  String get nextPage => '下一页';
-
-  @override
   String get exitAudiobookFirst => '请先退出有声书';
+
+  @override
+  String get jumpToChapter => '跳转章节';
+
+  @override
+  String get searchChapters => '搜索章节/段子';
+
+  @override
+  String get noSearchResults => '未找到匹配的章节';
 
   @override
   String get changelog => '更新日志';
@@ -619,12 +611,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get systemDefault => '跟随系统';
-
-  @override
-  String get communityTranslations => '社区翻译';
-
-  @override
-  String get communityTranslationsSubtitle => '在 Crowdin 上帮助翻译 Musly';
 
   @override
   String get yourLibrary => '你的音乐库';
@@ -791,9 +777,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tabAiPlaylist => 'AI 歌单';
-
-  @override
-  String get tabSupport => '支持';
 
   @override
   String get tabAbout => '关于';
@@ -1641,7 +1624,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get updateAvailable => '有可用更新';
 
   @override
-  String get updateAvailableSubtitle => '新版本的 Musly 已可用！';
+  String get updateAvailableSubtitle => '新版本的 Luobo 已可用！';
 
   @override
   String updateCurrentVersion(String version) {
@@ -1994,10 +1977,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutPlatform => '平台';
 
   @override
-  String get aboutMadeBy => '由 dddevid 制作';
+  String get aboutMadeBy => '由 chengsitom 制作';
 
   @override
-  String get aboutGitHub => 'github.com/dddevid';
+  String get aboutGitHub => 'github.com/chengsitom';
 
   @override
   String get aboutLinkGitHub => 'GitHub 仓库';
@@ -2009,13 +1992,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutLinkReportIssue => '报告问题';
 
   @override
-  String get aboutLinkDiscord => '加入 Discord 社区';
-
-  @override
   String get sectionAnalyticsPrivacy => '分析与隐私';
-
-  @override
-  String get anonymousAnalyticsSubtitle => '通过匿名崩溃报告和使用统计帮助改进应用';
 
   @override
   String get deviceId => '设备 ID';
@@ -2033,54 +2010,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutDeviceIdSubtitle => '这是应用生成的匿名标识符。它无法关联到你的个人身份，仅用于分析。';
-
-  @override
-  String get supportGreeting => '你好！👋';
-
-  @override
-  String get supportParagraph1 =>
-      '我是 Devid，Musly 的开发者。我做这个应用是因为热爱音乐，并且相信每个人都值得拥有一个漂亮的免费音乐播放器。';
-
-  @override
-  String get supportParagraph2 =>
-      'Musly 完全免费且开源。没有广告，没有订阅费。我利用业余时间开发它，因为我真心喜欢做对大家有用的东西。';
-
-  @override
-  String get supportParagraph3 =>
-      '但服务器、开发工具和咖啡不是免费的 😅 如果 Musly 已经成为你日常生活的一部分，并且想说声「谢谢」，一笔小小的捐赠对我意义重大。它能帮助我支付成本并保持动力去添加新功能。';
-
-  @override
-  String get supportParagraph4 => '完全没有压力——你喜欢这个应用本身就是最好的回报！💙';
-
-  @override
-  String get supportDonationTitle => '捐赠支持';
-
-  @override
-  String get supportDonationSubtitle => '通过 Revolut — 任何金额都有帮助！';
-
-  @override
-  String get supportDiscordTitle => '加入 Discord';
-
-  @override
-  String get supportDiscordSubtitle => '获取帮助、建议功能或聊天';
-
-  @override
-  String get supportWaysTitle => '其他支持方式';
-
-  @override
-  String get supportWayRate => '在应用商店留下评分';
-
-  @override
-  String get supportWayShare => '告诉朋友们';
-
-  @override
-  String get supportWayBugs => '报告 Bug 或建议功能';
-
-  @override
-  String get supportWayEnjoy => '享受音乐！🎵';
-
-  @override
-  String get supportMadeWithLove => '用 💙 在意大利制作';
 
   @override
   String get playbackSpeed => '播放速度';
@@ -2353,7 +2282,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get anonymousAnalyticsToggle => '匿名分析';
 
   @override
-  String get anonymousAnalyticsToggleSubtitle => '通过匿名的崩溃报告和使用统计帮助改进 Musly';
+  String get anonymousAnalyticsToggleSubtitle => '通过匿名的崩溃报告和使用统计帮助改进 Luobo';
 
   @override
   String anonymousIdLabel(String id) {
@@ -2382,16 +2311,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get alreadyRated => '您已经评过分了';
 
   @override
-  String get rateMusly => '为 Musly 评分';
+  String get rateMusly => '为 Luobo 评分';
 
   @override
   String get shareFeedback => '分享您的使用反馈';
-
-  @override
-  String get supportMusly => '支持 Musly';
-
-  @override
-  String get joinDiscordOrDonate => '加入 Discord 或捐赠';
 
   @override
   String get howWouldYouRate => '您如何评价使用体验？';
@@ -2404,27 +2327,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get thankYouFeedback => '感谢您的反馈！';
-
-  @override
-  String get supportMuslyDialog => '支持 Musly';
-
-  @override
-  String get supportDescription => 'Musly 是一个免费的开源项目，您的支持将帮助它持续发展！';
-
-  @override
-  String get joinDiscordSubtitle => '获取帮助、建议功能、与我们交流';
-
-  @override
-  String get supportWithDonation => '捐赠支持';
-
-  @override
-  String get donationSubtitle => '帮助支付服务器费用和开发成本';
-
-  @override
-  String get dontShowAgain => '不再显示';
-
-  @override
-  String get maybeLater => '以后再说';
 
   @override
   String addedFolder(String path) {

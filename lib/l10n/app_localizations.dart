@@ -151,7 +151,7 @@ abstract class AppLocalizations {
   /// Application name
   ///
   /// In en, this message translates to:
-  /// **'Musly'**
+  /// **'Luobo'**
   String get appName;
 
   /// Title shown when the app detects it's running on an emulator
@@ -838,12 +838,6 @@ abstract class AppLocalizations {
   /// **'Version'**
   String get version;
 
-  /// Developer credit
-  ///
-  /// In en, this message translates to:
-  /// **'Made by dddevid'**
-  String get madeBy;
-
   /// GitHub repository link label
   ///
   /// In en, this message translates to:
@@ -855,12 +849,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Report Issue'**
   String get reportIssue;
-
-  /// Discord button title
-  ///
-  /// In en, this message translates to:
-  /// **'Join our Discord'**
-  String get joinDiscord;
 
   /// Fallback displayed when a song has no artist
   ///
@@ -1096,29 +1084,29 @@ abstract class AppLocalizations {
   /// **'Failed to load chapters, please retry'**
   String get failedToLoadChapters;
 
-  /// Audiobook chapter pagination indicator
-  ///
-  /// In en, this message translates to:
-  /// **'Page {page} of {total}'**
-  String pageOf(int page, int total);
-
-  /// Audiobook chapter pagination previous button
-  ///
-  /// In en, this message translates to:
-  /// **'Previous page'**
-  String get previousPage;
-
-  /// Audiobook chapter pagination next button
-  ///
-  /// In en, this message translates to:
-  /// **'Next page'**
-  String get nextPage;
-
   /// Snackbar when queue operations are attempted while playing an audiobook
   ///
   /// In en, this message translates to:
   /// **'Please exit the audiobook first'**
   String get exitAudiobookFirst;
+
+  /// Dialog title for jumping to a specific chapter (numbered audiobooks)
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to chapter'**
+  String get jumpToChapter;
+
+  /// In-book search hint and empty-state text (collection audiobooks)
+  ///
+  /// In en, this message translates to:
+  /// **'Search chapters'**
+  String get searchChapters;
+
+  /// In-book search empty result state
+  ///
+  /// In en, this message translates to:
+  /// **'No matching chapters'**
+  String get noSearchResults;
 
   /// Changelog link label
   ///
@@ -1281,18 +1269,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'System Default'**
   String get systemDefault;
-
-  /// Community translations credit label
-  ///
-  /// In en, this message translates to:
-  /// **'Translations by Community'**
-  String get communityTranslations;
-
-  /// Community translations credit subtitle
-  ///
-  /// In en, this message translates to:
-  /// **'Help translate Musly on Crowdin'**
-  String get communityTranslationsSubtitle;
 
   /// No description provided for @yourLibrary.
   ///
@@ -1605,12 +1581,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Playlist'**
   String get tabAiPlaylist;
-
-  /// No description provided for @tabSupport.
-  ///
-  /// In en, this message translates to:
-  /// **'Support'**
-  String get tabSupport;
 
   /// No description provided for @tabAbout.
   ///
@@ -3205,7 +3175,7 @@ abstract class AppLocalizations {
   /// Subtitle in the update dialog
   ///
   /// In en, this message translates to:
-  /// **'A new version of Musly is available!'**
+  /// **'A new version of Luobo is available!'**
   String get updateAvailableSubtitle;
 
   /// Current version label in the update dialog
@@ -3613,7 +3583,7 @@ abstract class AppLocalizations {
   /// Discord RPC state style option: show app name
   ///
   /// In en, this message translates to:
-  /// **'App name (Musly)'**
+  /// **'App name (Luobo)'**
   String get discordRpcStyleApp;
 
   /// Playback settings section header for ReplayGain
@@ -3865,13 +3835,13 @@ abstract class AppLocalizations {
   /// Developer credit text in the about tab
   ///
   /// In en, this message translates to:
-  /// **'Made by dddevid'**
+  /// **'Made by chengsitom'**
   String get aboutMadeBy;
 
   /// Developer GitHub handle shown as subtitle
   ///
   /// In en, this message translates to:
-  /// **'github.com/dddevid'**
+  /// **'github.com/chengsitom'**
   String get aboutGitHub;
 
   /// Link tile title for the GitHub repo
@@ -3892,23 +3862,11 @@ abstract class AppLocalizations {
   /// **'Report Issue'**
   String get aboutLinkReportIssue;
 
-  /// Link tile title for the Discord server
-  ///
-  /// In en, this message translates to:
-  /// **'Join Discord Community'**
-  String get aboutLinkDiscord;
-
   /// Analytics and Privacy section header
   ///
   /// In en, this message translates to:
   /// **'Analytics & Privacy'**
   String get sectionAnalyticsPrivacy;
-
-  /// Subtitle explaining anonymous analytics
-  ///
-  /// In en, this message translates to:
-  /// **'Help improve Musly with anonymous crash reports and usage stats'**
-  String get anonymousAnalyticsSubtitle;
 
   /// Device ID field label
   ///
@@ -3939,96 +3897,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This is an anonymous identifier generated by the app. It cannot be linked to your personal identity and is used only for analytics.'**
   String get aboutDeviceIdSubtitle;
-
-  /// No description provided for @supportGreeting.
-  ///
-  /// In en, this message translates to:
-  /// **'Hey there! 👋'**
-  String get supportGreeting;
-
-  /// No description provided for @supportParagraph1.
-  ///
-  /// In en, this message translates to:
-  /// **'I\'m Devid, the developer behind Musly. I built this app because I love music and believe everyone deserves a beautiful, free music player.'**
-  String get supportParagraph1;
-
-  /// No description provided for @supportParagraph2.
-  ///
-  /// In en, this message translates to:
-  /// **'Musly is completely free and open-source. No ads and no subscription fees. I work on it in my free time because I genuinely enjoy making something useful for people like you.'**
-  String get supportParagraph2;
-
-  /// No description provided for @supportParagraph3.
-  ///
-  /// In en, this message translates to:
-  /// **'But servers, development tools, and coffee aren\'t free 😅 If Musly has become a part of your daily life and you\'d like to say \"thanks,\" a small donation would mean the world to me. It helps cover costs and keeps me motivated to add new features.'**
-  String get supportParagraph3;
-
-  /// No description provided for @supportParagraph4.
-  ///
-  /// In en, this message translates to:
-  /// **'No pressure at all though - your enjoyment of the app is already the best reward! 💙'**
-  String get supportParagraph4;
-
-  /// No description provided for @supportDonationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Support with a Donation'**
-  String get supportDonationTitle;
-
-  /// No description provided for @supportDonationSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'via Revolut - any amount helps!'**
-  String get supportDonationSubtitle;
-
-  /// No description provided for @supportDiscordTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Join our Discord'**
-  String get supportDiscordTitle;
-
-  /// No description provided for @supportDiscordSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Get help, suggest features, or just chat'**
-  String get supportDiscordSubtitle;
-
-  /// No description provided for @supportWaysTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Other ways to support'**
-  String get supportWaysTitle;
-
-  /// No description provided for @supportWayRate.
-  ///
-  /// In en, this message translates to:
-  /// **'Leave a rating on the app store'**
-  String get supportWayRate;
-
-  /// No description provided for @supportWayShare.
-  ///
-  /// In en, this message translates to:
-  /// **'Tell your friends about Musly'**
-  String get supportWayShare;
-
-  /// No description provided for @supportWayBugs.
-  ///
-  /// In en, this message translates to:
-  /// **'Report bugs or suggest features'**
-  String get supportWayBugs;
-
-  /// No description provided for @supportWayEnjoy.
-  ///
-  /// In en, this message translates to:
-  /// **'Just enjoy the music! 🎵'**
-  String get supportWayEnjoy;
-
-  /// No description provided for @supportMadeWithLove.
-  ///
-  /// In en, this message translates to:
-  /// **'Made with 💙 in Italy'**
-  String get supportMadeWithLove;
 
   /// Title of the playback speed bottom sheet
   ///
@@ -4507,7 +4375,7 @@ abstract class AppLocalizations {
   /// Analytics switch subtitle
   ///
   /// In en, this message translates to:
-  /// **'Help improve Musly with anonymous crash reports and usage stats'**
+  /// **'Help improve Luobo with anonymous crash reports and usage stats'**
   String get anonymousAnalyticsToggleSubtitle;
 
   /// Shows the anonymous device ID
@@ -4561,7 +4429,7 @@ abstract class AppLocalizations {
   /// Rate app button title
   ///
   /// In en, this message translates to:
-  /// **'Rate Musly'**
+  /// **'Rate Luobo'**
   String get rateMusly;
 
   /// Rate app subtitle
@@ -4569,18 +4437,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share your feedback'**
   String get shareFeedback;
-
-  /// Support button title
-  ///
-  /// In en, this message translates to:
-  /// **'Support Musly'**
-  String get supportMusly;
-
-  /// Support button subtitle
-  ///
-  /// In en, this message translates to:
-  /// **'Join Discord or donate'**
-  String get joinDiscordOrDonate;
 
   /// Rating dialog prompt
   ///
@@ -4605,48 +4461,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Thank you for your feedback!'**
   String get thankYouFeedback;
-
-  /// Support dialog title
-  ///
-  /// In en, this message translates to:
-  /// **'Support Musly'**
-  String get supportMuslyDialog;
-
-  /// Support dialog description
-  ///
-  /// In en, this message translates to:
-  /// **'Musly is a free, open-source project. Your support helps keep it alive!'**
-  String get supportDescription;
-
-  /// Discord button subtitle
-  ///
-  /// In en, this message translates to:
-  /// **'Get help, suggest features, chat with us'**
-  String get joinDiscordSubtitle;
-
-  /// Donate button title
-  ///
-  /// In en, this message translates to:
-  /// **'Support with a Donation'**
-  String get supportWithDonation;
-
-  /// Donate button subtitle
-  ///
-  /// In en, this message translates to:
-  /// **'Help cover server costs and development'**
-  String get donationSubtitle;
-
-  /// Checkbox to suppress future support dialogs
-  ///
-  /// In en, this message translates to:
-  /// **'Don\'t show this again'**
-  String get dontShowAgain;
-
-  /// Dismiss support dialog button
-  ///
-  /// In en, this message translates to:
-  /// **'Maybe Later'**
-  String get maybeLater;
 
   /// Snackbar after adding a scan folder
   ///

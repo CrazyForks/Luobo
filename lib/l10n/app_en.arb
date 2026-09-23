@@ -2,7 +2,7 @@
   "@@locale": "en",
   "@@last_modified": "2026-02-07T16:10:00Z",
 
-  "appName": "Musly",
+  "appName": "Luobo",
   "@appName": {
     "description": "Application name"
   },
@@ -521,10 +521,6 @@
     "description": "Version info label"
   },
 
-  "madeBy": "Made by dddevid",
-  "@madeBy": {
-    "description": "Developer credit"
-  },
 
   "githubRepository": "GitHub Repository",
   "@githubRepository": {
@@ -534,11 +530,6 @@
   "reportIssue": "Report Issue",
   "@reportIssue": {
     "description": "Report issue link label"
-  },
-
-  "joinDiscord": "Join Discord Community",
-  "@joinDiscord": {
-    "description": "Discord community link label"
   },
 
   "unknownArtist": "Unknown Artist",
@@ -772,32 +763,24 @@
     "description": "Error state message on the audiobook detail screen"
   },
 
-  "pageOf": "Page {page} of {total}",
-  "@pageOf": {
-    "description": "Audiobook chapter pagination indicator",
-    "placeholders": {
-      "page": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-
-  "previousPage": "Previous page",
-  "@previousPage": {
-    "description": "Audiobook chapter pagination previous button"
-  },
-
-  "nextPage": "Next page",
-  "@nextPage": {
-    "description": "Audiobook chapter pagination next button"
-  },
-
   "exitAudiobookFirst": "Please exit the audiobook first",
   "@exitAudiobookFirst": {
     "description": "Snackbar when queue operations are attempted while playing an audiobook"
+  },
+
+  "jumpToChapter": "Jump to chapter",
+  "@jumpToChapter": {
+    "description": "Dialog title for jumping to a specific chapter (numbered audiobooks)"
+  },
+
+  "searchChapters": "Search chapters",
+  "@searchChapters": {
+    "description": "In-book search hint and empty-state text (collection audiobooks)"
+  },
+
+  "noSearchResults": "No matching chapters",
+  "@noSearchResults": {
+    "description": "In-book search empty result state"
   },
 
   "changelog": "Changelog",
@@ -940,16 +923,6 @@
     "description": "System default language option"
   },
 
-  "communityTranslations": "Translations by Community",
-  "@communityTranslations": {
-    "description": "Community translations credit label"
-  },
-
-  "communityTranslationsSubtitle": "Help translate Musly on Crowdin",
-  "@communityTranslationsSubtitle": {
-    "description": "Community translations credit subtitle"
-  },
-
   "@_LIBRARY": {},
   "yourLibrary": "Your Library",
   "filterAll": "All",
@@ -1042,7 +1015,6 @@
   "tabServer": "Server",
   "tabDisplay": "Display",
   "tabAiPlaylist": "AI Playlist",
-  "tabSupport": "Support",
   "tabAbout": "About",
   "tabDiagnostics": "Diagnostics",
 
@@ -1071,7 +1043,6 @@
   "mechanicsGroupConnectivity": "Connect & Cast",
   "mechanicsGroupDiagnostics": "Diagnostics & Privacy",
   "mechanicsTechDetails": "Technical Details",
-
 
   "diagnosticsTitle": "Diagnostics",
   "diagnosticsSearchHint": "Search event type / content",
@@ -1724,7 +1695,7 @@
   "updateAvailable": "Update Available",
   "@updateAvailable": { "description": "Title of the update available dialog" },
 
-  "updateAvailableSubtitle": "A new version of Musly is available!",
+  "updateAvailableSubtitle": "A new version of Luobo is available!",
   "@updateAvailableSubtitle": { "description": "Subtitle in the update dialog" },
 
   "updateCurrentVersion": "Current: v{version}",
@@ -1852,8 +1823,6 @@
       "albumCount": { "type": "int" }
     }
   },
-
-
 
   "@_MUSIC_FOLDERS": {},
   "musicFoldersDialogTitle": "Select Music Folders",
@@ -1984,7 +1953,7 @@
   "discordRpcStyleSong": "Song title",
   "@discordRpcStyleSong": { "description": "Discord RPC state style option: show song title" },
 
-  "discordRpcStyleApp": "App name (Musly)",
+  "discordRpcStyleApp": "App name (Luobo)",
   "@discordRpcStyleApp": { "description": "Discord RPC state style option: show app name" },
 
   "sectionAutoDj": "AUTO DJ",
@@ -2146,10 +2115,10 @@
   "aboutPlatform": "Platform",
   "@aboutPlatform": { "description": "About screen platform row title" },
 
-  "aboutMadeBy": "Made by dddevid",
+  "aboutMadeBy": "Made by chengsitom",
   "@aboutMadeBy": { "description": "Developer credit text in the about tab" },
 
-  "aboutGitHub": "github.com/dddevid",
+  "aboutGitHub": "github.com/chengsitom",
   "@aboutGitHub": { "description": "Developer GitHub handle shown as subtitle" },
 
   "aboutLinkGitHub": "GitHub Repository",
@@ -2161,16 +2130,11 @@
   "aboutLinkReportIssue": "Report Issue",
   "@aboutLinkReportIssue": { "description": "Link tile title for reporting a bug" },
 
-  "aboutLinkDiscord": "Join Discord Community",
-  "@aboutLinkDiscord": { "description": "Link tile title for the Discord server" },
-
   "@_SETTINGS_ANALYTICS": {},
   "sectionAnalyticsPrivacy": "Analytics & Privacy",
   "@sectionAnalyticsPrivacy": { "description": "Analytics and Privacy section header" },
   "anonymousAnalytics": "Anonymous Analytics",
   "@anonymousAnalytics": { "description": "Title for anonymous analytics toggle" },
-  "anonymousAnalyticsSubtitle": "Help improve Musly with anonymous crash reports and usage stats",
-  "@anonymousAnalyticsSubtitle": { "description": "Subtitle explaining anonymous analytics" },
   "deviceId": "Device ID",
   "@deviceId": { "description": "Title for device ID row" },
   "deviceIdAnonymous": "Anonymous ID: {id}",
@@ -2188,21 +2152,6 @@
   "@aboutDeviceIdSubtitle": { "description": "Explanation of what device ID is" },
 
   "@_SUPPORT": {},
-  "supportGreeting": "Hey there! 👋",
-  "supportParagraph1": "I'm Devid, the developer behind Musly. I built this app because I love music and believe everyone deserves a beautiful, free music player.",
-  "supportParagraph2": "Musly is completely free and open-source. No ads and no subscription fees. I work on it in my free time because I genuinely enjoy making something useful for people like you.",
-  "supportParagraph3": "But servers, development tools, and coffee aren't free 😅 If Musly has become a part of your daily life and you'd like to say \"thanks,\" a small donation would mean the world to me. It helps cover costs and keeps me motivated to add new features.",
-  "supportParagraph4": "No pressure at all though - your enjoyment of the app is already the best reward! 💙",
-  "supportDonationTitle": "Support with a Donation",
-  "supportDonationSubtitle": "via Revolut - any amount helps!",
-  "supportDiscordTitle": "Join our Discord",
-  "supportDiscordSubtitle": "Get help, suggest features, or just chat",
-  "supportWaysTitle": "Other ways to support",
-  "supportWayRate": "Leave a rating on the app store",
-  "supportWayShare": "Tell your friends about Musly",
-  "supportWayBugs": "Report bugs or suggest features",
-  "supportWayEnjoy": "Just enjoy the music! 🎵",
-  "supportMadeWithLove": "Made with 💙 in Italy",
 
   "@_NOW_PLAYING_DIALOGS": {},
   "playbackSpeed": "Playback Speed",
@@ -2431,7 +2380,7 @@
   "@analyticsAndPrivacy": { "description": "Settings section title" },
   "anonymousAnalyticsToggle": "Anonymous Analytics",
   "@anonymousAnalyticsToggle": { "description": "Analytics switch label" },
-  "anonymousAnalyticsToggleSubtitle": "Help improve Musly with anonymous crash reports and usage stats",
+  "anonymousAnalyticsToggleSubtitle": "Help improve Luobo with anonymous crash reports and usage stats",
   "@anonymousAnalyticsToggleSubtitle": { "description": "Analytics switch subtitle" },
   "deviceId": "Device ID",
   "@deviceId": { "description": "Device ID field label" },
@@ -2453,14 +2402,10 @@
   "@thanksForRating": { "description": "Title after user rated the app" },
   "alreadyRated": "You've already rated the app",
   "@alreadyRated": { "description": "Subtitle after rated" },
-  "rateMusly": "Rate Musly",
+  "rateMusly": "Rate Luobo",
   "@rateMusly": { "description": "Rate app button title" },
   "shareFeedback": "Share your feedback",
   "@shareFeedback": { "description": "Rate app subtitle" },
-  "supportMusly": "Support Musly",
-  "@supportMusly": { "description": "Support button title" },
-  "joinDiscordOrDonate": "Join Discord or donate",
-  "@joinDiscordOrDonate": { "description": "Support button subtitle" },
   "howWouldYouRate": "How would you rate your experience?",
   "@howWouldYouRate": { "description": "Rating dialog prompt" },
   "optionalFeedback": "Optional feedback...",
@@ -2469,22 +2414,6 @@
   "@submit": { "description": "Submit button" },
   "thankYouFeedback": "Thank you for your feedback!",
   "@thankYouFeedback": { "description": "Snackbar after rating submitted" },
-  "supportMuslyDialog": "Support Musly",
-  "@supportMuslyDialog": { "description": "Support dialog title" },
-  "supportDescription": "Musly is a free, open-source project. Your support helps keep it alive!",
-  "@supportDescription": { "description": "Support dialog description" },
-  "joinDiscord": "Join our Discord",
-  "@joinDiscord": { "description": "Discord button title" },
-  "joinDiscordSubtitle": "Get help, suggest features, chat with us",
-  "@joinDiscordSubtitle": { "description": "Discord button subtitle" },
-  "supportWithDonation": "Support with a Donation",
-  "@supportWithDonation": { "description": "Donate button title" },
-  "donationSubtitle": "Help cover server costs and development",
-  "@donationSubtitle": { "description": "Donate button subtitle" },
-  "dontShowAgain": "Don't show this again",
-  "@dontShowAgain": { "description": "Checkbox to suppress future support dialogs" },
-  "maybeLater": "Maybe Later",
-  "@maybeLater": { "description": "Dismiss support dialog button" },
 
   "addedFolder": "Added folder: {path}",
   "@addedFolder": { "description": "Snackbar after adding a scan folder", "placeholders": { "path": { "type": "String" } } },

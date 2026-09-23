@@ -414,10 +414,6 @@
   "@version": {
     "description": "Version info label"
   },
-  "madeBy": "由 dddevid 开发",
-  "@madeBy": {
-    "description": "Developer credit"
-  },
   "githubRepository": "GitHub 仓库",
   "@githubRepository": {
     "description": "GitHub repository link label"
@@ -425,10 +421,6 @@
   "reportIssue": "报告问题",
   "@reportIssue": {
     "description": "Report issue link label"
-  },
-  "joinDiscord": "加入 Discord 社区",
-  "@joinDiscord": {
-    "description": "Discord community link label"
   },
   "unknownArtist": "未知艺术家",
   "@unknownArtist": {
@@ -632,32 +624,24 @@
     "description": "Error state message on the audiobook detail screen"
   },
 
-  "pageOf": "第 {page} / {total} 页",
-  "@pageOf": {
-    "description": "Audiobook chapter pagination indicator",
-    "placeholders": {
-      "page": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-
-  "previousPage": "上一页",
-  "@previousPage": {
-    "description": "Audiobook chapter pagination previous button"
-  },
-
-  "nextPage": "下一页",
-  "@nextPage": {
-    "description": "Audiobook chapter pagination next button"
-  },
-
   "exitAudiobookFirst": "请先退出有声书",
   "@exitAudiobookFirst": {
     "description": "Snackbar when queue operations are attempted while playing an audiobook"
+  },
+
+  "jumpToChapter": "跳转章节",
+  "@jumpToChapter": {
+    "description": "Dialog title for jumping to a specific chapter (numbered audiobooks)"
+  },
+
+  "searchChapters": "搜索章节/段子",
+  "@searchChapters": {
+    "description": "In-book search hint and empty-state text (collection audiobooks)"
+  },
+
+  "noSearchResults": "未找到匹配的章节",
+  "@noSearchResults": {
+    "description": "In-book search empty result state"
   },
 
   "changelog": "更新日志",
@@ -748,14 +732,6 @@
   "systemDefault": "跟随系统",
   "@systemDefault": {
     "description": "System default language option"
-  },
-  "communityTranslations": "社区翻译",
-  "@communityTranslations": {
-    "description": "Community translations credit label"
-  },
-  "communityTranslationsSubtitle": "在 Crowdin 上帮助翻译 Musly",
-  "@communityTranslationsSubtitle": {
-    "description": "Community translations credit subtitle"
   },
   "@_LIBRARY": {},
   "yourLibrary": "你的音乐库",
@@ -1556,7 +1532,7 @@
   "@updateAvailable": {
     "description": "Title of the update available dialog"
   },
-  "updateAvailableSubtitle": "新版本的 Musly 已可用！",
+  "updateAvailableSubtitle": "新版本的 Luobo 已可用！",
   "@updateAvailableSubtitle": {
     "description": "Subtitle in the update dialog"
   },
@@ -1889,7 +1865,6 @@
   "liveSearchSection": "搜索",
   "liveSearch": "实时搜索",
   "liveSearchSubtitle": "输入时实时更新结果，而非显示下拉列表",
-  "tabSupport": "支持",
   "sectionSavedProfiles": "已保存的配置",
   "switchProfile": "切换配置",
   "switchServer": "切换服务器",
@@ -1982,35 +1957,18 @@
   "sectionAboutLinks": "链接",
   "aboutVersion": "版本",
   "aboutPlatform": "平台",
-  "aboutMadeBy": "由 dddevid 制作",
-  "aboutGitHub": "github.com/dddevid",
+  "aboutMadeBy": "由 chengsitom 制作",
+  "aboutGitHub": "github.com/chengsitom",
   "aboutLinkGitHub": "GitHub 仓库",
   "aboutLinkChangelog": "更新日志",
   "aboutLinkReportIssue": "报告问题",
-  "aboutLinkDiscord": "加入 Discord 社区",
   "sectionAnalyticsPrivacy": "分析与隐私",
   "anonymousAnalytics": "匿名分析",
-  "anonymousAnalyticsSubtitle": "通过匿名崩溃报告和使用统计帮助改进应用",
   "deviceId": "设备 ID",
   "deviceIdAnonymous": "匿名 ID：{id}",
   "deviceIdDisabled": "启用分析以查看匿名设备 ID",
   "aboutDeviceId": "关于设备 ID",
   "aboutDeviceIdSubtitle": "这是应用生成的匿名标识符。它无法关联到你的个人身份，仅用于分析。",
-  "supportGreeting": "你好！👋",
-  "supportParagraph1": "我是 Devid，Musly 的开发者。我做这个应用是因为热爱音乐，并且相信每个人都值得拥有一个漂亮的免费音乐播放器。",
-  "supportParagraph2": "Musly 完全免费且开源。没有广告，没有订阅费。我利用业余时间开发它，因为我真心喜欢做对大家有用的东西。",
-  "supportParagraph3": "但服务器、开发工具和咖啡不是免费的 😅 如果 Musly 已经成为你日常生活的一部分，并且想说声「谢谢」，一笔小小的捐赠对我意义重大。它能帮助我支付成本并保持动力去添加新功能。",
-  "supportParagraph4": "完全没有压力——你喜欢这个应用本身就是最好的回报！💙",
-  "supportDonationTitle": "捐赠支持",
-  "supportDonationSubtitle": "通过 Revolut — 任何金额都有帮助！",
-  "supportDiscordTitle": "加入 Discord",
-  "supportDiscordSubtitle": "获取帮助、建议功能或聊天",
-  "supportWaysTitle": "其他支持方式",
-  "supportWayRate": "在应用商店留下评分",
-  "supportWayShare": "告诉朋友们",
-  "supportWayBugs": "报告 Bug 或建议功能",
-  "supportWayEnjoy": "享受音乐！🎵",
-  "supportMadeWithLove": "用 💙 在意大利制作",
   "playbackSpeed": "播放速度",
   "normalSpeed": "正常 (1×)",
   "preservePitch": "保持音调",
@@ -2130,7 +2088,7 @@
   "@analyticsAndPrivacy": { "description": "Settings section title" },
   "anonymousAnalyticsToggle": "匿名分析",
   "@anonymousAnalyticsToggle": { "description": "Analytics switch label" },
-  "anonymousAnalyticsToggleSubtitle": "通过匿名的崩溃报告和使用统计帮助改进 Musly",
+  "anonymousAnalyticsToggleSubtitle": "通过匿名的崩溃报告和使用统计帮助改进 Luobo",
   "@anonymousAnalyticsToggleSubtitle": { "description": "Analytics switch subtitle" },
   "deviceId": "设备 ID",
   "@deviceId": { "description": "Device ID field label" },
@@ -2152,14 +2110,10 @@
   "@thanksForRating": { "description": "Title after user rated the app" },
   "alreadyRated": "您已经评过分了",
   "@alreadyRated": { "description": "Subtitle after rated" },
-  "rateMusly": "为 Musly 评分",
+  "rateMusly": "为 Luobo 评分",
   "@rateMusly": { "description": "Rate app button title" },
   "shareFeedback": "分享您的使用反馈",
   "@shareFeedback": { "description": "Rate app subtitle" },
-  "supportMusly": "支持 Musly",
-  "@supportMusly": { "description": "Support button title" },
-  "joinDiscordOrDonate": "加入 Discord 或捐赠",
-  "@joinDiscordOrDonate": { "description": "Support button subtitle" },
   "howWouldYouRate": "您如何评价使用体验？",
   "@howWouldYouRate": { "description": "Rating dialog prompt" },
   "optionalFeedback": "反馈意见（可选）...",
@@ -2168,22 +2122,6 @@
   "@submit": { "description": "Submit button" },
   "thankYouFeedback": "感谢您的反馈！",
   "@thankYouFeedback": { "description": "Snackbar after rating submitted" },
-  "supportMuslyDialog": "支持 Musly",
-  "@supportMuslyDialog": { "description": "Support dialog title" },
-  "supportDescription": "Musly 是一个免费的开源项目，您的支持将帮助它持续发展！",
-  "@supportDescription": { "description": "Support dialog description" },
-  "joinDiscord": "加入我们的 Discord",
-  "@joinDiscord": { "description": "Discord button title" },
-  "joinDiscordSubtitle": "获取帮助、建议功能、与我们交流",
-  "@joinDiscordSubtitle": { "description": "Discord button subtitle" },
-  "supportWithDonation": "捐赠支持",
-  "@supportWithDonation": { "description": "Donate button title" },
-  "donationSubtitle": "帮助支付服务器费用和开发成本",
-  "@donationSubtitle": { "description": "Donate button subtitle" },
-  "dontShowAgain": "不再显示",
-  "@dontShowAgain": { "description": "Checkbox to suppress future support dialogs" },
-  "maybeLater": "以后再说",
-  "@maybeLater": { "description": "Dismiss support dialog button" },
 
   "addedFolder": "已添加文件夹：{path}",
   "@addedFolder": { "description": "Snackbar after adding a scan folder", "placeholders": { "path": { "type": "String" } } },

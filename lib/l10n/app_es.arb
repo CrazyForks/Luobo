@@ -1,7 +1,7 @@
 {
   "@@locale": "es",
   "@@last_modified": "2026-02-07T16:10:00Z",
-  "appName": "Musly",
+  "appName": "Luobo",
   "@appName": {
     "description": "Application name"
   },
@@ -262,10 +262,6 @@
   "@version": {
     "description": "Version info label"
   },
-  "madeBy": "Hecho por dddevid",
-  "@madeBy": {
-    "description": "Developer credit"
-  },
   "githubRepository": "Repositorio de GitHub",
   "@githubRepository": {
     "description": "GitHub repository link label"
@@ -273,10 +269,6 @@
   "reportIssue": "Reportar problema",
   "@reportIssue": {
     "description": "Report issue link label"
-  },
-  "joinDiscord": "Únete a la comunidad de Discord",
-  "@joinDiscord": {
-    "description": "Discord community link label"
   },
   "unknownArtist": "Artista desconocido",
   "@unknownArtist": {
@@ -501,14 +493,6 @@
   "systemDefault": "Valores por defecto del sistema",
   "@systemDefault": {
     "description": "System default language option"
-  },
-  "communityTranslations": "Traducciones por la comunidad",
-  "@communityTranslations": {
-    "description": "Community translations credit label"
-  },
-  "communityTranslationsSubtitle": "Ayude a traducir Musly en Crowdin",
-  "@communityTranslationsSubtitle": {
-    "description": "Community translations credit subtitle"
   },
   "@_LIBRARY": {},
   "yourLibrary": "Tu Biblioteca",
@@ -1167,7 +1151,7 @@
   "@updateAvailable": {
     "description": "Title of the update available dialog"
   },
-  "updateAvailableSubtitle": "¡Una nueva versión de Musly está disponible!",
+  "updateAvailableSubtitle": "¡Una nueva versión de Luobo está disponible!",
   "@updateAvailableSubtitle": {
     "description": "Subtitle in the update dialog"
   },
@@ -1492,7 +1476,7 @@
   "@discordRpcStyleSong": {
     "description": "Discord RPC state style option: show song title"
   },
-  "discordRpcStyleApp": "Nombre de la aplicación (Musly)",
+  "discordRpcStyleApp": "Nombre de la aplicación (Luobo)",
   "@discordRpcStyleApp": {
     "description": "Discord RPC state style option: show app name"
   },
@@ -1663,11 +1647,11 @@
   "@aboutPlatform": {
     "description": "About screen platform row title"
   },
-  "aboutMadeBy": "Hecho por dddevid",
+  "aboutMadeBy": "Hecho por chengsitom",
   "@aboutMadeBy": {
     "description": "Developer credit text in the about tab"
   },
-  "aboutGitHub": "github.com/dddevid",
+  "aboutGitHub": "github.com/chengsitom",
   "@aboutGitHub": {
     "description": "Developer GitHub handle shown as subtitle"
   },
@@ -1682,10 +1666,6 @@
   "aboutLinkReportIssue": "Reportar problema",
   "@aboutLinkReportIssue": {
     "description": "Link tile title for reporting a bug"
-  },
-  "aboutLinkDiscord": "Únete a la comunidad de Discord",
-  "@aboutLinkDiscord": {
-    "description": "Link tile title for the Discord server"
   },
 
   "lyricsSection": "LYRICS",

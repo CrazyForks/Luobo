@@ -6,7 +6,6 @@ import 'settings_storage_tab.dart';
 import 'settings_server_tab.dart';
 import 'settings_display_tab.dart';
 import 'settings_about_tab.dart';
-import 'settings_support_tab.dart';
 import 'settings_ai_playlist_tab.dart';
 import '../services/diagnostics/diagnostics.dart';
 import '../theme/app_theme.dart';
@@ -27,7 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 8, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
   }
 
   @override
@@ -88,10 +87,6 @@ class _SettingsScreenState extends State<SettingsScreen>
               text: l10n.tabAiPlaylist,
             ),
             Tab(
-              icon: const Icon(CupertinoIcons.heart_fill, size: 20),
-              text: l10n.tabSupport,
-            ),
-            Tab(
               icon: const Icon(CupertinoIcons.info, size: 20),
               text: l10n.tabAbout,
             ),
@@ -110,7 +105,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           SettingsServerTab(),
           SettingsDisplayTab(),
           SettingsAiPlaylistTab(),
-          SettingsSupportTab(),
           SettingsAboutTab(),
           DiagnosticsPage(),
         ],

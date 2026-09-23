@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/analytics_service.dart';
-import '../widgets/support_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsAboutTab extends StatefulWidget {
@@ -81,28 +80,21 @@ class _SettingsAboutTabState extends State<SettingsAboutTab> {
               context,
               icon: Icons.code_rounded,
               title: AppLocalizations.of(context)!.aboutLinkGitHub,
-              url: 'https://github.com/dddevid/Musly',
+              url: 'https://github.com/chengsitom/Luobo',
             ),
             _buildDivider(context),
             _buildLinkTile(
               context,
               icon: CupertinoIcons.doc_text,
               title: AppLocalizations.of(context)!.aboutLinkChangelog,
-              url: 'https://github.com/dddevid/Musly/releases/tag/v1.0.13',
+              url: 'https://github.com/chengsitom/Luobo/releases',
             ),
             _buildDivider(context),
             _buildLinkTile(
               context,
               icon: CupertinoIcons.exclamationmark_bubble,
               title: AppLocalizations.of(context)!.aboutLinkReportIssue,
-              url: 'https://github.com/dddevid/Musly/issues/new',
-            ),
-            _buildDivider(context),
-            _buildLinkTile(
-              context,
-              icon: Icons.chat_bubble_rounded,
-              title: AppLocalizations.of(context)!.aboutLinkDiscord,
-              url: 'https://discord.gg/k9FqpbT65M',
+              url: 'https://github.com/chengsitom/Luobo/issues/new',
             ),
           ],
         ),
@@ -244,15 +236,6 @@ class _SettingsAboutTabState extends State<SettingsAboutTab> {
                   : AppLocalizations.of(context)!.shareFeedback,
               onTap: _hasRated ? null : () => _showRatingDialog(context),
             ),
-            _buildDivider(context),
-            _buildActionTile(
-              context,
-              icon: CupertinoIcons.heart_fill,
-              iconColor: const Color(0xFFFF2D55),
-              title: AppLocalizations.of(context)!.supportMusly,
-              subtitle: AppLocalizations.of(context)!.joinDiscordOrDonate,
-              onTap: () => _showSupportDialog(context),
-            ),
           ],
         ),
         const SizedBox(height: 40),
@@ -361,7 +344,7 @@ class _SettingsAboutTabState extends State<SettingsAboutTab> {
         style: const TextStyle(fontSize: 13),
       ),
       trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-      onTap: () => _openUrl('https://github.com/dddevid'),
+      onTap: () => _openUrl('https://github.com/chengsitom'),
     );
   }
 
@@ -407,10 +390,6 @@ class _SettingsAboutTabState extends State<SettingsAboutTab> {
     } catch (e) {
       debugPrint('Error opening URL: $e');
     }
-  }
-
-  void _showSupportDialog(BuildContext context) {
-    showDialog(context: context, builder: (context) => const SupportDialog());
   }
 
   void _showRatingDialog(BuildContext context) async {
