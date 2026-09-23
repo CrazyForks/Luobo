@@ -352,19 +352,11 @@ jobs:
   release:
     runs-on: ubuntu-latest
     needs: [build-android, build-ios, build-windows, build-linux, build-macos]
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Create Tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v${{ github.event.inputs.version }}" -m "Release v${{ github.event.inputs.version }}"
-          git push origin "v${{ github.event.inputs.version }}"
-
-      - name: Download Android Artifacts
-        uses: actions/download-artifact@v4
         with:
           name: android-apk
           path: artifacts/android/
@@ -419,9 +411,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.event.inputs.version }}
-          name: Musly v${{ github.event.inputs.version }}
+          name: Luobo v${{ github.event.inputs.version }}
           body: |
-            ## 🎉 Musly v${{ github.event.inputs.version }}
+            ## 🎉 Luobo v${{ github.event.inputs.version }}
 
             ### 📦 Downloads
 
@@ -442,10 +434,10 @@ jobs:
             - `musly-linux-x64.tar.gz` (extract and run musly)
 
             ### 📝 Changelog
-            See [CHANGELOG.md](https://github.com/dddevid/Musly/blob/master/CHANGELOG.md)
+            See [CHANGELOG.md](https://github.com/chengsitom/Luobo/blob/master/CHANGELOG.md)
 
             ### 🌍 Translations
-            Contribute translations at [Crowdin](https://crowdin.com/project/musly)
+            Contribute translations via PRs at [github.com/chengsitom/Luobo](https://github.com/chengsitom/Luobo)
           files: |
             artifacts/android/*.apk
             artifacts/ios/*.ipa
